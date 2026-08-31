@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import CalendarPeriodComparisonHub from "@/components/my-library/CalendarPeriodComparisonHub";
 import CalendarPlanWeekHub from "@/components/my-library/CalendarPlanWeekHub";
+import LocalDayTimezoneSynchronizer from "@/components/my-library/LocalDayTimezoneSynchronizer";
 import { loadMyLibraryCalendarComparison } from "@/lib/my-library/calendar-comparison";
 import { loadMyLibraryCalendarPlan } from "@/lib/my-library/calendar-plan";
 import {
   buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarPlanHref,
-  getTodayCalendarDate,
   normalizeMyLibraryCalendarDateParam,
   normalizeMyLibraryCalendarPeriodParam,
   normalizeMyLibraryCalendarPlanDateParam,
@@ -17,6 +17,7 @@ import {
   normalizeOptionalMyLibraryCalendarDateParam,
   normalizeMyLibraryCalendarViewParam,
 } from "@/lib/my-library/calendar";
+import { getRequestReadLocalDayContext } from "@/lib/my-library/local-day-server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -39,8 +40,11 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
     redirect("/auth/sign-in?next=%2Fmy-library%2Fcalendar");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const todayDate = getTodayCalendarDate();
+  const [resolvedSearchParams, localDayContext] = await Promise.all([
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
+    getRequestReadLocalDayContext(),
+  ]);
+  const todayDate = localDayContext.todayDate;
   const selectedView = normalizeMyLibraryCalendarViewParam(resolvedSearchParams.view);
   const comparisonSelectedDate = normalizeMyLibraryCalendarDateParam(
     resolvedSearchParams.date,
@@ -84,6 +88,7 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
 
   return (
     <SiteChrome>
+      <LocalDayTimezoneSynchronizer />
       <section
         data-testid="calendar-workspace"
         className={`mx-auto min-h-screen w-full px-4 pt-16 pb-20 sm:px-6 sm:pt-24 ${

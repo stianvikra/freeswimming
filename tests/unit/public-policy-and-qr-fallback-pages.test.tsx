@@ -81,11 +81,15 @@ describe("public policy and QR fallback pages", () => {
 
     const page = screen.getByTestId("cookie-policy-page");
     expect(within(page).getByRole("heading", { name: "Cookie Policy" })).toBeVisible();
-    expect(within(page).getByText("Last updated: June 9, 2026")).toBeVisible();
+    expect(within(page).getByText("Last updated: August 31, 2026")).toBeVisible();
 
     const essentialStorageCard = screen.getByTestId("cookie-essential-storage-card");
     expect(essentialStorageCard).toHaveClass("fs-library-card", "fs-library-card-accent");
     expect(screen.getByText("Session cookies used by Supabase authentication.")).toBeVisible();
+    expect(essentialStorageCard).toHaveTextContent("fs_timezone");
+    expect(essentialStorageCard).toHaveTextContent("browser's IANA timezone");
+    expect(essentialStorageCard).toHaveTextContent("up to 360 days");
+    expect(essentialStorageCard).toHaveTextContent("is not used to identify or track you");
     expect(screen.getByText("Consent boundary")).toBeVisible();
     expect(
       screen.getByText(

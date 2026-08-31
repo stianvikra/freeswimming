@@ -5,11 +5,13 @@ import ReviewActualPage from "@/app/my-library/calendar/actuals/[instanceId]/pag
 import type { ReviewActualEditorModel } from "@/lib/my-library/review-actual";
 
 const {
+  getRequestReadLocalDayContextMock,
   getServerSupabaseUserIfAuthCookiePresentMock,
   loadReviewActualEditorModelMock,
   notFoundMock,
   redirectMock,
 } = vi.hoisted(() => ({
+  getRequestReadLocalDayContextMock: vi.fn(),
   getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
   loadReviewActualEditorModelMock: vi.fn(),
   notFoundMock: vi.fn(() => {
@@ -32,8 +34,16 @@ vi.mock("@/components/my-library/ReviewActualEditor", () => ({
   ),
 }));
 
+vi.mock("@/components/my-library/LocalDayTimezoneSynchronizer", () => ({
+  default: () => <div data-testid="local-day-timezone-synchronizer" />,
+}));
+
 vi.mock("@/lib/my-library/review-actual", () => ({
   loadReviewActualEditorModel: loadReviewActualEditorModelMock,
+}));
+
+vi.mock("@/lib/my-library/local-day-server", () => ({
+  getRequestReadLocalDayContext: getRequestReadLocalDayContextMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -61,6 +71,13 @@ describe("Review actual page", () => {
       status: "missing_actual",
       returnHref: "/my-library/calendar?view=plan",
     } satisfies ReviewActualEditorModel);
+    getRequestReadLocalDayContextMock.mockResolvedValue({
+      status: "resolved",
+      source: "cookie",
+      timezone: "America/Los_Angeles",
+      todayDate: "2026-06-19",
+      now: new Date("2026-06-20T01:00:00.000Z"),
+    });
   });
 
   afterEach(() => {
@@ -77,6 +94,7 @@ describe("Review actual page", () => {
     );
 
     expect(screen.getByTestId("site-chrome")).toBeInTheDocument();
+    expect(screen.getByTestId("local-day-timezone-synchronizer")).toBeInTheDocument();
     expect(screen.getByTestId("review-actual-route-shell")).toHaveClass("max-w-[1120px]");
     expect(screen.getByRole("heading", { name: "Review actual", level: 1 })).toBeVisible();
     expect(screen.getByTestId("review-actual-editor")).toHaveAttribute(
@@ -137,6 +155,24 @@ describe("Review actual page", () => {
       })
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(getServerSupabaseUserIfAuthCookiePresentMock).not.toHaveBeenCalled();
+    expect(getRequestReadLocalDayContextMock).not.toHaveBeenCalled();
     expect(loadReviewActualEditorModelMock).not.toHaveBeenCalled();
+  });
+
+  it("uses local today as the impossible-date fallback without capping valid future plan dates", async () => {
+    render(
+      await ReviewActualPage({
+        params: Promise.resolve({ instanceId }),
+        searchParams: Promise.resolve({ date: "2026-02-31" }),
+      })
+    );
+
+    expect(loadReviewActualEditorModelMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      expect.objectContaining({
+        returnHref: "/my-library/calendar?view=plan&date=2026-06-19",
+      })
+    );
   });
 });

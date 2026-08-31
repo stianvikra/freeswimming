@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_ABSENCE_REVIEW_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
-import { normalizeHabitDate } from "@/lib/habits/shared";
+import {
+  clampLocalDayDateToToday,
+  isLocalDayDateKey,
+  validateRenderedLocalDayDate,
+} from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -12,7 +17,9 @@ const MAX_REVIEW_DATES_PER_REQUEST = 31;
 type AbsenceReviewRequestBody = {
   dates?: unknown;
   selectedDate?: unknown;
+  renderedTodayDate?: unknown;
   action?: unknown;
+  timezone?: unknown;
 };
 
 function noStoreJson(body: Record<string, unknown>, init?: { status?: number }) {
@@ -29,7 +36,11 @@ function parseReviewDates(value: unknown, todayDate: string) {
     return { ok: false as const, error: "Review dates are required." };
   }
 
-  const dates = [...new Set(value)].filter((date): date is string => typeof date === "string");
+  if (value.some((date) => typeof date !== "string")) {
+    return { ok: false as const, code: "INVALID_DATE" as const, error: "Invalid review date." };
+  }
+
+  const dates = [...new Set(value as string[])];
   if (dates.length === 0) {
     return { ok: false as const, error: "Review dates are required." };
   }
@@ -38,9 +49,11 @@ function parseReviewDates(value: unknown, todayDate: string) {
     return { ok: false as const, error: "Too many review dates." };
   }
 
-  const hasInvalidDate = dates.some((date) => !ISO_DATE_PATTERN.test(date));
+  const hasInvalidDate = dates.some(
+    (date) => !ISO_DATE_PATTERN.test(date) || !isLocalDayDateKey(date)
+  );
   if (hasInvalidDate) {
-    return { ok: false as const, error: "Invalid review date." };
+    return { ok: false as const, code: "INVALID_DATE" as const, error: "Invalid review date." };
   }
 
   const hasFutureDate = dates.some((date) => date > todayDate);
@@ -70,24 +83,76 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: AbsenceReviewRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as AbsenceReviewRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
     );
   }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as AbsenceReviewRequestBody;
 
-  const todayDate = normalizeHabitDate(undefined);
-  const selectedDate = normalizeHabitDate(
-    body.selectedDate,
-    new Date(`${todayDate}T00:00:00.000Z`)
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: new Date(),
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Choose a valid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const renderedLocalDay = validateRenderedLocalDayDate(
+    body.renderedTodayDate,
+    localDayContext.todayDate
   );
+  if (renderedLocalDay.status === "invalid") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "INVALID_DATE",
+          error: "The rendered local day is invalid. Refresh the page and try again.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+  if (renderedLocalDay.status !== "current") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "STALE_LOCAL_DAY_CONTEXT",
+          error: "Your local day changed. Refresh the page and try again.",
+        },
+        { status: 409 }
+      )
+    );
+  }
+
+  const todayDate = localDayContext.todayDate;
+  const selectedDate = clampLocalDayDateToToday(body.selectedDate, todayDate);
   const parsedDates = parseReviewDates(body.dates, todayDate);
   if (!parsedDates.ok) {
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: parsedDates.error }, { status: 400 })
+      noStoreJson(
+        {
+          ok: false,
+          ...("code" in parsedDates ? { code: parsedDates.code } : {}),
+          error: parsedDates.error,
+        },
+        { status: 400 }
+      )
     );
   }
 
@@ -131,7 +196,10 @@ export async function POST(request: Request) {
     },
   });
 
-  const snapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate,
+    todayDate,
+  });
 
   return applySupabaseCookies(
     noStoreJson({

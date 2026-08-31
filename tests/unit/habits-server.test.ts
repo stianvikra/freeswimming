@@ -271,7 +271,10 @@ describe("habits server loader", () => {
       ]
     );
 
-    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
 
     expect(microLinkQuery.in).toHaveBeenCalledWith("habit_id", [habit.id]);
     expect(microPlanQuery.in).toHaveBeenCalledWith("id", ["22222222-2222-4222-8222-222222222222"]);
@@ -312,7 +315,10 @@ describe("habits server loader", () => {
       error: { message: "Dryland progress unavailable" },
     });
 
-    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
 
     expect(snapshot.activeHabits[0]?.microSessionLink).toMatchObject({
       planId: "22222222-2222-4222-8222-222222222222",
@@ -351,7 +357,10 @@ describe("habits server loader", () => {
     );
     const { supabase, checkInQuery, resetQuery } = buildSupabaseMock([habit], checkIns);
 
-    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
 
     expect(checkInQuery.gte).toHaveBeenCalledWith("check_in_date", "2026-04-28");
     expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
@@ -373,7 +382,10 @@ describe("habits server loader", () => {
       ]
     );
 
-    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-29");
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-29",
+      todayDate: "2026-06-05",
+    });
 
     expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-31");
     expect(snapshot.weekSummary.days.map((day) => day.date)).toEqual([
@@ -386,6 +398,24 @@ describe("habits server loader", () => {
       "2026-05-31",
     ]);
     expect(snapshot.weekSummary.days.at(-1)?.completionPercent).toBe(100);
+  });
+
+  it("clamps future snapshot dates to the request-local today boundary", async () => {
+    const habit = buildHabitRow({ start_date: "2026-05-25" });
+    const { supabase, checkInQuery, resetQuery, absenceReviewQuery } = buildSupabaseMock(
+      [habit],
+      []
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2999-01-01",
+      todayDate: "2026-06-05",
+    });
+
+    expect(snapshot.selectedDate).toBe("2026-06-05");
+    expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-06-05");
+    expect(resetQuery.lte).toHaveBeenCalledWith("effective_date", "2026-06-05");
+    expect(absenceReviewQuery.lte).toHaveBeenCalledWith("review_date", "2026-06-05");
   });
 
   it("loads server-canonical absence review acknowledgements for the visible week", async () => {
@@ -411,7 +441,10 @@ describe("habits server loader", () => {
       ]
     );
 
-    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
 
     expect(absenceReviewQuery.gte).toHaveBeenCalledWith("review_date", "2026-05-04");
     expect(absenceReviewQuery.lte).toHaveBeenCalledWith("review_date", "2026-05-10");

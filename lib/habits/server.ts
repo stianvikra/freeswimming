@@ -5,6 +5,7 @@ import {
 } from "@/lib/dryland/micro-plans";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
+import { clampLocalDayDateToToday } from "@/lib/my-library/local-day";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
@@ -14,7 +15,6 @@ import {
   buildHabitWeekSummary,
   getHabitMotivationRangeStartDate,
   HABIT_MOTIVATION_RANGE_VALUES,
-  normalizeHabitDate,
   type HabitAbsenceReviewAcknowledgementRow,
   type HabitCheckInRow,
   type HabitDefinitionRow,
@@ -247,8 +247,7 @@ function getHabitCheckInStartDate(
   return checkInStart;
 }
 
-function getHabitCheckInEndDate(selectedDate: string) {
-  const todayDate = normalizeHabitDate(undefined);
+function getHabitCheckInEndDate(selectedDate: string, todayDate: string) {
   const weekEnd = getWeekEndDate(selectedDate);
   return weekEnd > todayDate ? todayDate : weekEnd;
 }
@@ -290,9 +289,12 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
 export async function loadHabitSnapshot(
   supabase: TypedSupabaseClient,
   userId: string,
-  selectedDateInput?: unknown
+  dateContext: {
+    selectedDate?: unknown;
+    todayDate: string;
+  }
 ): Promise<HabitSnapshot> {
-  const selectedDate = normalizeHabitDate(selectedDateInput);
+  const selectedDate = clampLocalDayDateToToday(dateContext.selectedDate, dateContext.todayDate);
   const habitResult = await supabase
     .from("habit_definitions")
     .select(HABIT_DEFINITION_SELECT)
@@ -337,7 +339,7 @@ export async function loadHabitSnapshot(
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const archivedHabits = habits.filter((habit) => habit.status === "archived");
   const checkInStart = getHabitCheckInStartDate(selectedDate, habits);
-  const checkInEnd = getHabitCheckInEndDate(selectedDate);
+  const checkInEnd = getHabitCheckInEndDate(selectedDate, dateContext.todayDate);
   const checkInResult = await supabase
     .from("habit_check_ins")
     .select(HABIT_CHECK_IN_SELECT)
@@ -382,7 +384,7 @@ export async function loadHabitSnapshot(
   }
 
   const absenceReviewStart = getWeekStartDate(selectedDate);
-  const absenceReviewEnd = getHabitCheckInEndDate(selectedDate);
+  const absenceReviewEnd = getHabitCheckInEndDate(selectedDate, dateContext.todayDate);
   const absenceReviewResult = await supabase
     .from("habit_absence_review_acknowledgements")
     .select(HABIT_ABSENCE_REVIEW_SELECT)

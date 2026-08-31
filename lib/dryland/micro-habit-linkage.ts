@@ -5,7 +5,6 @@ import { HABIT_CHECK_IN_SELECT, HABIT_DEFINITION_SELECT } from "@/lib/habits/ser
 import {
   buildHabitCheckInView,
   buildHabitDefinitionView,
-  normalizeHabitDate,
   normalizeHabitTimezone,
   type HabitCheckInRow,
   type HabitDefinitionRow,
@@ -15,6 +14,7 @@ import {
   type DrylandMicroHabitCreditResult,
   type DrylandMicroHabitLinkRecord,
 } from "@/lib/dryland/micro-plans";
+import { isLocalDayDateKey } from "@/lib/my-library/local-day";
 import type { Database } from "@/types/database";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -40,7 +40,8 @@ export function buildDrylandMicroHabitLinkRecord(
   habit: HabitDefinitionRow | null
 ): DrylandMicroHabitLinkRecord {
   const habitView = habit ? buildHabitDefinitionView(habit) : null;
-  const status = isMicroHabitLinkStatus(link.status) ? link.status : "unsupported";
+  const startsOn = isLocalDayDateKey(link.starts_on) ? link.starts_on : "";
+  const status = startsOn && isMicroHabitLinkStatus(link.status) ? link.status : "unsupported";
   const habitStatus = habitView?.status ?? "unsupported";
   const habitMode = habitView?.habitMode ?? "unsupported";
 
@@ -48,7 +49,7 @@ export function buildDrylandMicroHabitLinkRecord(
     id: link.id,
     habitId: link.habit_id,
     status,
-    startsOn: normalizeHabitDate(link.starts_on),
+    startsOn,
     pausedAt: link.paused_at,
     resumedAt: link.resumed_at,
     endedAt: link.ended_at,
@@ -94,6 +95,16 @@ export async function loadDrylandMicroHabitLinkRecord(
   if (!linkResult.data) return null;
 
   const link = linkResult.data as MicroSessionHabitLinkRow;
+  if (!isLocalDayDateKey(link.starts_on)) {
+    console.error("[DrylandMicroHabitLink] Invalid persisted link start date", {
+      linkId: link.id,
+      planId,
+    });
+    if (options.required) {
+      throw new Error("Linked Habit start date is invalid.");
+    }
+    return buildDrylandMicroHabitLinkRecord(link, null);
+  }
   const habitResult = await supabase
     .from("habit_definitions")
     .select(HABIT_DEFINITION_SELECT)
@@ -128,10 +139,13 @@ function buildMicroHabitCheckInInsert(input: {
   blockId: string;
   completedAt: string;
 }): HabitCheckInInsert {
+  if (!isLocalDayDateKey(input.checkInDate)) {
+    throw new Error("Micro Session Habit check-in date must be valid.");
+  }
   return {
     user_id: input.userId,
     habit_id: input.habitId,
-    check_in_date: normalizeHabitDate(input.checkInDate),
+    check_in_date: input.checkInDate,
     timezone: normalizeHabitTimezone(input.timezone),
     value_numeric: null,
     value_boolean: true,
@@ -149,16 +163,20 @@ function buildMicroHabitCheckInInsert(input: {
 }
 
 function addUtcDays(dateKey: string, days: number): string {
-  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
-  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  if (!isLocalDayDateKey(dateKey)) {
+    throw new RangeError("Micro Session Habit date must be valid.");
+  }
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
   date.setUTCHours(0, 0, 0, 0);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
 
 function getCalendarWeekStartDate(dateKey: string): string {
-  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
-  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  if (!isLocalDayDateKey(dateKey)) {
+    throw new RangeError("Micro Session Habit date must be valid.");
+  }
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
   date.setUTCHours(0, 0, 0, 0);
   date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
   return date.toISOString().slice(0, 10);
@@ -176,6 +194,7 @@ export async function recordMicroSessionHabitCredit(
     blockId: string;
     link: DrylandMicroHabitLinkRecord | null;
     selectedDate: unknown;
+    todayDate: string;
     timezone: unknown;
     completedAt: string;
   }
@@ -201,7 +220,20 @@ export async function recordMicroSessionHabitCredit(
     };
   }
 
-  const checkInDate = normalizeHabitDate(input.selectedDate);
+  if (!isLocalDayDateKey(input.selectedDate) || !isLocalDayDateKey(input.todayDate)) {
+    return {
+      status: "blocked",
+      message: "Micro Session saved, but the Habit date was invalid.",
+    };
+  }
+
+  const checkInDate = input.selectedDate;
+  if (checkInDate > input.todayDate) {
+    return {
+      status: "blocked",
+      message: "Micro Session saved, but future Habit credit was not counted.",
+    };
+  }
   const weekStart = getCalendarWeekStartDate(checkInDate);
   const weekEnd = getCalendarWeekEndDate(checkInDate);
   if (checkInDate < input.link.startsOn) {
@@ -346,11 +378,32 @@ export async function removeMicroSessionHabitCredit(
     planId: string;
     link: DrylandMicroHabitLinkRecord | null;
     selectedDate: unknown;
+    todayDate: string;
   }
 ): Promise<DrylandMicroHabitCreditResult | undefined> {
   if (!input.link) return undefined;
 
-  const checkInDate = normalizeHabitDate(input.selectedDate);
+  if (input.link.status === "unsupported" || !isLocalDayDateKey(input.link.startsOn)) {
+    return {
+      status: "blocked",
+      message: "Micro Session updated, but the linked Habit boundary was invalid.",
+    };
+  }
+
+  if (!isLocalDayDateKey(input.selectedDate) || !isLocalDayDateKey(input.todayDate)) {
+    return {
+      status: "blocked",
+      message: "Micro Session updated, but the Habit date was invalid.",
+    };
+  }
+
+  const checkInDate = input.selectedDate;
+  if (checkInDate > input.todayDate) {
+    return {
+      status: "blocked",
+      message: "Micro Session updated, but future Habit credit was not changed.",
+    };
+  }
   const weekStart = getCalendarWeekStartDate(checkInDate);
   const weekEnd = getCalendarWeekEndDate(checkInDate);
   const deleteResult = await supabase

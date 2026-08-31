@@ -162,6 +162,7 @@ export type DrylandMicroPlanApiSuccess = {
 
 export type DrylandMicroPlanApiError = {
   ok: false;
+  code?: "INVALID_TIMEZONE" | "INVALID_DATE";
   error: string;
 };
 

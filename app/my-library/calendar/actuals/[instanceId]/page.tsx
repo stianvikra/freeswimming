@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
+import LocalDayTimezoneSynchronizer from "@/components/my-library/LocalDayTimezoneSynchronizer";
 import ReviewActualEditor from "@/components/my-library/ReviewActualEditor";
 import {
   buildMyLibraryCalendarPlanHref,
-  getTodayCalendarDate,
   normalizeMyLibraryCalendarPlanDateParam,
   normalizeMyLibraryCalendarProgramIdParam,
 } from "@/lib/my-library/calendar";
+import { getRequestReadLocalDayContext } from "@/lib/my-library/local-day-server";
 import { loadReviewActualEditorModel } from "@/lib/my-library/review-actual";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -44,11 +45,14 @@ export default async function ReviewActualPage({ params, searchParams }: ReviewA
     notFound();
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const [resolvedSearchParams, localDayContext] = await Promise.all([
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
+    getRequestReadLocalDayContext(),
+  ]);
   const rawSelectedDate = getFirstSearchParam(resolvedSearchParams.date);
   const selectedDate = normalizeMyLibraryCalendarPlanDateParam(
     resolvedSearchParams.date,
-    getTodayCalendarDate()
+    localDayContext.todayDate
   );
   const selectedProgramId = normalizeMyLibraryCalendarProgramIdParam(
     resolvedSearchParams.programId
@@ -75,6 +79,7 @@ export default async function ReviewActualPage({ params, searchParams }: ReviewA
 
   return (
     <SiteChrome>
+      <LocalDayTimezoneSynchronizer />
       <section
         data-testid="review-actual-route-shell"
         className="mx-auto min-h-screen w-full max-w-[1120px] px-4 pt-16 pb-20 sm:px-6 sm:pt-24"

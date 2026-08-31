@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRouteHandlerSupabaseClientMock, loadHabitSnapshotMock, trackAnalyticsEventMock } =
-  vi.hoisted(() => ({
-    createRouteHandlerSupabaseClientMock: vi.fn(),
-    loadHabitSnapshotMock: vi.fn(),
-    trackAnalyticsEventMock: vi.fn(),
-  }));
+const {
+  createRouteHandlerSupabaseClientMock,
+  getRequestLocalDayContextMock,
+  loadHabitSnapshotMock,
+  trackAnalyticsEventMock,
+} = vi.hoisted(() => ({
+  createRouteHandlerSupabaseClientMock: vi.fn(),
+  getRequestLocalDayContextMock: vi.fn(),
+  loadHabitSnapshotMock: vi.fn(),
+  trackAnalyticsEventMock: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
@@ -17,6 +22,10 @@ vi.mock("@/lib/habits/server", () => ({
   HABIT_MOTIVATION_RESET_SELECT: "habit motivation reset select",
   HABIT_ABSENCE_REVIEW_SELECT: "habit absence review select",
   loadHabitSnapshot: loadHabitSnapshotMock,
+}));
+
+vi.mock("@/lib/my-library/local-day-server", () => ({
+  getRequestLocalDayContext: getRequestLocalDayContextMock,
 }));
 
 vi.mock("@/lib/analytics/events", () => ({
@@ -61,9 +70,96 @@ function buildSnapshot() {
   };
 }
 
+const HABIT_ID = "11111111-1111-4111-8111-111111111111";
+const HABITS_API_URL = "http://127.0.0.1:3000/api/my-library/habits";
+
+const HABIT_MUTATION_ROUTES = [
+  ["create", "POST", "", { title: "Read" }],
+  ["update", "PATCH", `/${HABIT_ID}`, { title: "Read" }],
+  ["check-in", "POST", "/check-ins", { habitId: HABIT_ID, valueBoolean: true }],
+  ["absence-review", "POST", "/absence-review", { dates: ["2026-05-10"] }],
+  ["reset-stats", "POST", `/${HABIT_ID}/reset-stats`, { effectiveDate: "2026-05-10" }],
+] as const;
+type HabitMutationRoute = (typeof HABIT_MUTATION_ROUTES)[number];
+type HabitMutationKind = HabitMutationRoute[0];
+
+function mockAuthenticatedRouteClient(from = vi.fn()) {
+  const client = {
+    supabase: {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+      },
+      from,
+    },
+    applySupabaseCookies: applyResponseCookiesIdentity,
+  };
+  createRouteHandlerSupabaseClientMock.mockResolvedValue(client);
+  return from;
+}
+
+function callHabitMutation(route: HabitMutationRoute, serializedBody: string) {
+  const [kind, method, path] = route;
+  const request = new Request(`${HABITS_API_URL}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: serializedBody,
+  });
+  if (kind === "update") {
+    return patchHabit(request, { params: Promise.resolve({ habitId: HABIT_ID }) });
+  }
+  if (kind === "reset-stats") {
+    return postHabitResetStats(request, { params: Promise.resolve({ habitId: HABIT_ID }) });
+  }
+  if (kind === "check-in") return postHabitCheckIn(request);
+  if (kind === "absence-review") return postHabitAbsenceReview(request);
+  return postHabit(request);
+}
+
+function callHabitMutationJson(route: HabitMutationRoute, overrides: Record<string, unknown> = {}) {
+  return callHabitMutation(route, JSON.stringify({ ...route[3], ...overrides }));
+}
+
+function getHabitMutationRoute(kind: HabitMutationKind) {
+  return HABIT_MUTATION_ROUTES.find((route) => route[0] === kind)!;
+}
+
+function mockHabitDefinitionCreateClient() {
+  const existingEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+  const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
+  const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
+  const insert = vi.fn();
+  const from = vi.fn(() => ({ select: existingSelect, insert }));
+  mockAuthenticatedRouteClient(from);
+  return { from, insert };
+}
+
+function mockResetStatsClient(startDate: string) {
+  const habitMaybeSingle = vi.fn().mockResolvedValue({
+    data: { id: HABIT_ID, habit_mode: "timed", start_date: startDate, status: "active" },
+    error: null,
+  });
+  const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+  const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+  const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+  const insert = vi.fn();
+  const from = vi.fn(() => ({ select: habitSelect, insert }));
+  mockAuthenticatedRouteClient(from);
+  return { from, insert };
+}
+
 describe("habits routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
+    getRequestLocalDayContextMock.mockReset();
+    getRequestLocalDayContextMock.mockImplementation(({ now }: { now: Date }) =>
+      Promise.resolve({
+        status: "resolved",
+        source: "utc_fallback",
+        timezone: "UTC",
+        todayDate: "2026-05-10",
+        now,
+      })
+    );
     loadHabitSnapshotMock.mockResolvedValue(buildSnapshot());
   });
 
@@ -92,6 +188,70 @@ describe("habits routes", () => {
     expect(response.status).toBe(401);
   });
 
+  it("rejects non-object JSON bodies before every Habits mutation write", async () => {
+    for (const route of HABIT_MUTATION_ROUTES) {
+      for (const payload of [null, "invalid", []]) {
+        const from = mockAuthenticatedRouteClient();
+        const response = await callHabitMutation(route, JSON.stringify(payload));
+
+        expect(response.status).toBe(400);
+        await expect(response.json()).resolves.toMatchObject({
+          ok: false,
+          error: "Invalid JSON body.",
+        });
+        expect(from).not.toHaveBeenCalled();
+      }
+    }
+
+    expect(getRequestLocalDayContextMock).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing, stale, and malformed rendered local-day context before every write", async () => {
+    const renderedCases = [
+      [undefined, 409, "STALE_LOCAL_DAY_CONTEXT"],
+      ["2026-05-09", 409, "STALE_LOCAL_DAY_CONTEXT"],
+      ["2026-02-30", 400, "INVALID_DATE"],
+    ] as const;
+
+    for (const [renderedTodayDate, status, code] of renderedCases) {
+      const renderedContext = renderedTodayDate === undefined ? {} : { renderedTodayDate };
+      for (const route of HABIT_MUTATION_ROUTES) {
+        const from = mockAuthenticatedRouteClient();
+        const response = await callHabitMutationJson(route, renderedContext);
+
+        expect(response.status).toBe(status);
+        await expect(response.json()).resolves.toMatchObject({
+          ok: false,
+          code,
+        });
+        expect(from).not.toHaveBeenCalled();
+      }
+    }
+
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid explicit timezones before every Habits mutation write", async () => {
+    const invalidTimezone = {
+      status: "invalid_explicit",
+      reason: "unsupported",
+      now: new Date("2026-05-10T12:00:00.000Z"),
+    } as const;
+
+    for (const route of HABIT_MUTATION_ROUTES) {
+      const from = mockAuthenticatedRouteClient();
+      getRequestLocalDayContextMock.mockResolvedValueOnce(invalidTimezone);
+      const response = await callHabitMutationJson(route, { timezone: "Mars/Olympus" });
+      const payload = (await response.json()) as { ok: boolean; code: string };
+
+      expect(response.status).toBe(400);
+      expect(payload).toMatchObject({ ok: false, code: "INVALID_TIMEZONE" });
+      expect(from).not.toHaveBeenCalled();
+      expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    }
+  });
+
   it("saves absence review acknowledgements without writing habit check-ins", async () => {
     const select = vi.fn().mockResolvedValue({ data: [], error: null });
     const upsert = vi.fn(() => ({ select }));
@@ -116,6 +276,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           dates: ["2026-05-06", "2026-05-05"],
           selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           action: "finish",
         }),
       })
@@ -145,7 +306,10 @@ describe("habits routes", () => {
       { onConflict: "user_id,review_scope,review_date" }
     );
     expect(select).toHaveBeenCalledWith("habit absence review select");
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "habit_absence_review_acknowledged",
@@ -158,6 +322,32 @@ describe("habits routes", () => {
         }),
       })
     );
+  });
+
+  it.each([
+    {
+      name: "future",
+      body: { dates: ["2026-05-11"], selectedDate: "2026-05-11" },
+      expected: { ok: false, error: "Review dates cannot be in the future." },
+      checksSnapshot: true,
+    },
+    {
+      name: "impossible",
+      body: { dates: ["2026-02-31"] },
+      expected: { ok: false, code: "INVALID_DATE", error: "Invalid review date." },
+      checksSnapshot: false,
+    },
+  ])("rejects $name absence-review dates before database writes", async (testCase) => {
+    const from = mockAuthenticatedRouteClient();
+    const response = await callHabitMutationJson(getHabitMutationRoute("absence-review"), {
+      ...testCase.body,
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject(testCase.expected);
+    expect(from).not.toHaveBeenCalled();
+    if (testCase.checksSnapshot) expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("rejects future habit check-ins before database writes", async () => {
@@ -180,6 +370,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2999-01-01",
+          renderedTodayDate: "2026-05-10",
           valueBoolean: true,
         }),
       })
@@ -228,6 +419,7 @@ describe("habits routes", () => {
           targetValueNumeric: 2,
           targetUnit: "litres",
           selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
         }),
       })
     );
@@ -264,6 +456,56 @@ describe("habits routes", () => {
     );
   });
 
+  it.each([
+    {
+      name: "rejects matching future start and selected dates before habit creation",
+      body: { title: "Future habit", startDate: "2026-05-11", selectedDate: "2026-05-11" },
+      expected: { ok: false, error: "Choose today or an earlier start date." },
+      needsDefinitionLookup: true,
+      checksContext: false,
+      checksSnapshot: true,
+    },
+    {
+      name: "rejects impossible habit start dates before database access",
+      body: { title: "Impossible date", startDate: "2026-02-31" },
+      expected: { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+      needsDefinitionLookup: false,
+      checksContext: true,
+      checksSnapshot: false,
+    },
+    {
+      name: "rejects PostgreSQL-incompatible year-zero dates before database access",
+      body: { title: "Year zero", startDate: "0000-01-01" },
+      expected: { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+      needsDefinitionLookup: false,
+      checksContext: true,
+      checksSnapshot: true,
+    },
+    {
+      name: "rejects an impossible selected date used as the implicit start before database access",
+      body: { title: "Implicit impossible date", selectedDate: "2026-02-31" },
+      expected: { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+      needsDefinitionLookup: false,
+      checksContext: true,
+      checksSnapshot: true,
+    },
+  ])("$name", async (testCase) => {
+    const client = testCase.needsDefinitionLookup
+      ? mockHabitDefinitionCreateClient()
+      : { from: mockAuthenticatedRouteClient(), insert: null };
+    const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+      ...testCase.body,
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject(testCase.expected);
+    if (client.insert) expect(client.insert).not.toHaveBeenCalled();
+    else expect(client.from).not.toHaveBeenCalled();
+    if (testCase.checksContext) expect(getRequestLocalDayContextMock).not.toHaveBeenCalled();
+    if (testCase.checksSnapshot) expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("rejects unsupported monthly fixed-date cadence before writes", async () => {
     const existingEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
     const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
@@ -291,6 +533,7 @@ describe("habits routes", () => {
           cadenceTargetCount: 5,
           cadenceDayPolicy: "fixed",
           selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
         }),
       })
     );
@@ -356,7 +599,10 @@ describe("habits routes", () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ effectiveDate: "2026-05-10" }),
+          body: JSON.stringify({
+            effectiveDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
+          }),
         }
       ),
       {
@@ -395,7 +641,10 @@ describe("habits routes", () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ effectiveDate: "2026-05-10" }),
+          body: JSON.stringify({
+            effectiveDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
+          }),
         }
       ),
       {
@@ -485,6 +734,7 @@ describe("habits routes", () => {
             startDate: "2026-05-04",
             scheduleDays: ["monday", "wednesday", "friday"],
             selectedDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
           }),
         }
       ),
@@ -517,6 +767,23 @@ describe("habits routes", () => {
     expect(updateEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
   });
 
+  it("rejects matching future start and selected dates before habit updates", async () => {
+    const from = mockAuthenticatedRouteClient();
+    const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+      startDate: "2026-05-11",
+      selectedDate: "2026-05-11",
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Choose today or an earlier start date.",
+    });
+    expect(from).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("rejects unsupported habit lifecycle status before writes", async () => {
     const from = vi.fn();
 
@@ -536,7 +803,7 @@ describe("habits routes", () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "deleted" }),
+          body: JSON.stringify({ status: "deleted", renderedTodayDate: "2026-05-10" }),
         }
       ),
       {
@@ -606,7 +873,11 @@ describe("habits routes", () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "active", selectedDate: "2026-05-10" }),
+          body: JSON.stringify({
+            status: "active",
+            selectedDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
+          }),
         }
       ),
       {
@@ -627,7 +898,10 @@ describe("habits routes", () => {
     expect(update).toHaveBeenCalledWith({ status: "active" });
     expect(from).toHaveBeenCalledWith("habit_definitions");
     expect(from).not.toHaveBeenCalledWith("habit_check_ins");
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "habit_updated",
@@ -664,7 +938,7 @@ describe("habits routes", () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "active" }),
+          body: JSON.stringify({ status: "active", renderedTodayDate: "2026-05-10" }),
         }
       ),
       {
@@ -720,7 +994,7 @@ describe("habits routes", () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "active" }),
+          body: JSON.stringify({ status: "active", renderedTodayDate: "2026-05-10" }),
         }
       ),
       {
@@ -767,7 +1041,7 @@ describe("habits routes", () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: "Read" }),
+          body: JSON.stringify({ title: "Read", renderedTodayDate: "2026-05-10" }),
         }
       ),
       {
@@ -833,6 +1107,7 @@ describe("habits routes", () => {
           body: JSON.stringify({
             effectiveDate: "2026-05-10",
             selectedDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
           }),
         }
       ),
@@ -859,7 +1134,10 @@ describe("habits routes", () => {
       })
     );
     expect(upsert).not.toHaveBeenCalled();
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "habit_stats_reset_created",
@@ -869,6 +1147,43 @@ describe("habits routes", () => {
           effectiveDate: "2026-05-10",
         }),
       })
+    );
+  });
+
+  it("rejects future reset boundaries before reset-event writes", async () => {
+    const { insert } = mockResetStatsClient("2026-05-01");
+    const response = await callHabitMutationJson(getHabitMutationRoute("reset-stats"), {
+      effectiveDate: "2026-05-11",
+      selectedDate: "2026-05-11",
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Choose today or an earlier reset date.",
+    });
+    expect(insert).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed without reset writes when the persisted habit start date is invalid", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { insert } = mockResetStatsClient("not-a-date");
+    const response = await callHabitMutationJson(getHabitMutationRoute("reset-stats"), {
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: "Could not reset habit stats right now.",
+    });
+    expect(insert).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "[HabitsApi] Habit has an invalid persisted start date",
+      { habitId: HABIT_ID }
     );
   });
 
@@ -915,6 +1230,7 @@ describe("habits routes", () => {
           body: JSON.stringify({
             effectiveDate: "2026-05-10",
             selectedDate: "2026-05-10",
+            renderedTodayDate: "2026-05-10",
           }),
         }
       ),
@@ -937,7 +1253,7 @@ describe("habits routes", () => {
     );
   });
 
-  it("upserts one owner-scoped check-in per habit date", async () => {
+  it("accepts and stores a check-in on an opposite positive local-date boundary", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: { id: "11111111-1111-4111-8111-111111111111" },
       error: null,
@@ -955,27 +1271,22 @@ describe("habits routes", () => {
       table === "habit_check_ins" ? { upsert } : { select: habitSelect }
     );
 
-    createRouteHandlerSupabaseClientMock.mockResolvedValue({
-      supabase: {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
-        },
-        from,
-      },
-      applySupabaseCookies: applyResponseCookiesIdentity,
-    });
-
-    const response = await postHabitCheckIn(
-      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          habitId: "11111111-1111-4111-8111-111111111111",
-          checkInDate: "2026-05-10",
-          valueBoolean: true,
-        }),
+    mockAuthenticatedRouteClient(from);
+    getRequestLocalDayContextMock.mockImplementationOnce(({ now }: { now: Date }) =>
+      Promise.resolve({
+        status: "resolved",
+        source: "explicit",
+        timezone: "Pacific/Kiritimati",
+        todayDate: "2026-05-11",
+        now,
       })
     );
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("check-in"), {
+      checkInDate: "2026-05-11",
+      renderedTodayDate: "2026-05-11",
+      timezone: "Pacific/Kiritimati",
+    });
     const payload = (await response.json()) as { ok: boolean };
 
     expect(response.status).toBe(200);
@@ -986,7 +1297,8 @@ describe("habits routes", () => {
       expect.objectContaining({
         user_id: "user-1",
         habit_id: "11111111-1111-4111-8111-111111111111",
-        check_in_date: "2026-05-10",
+        check_in_date: "2026-05-11",
+        timezone: "Pacific/Kiritimati",
         value_boolean: true,
       }),
       { onConflict: "user_id,habit_id,check_in_date" }
@@ -1001,6 +1313,10 @@ describe("habits routes", () => {
         }),
       })
     );
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      selectedDate: "2026-05-11",
+      todayDate: "2026-05-11",
+    });
   });
 
   it("keeps the selected snapshot date after a catch-up check-in writes a past day", async () => {
@@ -1043,6 +1359,7 @@ describe("habits routes", () => {
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-08",
           selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           valueBoolean: true,
           actionSource: "catch_up",
         }),
@@ -1052,7 +1369,10 @@ describe("habits routes", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "habit_check_in_logged",
@@ -1105,6 +1425,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           timerSeconds: 125,
           manualMinutes: 5,
         }),
@@ -1192,6 +1513,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           clearTimedCompletion: true,
         }),
       })
@@ -1277,6 +1599,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           clearTimedCompletion: true,
         }),
       })
@@ -1326,6 +1649,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           timerSeconds: 120,
           manualMinutes: 5,
           valueNumeric: 99,
@@ -1374,6 +1698,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           timerSeconds: 0,
           manualMinutes: 5,
         }),
@@ -1422,6 +1747,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           status: "skipped",
         }),
       })
@@ -1498,6 +1824,7 @@ describe("habits routes", () => {
         body: JSON.stringify({
           habitId: "11111111-1111-4111-8111-111111111111",
           checkInDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
           valueBoolean: false,
         }),
       })
