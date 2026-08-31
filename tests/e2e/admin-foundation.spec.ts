@@ -298,7 +298,11 @@ async function exerciseFoundationNavigation(page: Page) {
   ).toBeVisible();
 
   await openTabWithFallback(tabOperations, "Operations", "operations");
-  await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-operations-manager-header")
+      .getByRole("heading", { name: "Runtime controls", exact: true })
+  ).toBeVisible();
 
   await openTabWithFallback(tabAnalytics, "Analytics", "analytics");
   await expect(page.getByRole("heading", { name: "Read-only insight dashboard" })).toBeVisible();
@@ -642,9 +646,11 @@ test.describe("admin foundation", () => {
         .getByLabel("Summary")
         .fill("Created from module-scoped workspace context.");
       await workspaceCreateForm.getByRole("button", { name: "Create lesson" }).click();
-      await expect(
-        page.getByText("Lesson created in selected module. Opening editor.")
-      ).toBeVisible();
+      const lessonCreatedNotice = page.getByTestId("admin-content-action-notice-state");
+      await expect(lessonCreatedNotice).toHaveText(
+        "Lesson created in selected module. Opening editor."
+      );
+      await expect(lessonCreatedNotice).toHaveAttribute("role", "status");
       await expect(listTypeFilter).toHaveValue("course_lesson");
       const workspaceCreatedItem = page
         .getByTestId("admin-content-item")

@@ -464,6 +464,71 @@ describe("AdminContentManager state rendering", () => {
     expect(createError).toHaveTextContent("Could not create lesson.");
   });
 
+  it("keeps workspace lesson create success visible while opening the new lesson editor", async () => {
+    const moduleItem = buildContentItem({
+      id: "module-create-success",
+      content_type: "course_module",
+      slug: "course-module-create-success",
+      title: "Create success module",
+      category: "Course modules",
+      body: { moduleId: "create-success" },
+    });
+    const createdLesson = buildContentItem({
+      id: "lesson-create-success",
+      content_type: "course_lesson",
+      slug: "course-lesson-create-success",
+      title: "Created workspace lesson",
+      category: "Course lessons",
+      parent_id: moduleItem.id,
+      body: {
+        moduleId: "create-success",
+        lessonId: "create-success--created-workspace-lesson",
+      },
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content" && init?.method === "POST") {
+        return okJson({ ok: true, item: createdLesson });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const moduleRow = await screen.findByTestId("admin-course-module-status-row");
+    fireEvent.click(within(moduleRow).getByRole("button", { name: "Add lesson" }));
+
+    const workspaceCreateForm = await screen.findByTestId("admin-workspace-lesson-create-form");
+    fireEvent.change(within(workspaceCreateForm).getByLabelText("Title"), {
+      target: { value: createdLesson.title },
+    });
+    fireEvent.click(within(workspaceCreateForm).getByRole("button", { name: "Create lesson" }));
+
+    const actionNotice = await screen.findByTestId("admin-content-action-notice-state");
+    expect(actionNotice).toHaveTextContent("Lesson created in selected module. Opening editor.");
+    expect(actionNotice).toHaveAttribute("role", "status");
+    expect(actionNotice).toHaveAttribute("aria-live", "polite");
+
+    const createdRow = screen
+      .getAllByTestId("admin-content-item")
+      .find((row) => within(row).queryAllByText(createdLesson.title).length > 0);
+    expect(createdRow).toBeDefined();
+    expect(within(createdRow as HTMLElement).getByTestId("admin-content-edit-form")).toBeVisible();
+    expect(screen.getByLabelText("Filter by type")).toHaveValue("course_lesson");
+  });
+
   it("does not announce no-results content states", async () => {
     useAllContentView("page");
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {

@@ -20,11 +20,11 @@
 
 ## Goal
 
-Restore a trustworthy security and CI baseline by applying the smallest compatible dependency patches, closing the known CodeQL findings, stabilizing current Admin E2E contracts, and proving the result through the full release-gate lane.
+Restore a trustworthy security and CI baseline by applying the smallest compatible dependency patches, closing the known CodeQL findings, stabilizing current Admin E2E contracts, restoring the already-authored lesson-create success feedback exposed by the authenticated gate, and proving the result through the full release-gate lane.
 
 ## Pre-Implementation Owner Explanation
 
-Codex will secure the local environment files, update the concrete security-exposed packages, fix the two known CodeQL findings, and make the Admin nightly tests reflect the current product safely. This matters because feature work should not continue on top of known security and CI debt. TypeScript 7, Node 26, ESLint 10, redesign, new product behavior, broad dependency modernization, secret rotation, and environment-value consolidation are intentionally out of scope.
+Codex will secure the local environment files, update the concrete security-exposed packages, fix the two known CodeQL findings, and make the Admin nightly tests reflect the current product safely. The authenticated gate also exposed that the existing lesson-create confirmation was cleared while opening the editor; this bounded repair restores that intended success feedback without changing its copy, action, or layout. This matters because feature work should not continue on top of known security and CI debt. TypeScript 7, Node 26, ESLint 10, redesign, new product behavior beyond that existing feedback contract, broad dependency modernization, secret rotation, and environment-value consolidation are intentionally out of scope.
 
 ## Why This Brief Exists
 
@@ -33,6 +33,7 @@ Codex will secure the local environment files, update the concrete security-expo
 - Next `16.3+` also writes a canonical managed agent-rules block during `next dev`; committing that block is the documented way to avoid a recurring dirty worktree while preserving all Freeswimming rules outside its markers.
 - GitHub has two open `js/polynomial-redos` CodeQL alerts in `lib/guides/runtime-identity.ts`.
 - The latest fourteen observed scheduled Admin E2E runs failed, with three stable contract/readiness mismatches in the latest inspected run.
+- The first authenticated branch run then exposed two deterministic follow-on failures: an Operations eyebrow incorrectly asserted as a heading, and the existing lesson-create success notice being cleared by the immediate editor transition.
 - Local ignored environment files were mode `0644`; the minimum local hardening is mode `0600` without reading, printing, moving, deleting, consolidating, or rotating their values.
 
 ## Platform 10/10 Scorecard Mapping
@@ -50,11 +51,11 @@ Critical target categories for a `10/10` claim in this brief:
 
 | Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                                                                    | Evidence                                                 | Expected Closeout Score |
 | --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | Complete one security/resume baseline with no route, IA, navigation, or user-job change.                                                                                          | brief scope + runtime diff review                        | `5/5`                   |
-| UX flow clarity                               | `supporting` | Existing Admin workflows keep their current visible behavior; test repair must not introduce or hide a user-facing failure state.                                                 | Admin E2E diff + targeted run                            | `4/5`                   |
-| Visual design quality                         | `N/A`        | N/A because no authored UI, layout, print, export, branding, token, or visual asset change is allowed.                                                                            | explicit non-visual scope rationale                      | `N/A`                   |
+| Product goals and IA                          | `target`     | Complete one security/resume baseline with no route, IA, navigation, or user-job change; only restore the existing lesson-create confirmation during its editor handoff.          | brief scope + runtime diff review                        | `5/5`                   |
+| UX flow clarity                               | `target`     | A successful workspace lesson create opens the new editor and keeps the existing success confirmation visible and politely announced.                                             | unit + Admin E2E + screenshot                            | `5/5`                   |
+| Visual design quality                         | `supporting` | Existing tokens, copy, spacing, and layout remain unchanged; before/after evidence shows only the intended success state becoming visible.                                        | screenshot handoff                                       | `4/5`                   |
 | Business logic correctness and data integrity | `target`     | Dependency and regex fixes preserve runtime identity parsing, auth/session behavior, persistence, and Admin object visibility without weakening assertions.                       | unit tests + Admin E2E + full gate                       | `5/5`                   |
-| Admin editor ergonomics                       | `supporting` | Current Admin headings and mirror metrics remain testable at their actual semantic/readiness surface; no operator workflow is redesigned.                                         | targeted Admin E2E                                       | `4/5`                   |
+| Admin editor ergonomics                       | `target`     | Current Admin headings and mirror metrics remain testable at their actual semantic/readiness surface, and lesson create hands off to the editor with visible success feedback.    | targeted Admin E2E + screenshot                          | `5/5`                   |
 | Accessibility (a11y)                          | `supporting` | Admin locator repair uses unambiguous roles/names and does not remove semantic or accessibility assertions.                                                                       | E2E locator diff + full gate                             | `4/5`                   |
 | Performance (CWV + payloads)                  | `target`     | Production build and existing performance budgets pass with no new direct dependency and no measured budget regression.                                                           | build/performance stages in `verify:pre-pr`              | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because no database, browser storage, sync, retention, conflict, or local/server ownership contract changes.                                                                  | explicit data-boundary scope rationale                   | `N/A`                   |
@@ -63,7 +64,7 @@ Critical target categories for a `10/10` claim in this brief:
 | Security and authz                            | `target`     | Production high audit findings in the named dependency paths are remediated or explicitly proven non-remediable; both CodeQL alerts are fixed without weakening fail-closed code. | `npm audit --omit=dev`, unit tests, CodeQL CI            | `5/5`                   |
 | Privacy and compliance                        | `target`     | Local environment files are `0600`; no secret values appear in output, diffs, logs, artifacts, or commits; no processor/data-purpose change occurs.                               | permission-only stat check + secret/diff review          | `5/5`                   |
 | Content governance                            | `target`     | Scope, advisories, decisions, gate evidence, deferred majors, and return path are recorded in this lifecycle brief and PR.                                                        | brief lint + PR summary                                  | `5/5`                   |
-| Admin workflow and editability                | `supporting` | Admin test repairs keep current object/workflow coverage and do not weaken editing, publishing, recovery, or mirror visibility contracts.                                         | Admin E2E assertions                                     | `4/5`                   |
+| Admin workflow and editability                | `target`     | Admin test repairs keep current object/workflow coverage and prove create-to-edit handoff, publishing, recovery, and mirror visibility contracts without weakening assertions.    | unit + Admin E2E assertions                              | `5/5`                   |
 | SEO and crawlability                          | `supporting` | Next patch retains existing metadata, sitemap, robots, and site-lock checks through the full gate.                                                                                | build + existing Playwright coverage                     | `4/5`                   |
 | AI discoverability                            | `N/A`        | N/A because no public content model, structured data, semantic copy, or AI-facing route content changes.                                                                          | explicit discoverability scope rationale                 | `N/A`                   |
 | Analytics and KPI observability               | `supporting` | Existing CI artifacts, CodeQL alerts, npm audit output, and Admin nightly evidence remain the diagnostics source; no product analytics event changes.                             | local/CI logs                                            | `4/5`                   |
@@ -95,7 +96,8 @@ Critical target categories for a `10/10` claim in this brief:
   - do not print, move, delete, consolidate, or rotate secret values;
   - no webhook, retry, idempotency, or provider contract change.
 - UI system:
-  - no rendered UI changes; Admin E2E locators must target the mature current surface through precise accessible semantics and observable readiness.
+  - preserve the current rendered component, copy, tokens, and layout; the only visible behavior repair is retaining its already-authored success state after the create-to-edit transition;
+  - Admin E2E locators must target the mature current surface through precise accessible semantics and observable readiness.
 - Testing:
   - targeted regex unit tests, exact Admin E2E spec, dependency audit/resolution checks, full local release gate, CodeQL/CI, then pre-merge gate.
 
@@ -124,9 +126,9 @@ Return path:
 
 ## Domain Granularity Gate
 
-- User/operator mental object: the existing Admin content/commerce dashboard and its mirror-status evidence.
-- Canonical objects: current Admin routes, content-item identifiers, course lesson mirror metric, and their existing server/UI contracts; no persisted object changes.
-- Relevant levels: section heading (`view` test coverage), page heading (`view` test coverage), mirror metric (`view`/readiness test coverage); edit/create/delete/reorder/reconcile are out of scope.
+- User/operator mental object: the existing Admin content/commerce dashboard, its mirror-status evidence, and the workspace lesson create-to-edit handoff.
+- Canonical objects: current Admin routes, content-item identifiers, course lesson mirror metric, created lesson server response, and their existing server/UI contracts; no schema or persisted-shape change.
+- Relevant levels: section heading (`view` test coverage), page heading (`view` test coverage), mirror metric (`view`/readiness test coverage), and workspace lesson `create` followed by immediate `edit` with visible success feedback; delete/reorder/reconcile remain out of scope.
 - Mature reference surface: the current rendered Admin UI itself plus `tests/e2e/admin-foundation.spec.ts`.
 - Child-structure rule: the test continues to verify the existing child metric rather than replacing it with a summary-only assertion.
 
@@ -160,6 +162,7 @@ Return path:
 - Refresh the npm lockfile and confirm production audit remediation, including relevant transitive paths.
 - Fix both open `js/polynomial-redos` findings in `lib/guides/runtime-identity.ts` with regression tests.
 - Stabilize the three known Admin E2E contract/readiness failures without weakening product assertions or adding skips.
+- Repair the authenticated follow-on failures by asserting the actual `Runtime controls` heading and retaining the existing lesson-created success notice after the editor opens; add direct regression coverage and screenshot evidence.
 - Run targeted validation, `verify:pre-pr`, required GitHub CI, and `verify:pre-merge`; prepare but do not merge the PR.
 
 ## Out Of Scope
@@ -167,7 +170,7 @@ Return path:
 - TypeScript 7, Node 26, npm 12, ESLint 10, lint-staged 17, jest-dom 7, Vercel CLI major migration, Supabase CLI pinning, or a broad `npm update`/`npm audit fix`.
 - Supabase SSR behavior/cookie migration beyond the audited compatible range.
 - Secret inspection, value output, consolidation, deletion, rotation, or Vercel environment mutation.
-- Product features, UI/design changes, Admin workflow redesign, route/label changes, database/schema/RLS changes, analytics, commerce contracts, Help/Guide content, or performance-budget tightening.
+- Product features, UI redesign, Admin workflow redesign beyond the existing success-feedback repair, route/label changes, database/schema/RLS changes, analytics, commerce contracts, Help/Guide content, or performance-budget tightening.
 - Opting out of Next agent-rule generation or changing Freeswimming instructions outside the generated markers.
 - Dependabot configuration, branch cleanup, stash cleanup, quarterly governance registry refresh, launch-readiness work, or merging without explicit owner approval.
 
@@ -178,19 +181,19 @@ Return path:
 3. Named direct dependencies resolve to secure compatible versions; Next/config versions match; no deferred major is introduced without an explicit scope decision; the canonical Next-managed `AGENTS.md` block is committed and idempotent under `next dev`.
 4. `npm audit --omit=dev` has no remaining high/critical vulnerability in the remediated production paths, or an upstream-blocked exception is documented with exact evidence and owner decision before merge recommendation.
 5. Both runtime-identity CodeQL findings are removed through bounded deterministic parsing and regression coverage, not suppression.
-6. The three known Admin E2E failures pass with precise current-contract assertions and no new skip.
-7. Lint, strict typecheck, all unit tests, build, performance budgets, full E2E, and relevant private/security gates pass through `npm run verify:pre-pr`.
+6. The original three and authenticated follow-on Admin E2E failures pass with precise current-contract assertions and no new skip; workspace lesson create opens the new editor while its existing polite success state remains visible.
+7. The lesson-create success repair has approved before/after screenshot evidence, then lint, strict typecheck, all unit tests, build, performance budgets, full E2E, and relevant private/security gates pass through `npm run verify:pre-pr`.
 8. Required GitHub checks, including CodeQL analysis, pass and the two alerts are resolved/closed by the branch analysis or confirmed resolved after PR processing.
 9. `npm run verify:pre-merge` passes on a branch current with `origin/main` before merge recommendation.
 10. PR remains unmerged until explicit owner approval.
 
 ## Route, Label, And Support-Surface Impact Sweep
 
-- Identifiers searched: stale Commerce content heading `Commerce`, canonical `Product catalog`, unscoped/scoped Content heading `Content`, `admin-commerce-manager-header`, `admin-content-manager-header`, `admin-mirror-summary`, `admin-mirror-details`, and `admin-mirror-metric-course_lesson`.
-- Canonical current identifiers: Commerce remains the tab/section label while its manager heading is `Product catalog`; Content heading is scoped to `admin-content-manager-header` with an exact accessible name; mirror child metrics become visible after `admin-mirror-summary` expands `admin-mirror-details`.
+- Identifiers searched: stale Commerce content heading `Commerce`, canonical `Product catalog`, Operations eyebrow and canonical `Runtime controls` heading, unscoped/scoped Content heading `Content`, `admin-commerce-manager-header`, `admin-operations-manager-header`, `admin-content-manager-header`, `admin-content-action-notice-state`, `Lesson created in selected module. Opening editor.`, `admin-mirror-summary`, `admin-mirror-details`, and `admin-mirror-metric-course_lesson`.
+- Canonical current identifiers: Commerce remains the tab/section label while its manager heading is `Product catalog`; Operations remains the tab/eyebrow while its manager heading is `Runtime controls`; Content heading is scoped to `admin-content-manager-header` with an exact accessible name; the lesson-created notice is a polite status that remains visible after the new editor opens; mirror child metrics become visible after `admin-mirror-summary` expands `admin-mirror-details`.
 - Surfaces checked: `app/`, `components/`, `tests/`, `docs/` including runbooks and all brief lifecycle folders, `scripts/`, and `package.json`.
-- Fallout handled: no product label, route, Help/Guide, or operator guidance changed; only stale/ambiguous test contracts were updated. Historical brief references and the intentional Commerce tab label remain unchanged.
-- Targeted evidence: local Admin Playwright completed `2 passed / 3 skipped`; skips were caused by unavailable local authenticated Supabase dev login, so the remote branch must pass the authenticated `Admin E2E` workflow before merge readiness.
+- Fallout handled: no product label, route, Help/Guide, or operator guidance changed; stale/ambiguous heading contracts were updated and the existing create success state was preserved across its editor transition. Historical brief references and intentional Commerce/Operations tab labels remain unchanged.
+- Targeted evidence: local Admin Playwright completed `2 passed / 3 skipped`; skips were caused by unavailable local authenticated Supabase dev login. The first authenticated branch run completed `7 passed / 2 failed / 1 skipped` and provided deterministic evidence for the two follow-on repairs; the corrected branch must pass the authenticated `Admin E2E` workflow before merge readiness.
 
 ## Validation
 
@@ -198,7 +201,9 @@ Return path:
 - `npm ls next eslint-config-next nodemailer @supabase/supabase-js @supabase/ssr --depth=0`
 - `npm audit --omit=dev --audit-level=high`
 - focused runtime-identity Vitest files selected from repository coverage
+- focused `AdminContentManager` success-state unit coverage
 - targeted `tests/e2e/admin-foundation.spec.ts` Admin project/run profile
+- before/after screenshot capture of the workspace lesson create-to-edit state
 - `npm run lint:briefs`
 - `git diff --check`
 - `npm run verify:pre-pr`
@@ -212,20 +217,21 @@ Return path:
 
 ## Manual QA Environments
 
-- No manual product QA or screenshot handoff is required because this slice intentionally changes no authored UI or visible product behavior.
-- Admin validation uses the repository Playwright configuration and current local/CI environment contracts.
+- Screenshot review is required because the repair makes the existing success status visible after workspace lesson creation.
+- Capture true before/after desktop evidence against the same synthetic lesson/module state. If local Admin auth remains blocked, use the documented temporary harness with the real `AdminContentManager`, deterministic mock responses, no cloud writes, and remove the harness before validation/PR diff.
+- Admin behavioral validation otherwise uses the repository Playwright configuration and current local/CI environment contracts.
 
 ## Constraints
 
 - Never expose secret values.
 - Do not suppress CodeQL, loosen assertions, add test skips, or accept rerun-only evidence for deterministic failures.
 - Keep direct dependency changes limited to the named packages and compatible ranges.
-- Keep runtime behavior and user-visible Admin behavior unchanged.
+- Keep runtime and user-visible Admin behavior unchanged except for retaining the already-authored lesson-create success state through the immediate editor transition.
 - Do not touch unrelated dirty or generated files.
 
 ## Help/Guide And Operator Training Contract
 
-`N/A` because no user/admin label, action, workflow, recovery path, Help/Guide assertion, or support procedure changes. Test locators are aligned to the current surface only.
+`N/A` because no user/admin label, action, recovery path, Help/Guide assertion, or support procedure changes; the existing create-to-edit workflow and existing success copy are only made internally consistent. Test locators are aligned to the current surface.
 
 ## Security, Privacy, And Compliance
 
@@ -258,7 +264,7 @@ Return path:
 
 - Automation-first end-to-end execution.
 - Pause only for a sandbox approval, missing credentials/context, a real product/compatibility decision, or explicit merge approval.
-- No screenshot approval stop because there is no intentional visual change.
+- Pause after the required before/after success-state screenshot handoff for owner approval before rerunning `verify:pre-pr`, pushing the corrective commit, or continuing pre-merge.
 
 ## Branch Hygiene Defaults
 
@@ -271,13 +277,13 @@ Return path:
 
 ## Manual QA URL Rule
 
-`N/A` because no manual UI URL walkthrough is required for this non-visual maintenance slice.
+Use `http://127.0.0.1:3000` with the temporary local visual-harness route only for deterministic screenshot capture when `/admin` dev login remains blocked; remove the route before validation and PR diff.
 
 ## 10/10 Quality Bar
 
 - No known in-scope high/critical production dependency advisory remains without an explicit upstream-blocked decision.
 - Both CodeQL findings are fixed with direct regression proof.
-- The repeatedly red Admin E2E baseline is deterministic and green without skips or weakened object-level coverage.
+- The repeatedly red Admin E2E baseline is deterministic and green without new skips or weakened object-level coverage, and the create-to-edit success status has approved before/after evidence.
 - All critical target categories must reach `5/5` for a `10/10` claim; otherwise record the gap and recommend fix/defer before merge.
 
 ## Checkpoint Log
@@ -287,6 +293,9 @@ Return path:
 - `2026-08-31 | owner decision` - owner approved Nodemailer `9.0.6`; compatibility review found the app uses only plain SMTP with fixed text fields, while the documented v9 breaking change is stricter TLS validation for remote content/OAuth2/proxy paths not used here | next: install `9.0.6`, prove audit/type/message-delivery compatibility, then run full pre-PR and PR/CI flow.
 - `2026-08-31 | targeted validation` - lock-clean `npm ci` passed; resolved versions are Next/config `16.3.3`, Nodemailer `9.0.6`, Supabase JS `2.112.4`, and SSR `0.10.3`; production audit is fully clean (`0` total), while full audit retains `4 high / 1 low` dev-transitive findings for a separate maintenance wave; Supabase's widened assurance type required a fail-safe `aal1`/`aal2` normalizer; targeted dependency/security tests pass (`48/48` before the guard, then `20/20` including new guard tests), targeted ESLint and formatting pass, and strict typecheck now passes | next: run quality-gate lint, full `verify:pre-pr`, then commit/push and authenticated Admin CI.
 - `2026-08-31 | pre-PR validation` - the first full gate proved all non-browser stages green but stopped because the updated Playwright package had no matching local Firefox/WebKit binaries; `npx playwright install` restored the version-matched matrix, and the clean rerun passed in `artifacts/test-runs/20260831-133500/verify.log`: quality gates, lint (`0` errors; `8` pre-existing/generated warnings), strict typecheck, `261/261` unit files with `1738/1738` tests, Next `16.3.3` production build with `72/72` pages, all route performance budgets (worst margin `16.8%`, recommendation `hold`, weekly run `1/2`), and Playwright (`111` passed / `567` matrix- or environment-gated skips) | next: commit/push, open the PR, then run required CI plus the authenticated `Admin E2E` workflow.
+- `2026-08-31 | PR and authenticated Admin follow-up` - commit `ae6868af` passed final local `verify:pre-pr`, was pushed, and opened as PR `#1246`; all nine automatic PR checks, including CodeQL, CI verify, E2E smoke, site-lock, deployment, size, and Vercel, passed. The manually dispatched authenticated Admin E2E run `33389274208` completed `7 passed / 2 failed / 1 skipped` and proved two deterministic follow-on causes: stale heading semantics (`Operations` eyebrow vs `Runtime controls` heading) and the lesson-create success notice being cleared by the immediate edit transition. The smallest repairs and direct unit/E2E assertions are now in the working tree | next: targeted validation, true before/after screenshot handoff, then wait for owner approval before a new full pre-PR/commit/push/CI cycle.
+- `2026-08-31 | corrective screenshot stop` - the semantic heading assertions now target exact `Runtime controls`; the create-to-edit state clears any old notice first and then retains the existing lesson-created success status. Targeted validation passes: `AdminContentManager` unit suite `21/21`, strict typecheck, targeted ESLint, all `558` brief files, and `git diff --check`. True before/after desktop evidence is stored in `output/security-resume-admin-success-2026-08-31-142231`; capture used the real production component with deterministic local mocks because local Admin auth is blocked, the temporary harness/script and generated `.next/dev` cache were removed, and no product-rendering file changed after the final after capture | next: wait for owner screenshot approval before `verify:pre-pr`, corrective commit/push, CI, authenticated Admin E2E, and `verify:pre-merge`.
+- `2026-08-31 | corrective screenshot approved` - owner approved the true before/after Admin lesson-create success-state handoff; no product-rendering files changed after the final capture | next: run `verify:pre-pr`, commit and push the corrective patch, then require fresh CI, authenticated Admin E2E, and `verify:pre-merge` before merge recommendation.
 
 ## Completion Record
 
