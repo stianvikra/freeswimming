@@ -811,9 +811,9 @@ test.describe("admin foundation", () => {
         savedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
       ).toHaveValue(supportStartLessonInModule);
       await expect(savedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
-      await expect(savedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
-        `Repeat drill quality x3 ${unique}`
-      );
+      await expect(
+        savedLessonEditForm.getByRole("textbox", { name: "Next step", exact: true })
+      ).toHaveValue(`Repeat drill quality x3 ${unique}`);
       await expect(savedLessonEditForm.getByLabel("Pass criteria (one per line)")).toHaveValue(
         checkpointCriteriaText
       );
