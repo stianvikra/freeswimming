@@ -597,11 +597,6 @@ test.describe("admin foundation", () => {
           `Module workspace does not contain fixture module ${lessonFixtureModule.title}.`
         );
       }
-      const fixtureModuleLabel = await workspaceModuleSelect.evaluate((node, moduleId) => {
-        const selectElement = node as HTMLSelectElement;
-        const option = [...selectElement.options].find((entry) => entry.value === moduleId);
-        return option?.textContent?.trim() ?? "";
-      }, lessonFixtureModule.id);
       const overviewModuleRow = lessonWorkspace
         .getByTestId("admin-course-module-status-row")
         .filter({ hasText: lessonFixtureModule.title })
@@ -679,7 +674,7 @@ test.describe("admin foundation", () => {
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
-        fixtureModuleLabel
+        lessonFixtureModule.title
       );
 
       const workspaceLessonRow = lessonWorkspace
@@ -706,7 +701,7 @@ test.describe("admin foundation", () => {
       );
       await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
       await expect(listTypeFilter).toHaveValue("course_lesson");
-      await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
+      await expect(focusModeBanner).toContainText(lessonFixtureModule.title);
 
       const fixtureLessonItem = page
         .getByTestId("admin-content-item")
@@ -722,12 +717,12 @@ test.describe("admin foundation", () => {
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
-        fixtureModuleLabel
+        lessonFixtureModule.title
       );
 
       await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
       await expect(listTypeFilter).toHaveValue("course_lesson");
-      await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
+      await expect(focusModeBanner).toContainText(lessonFixtureModule.title);
       await expect(fixtureLessonEditForm).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson editor")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Video / estimated time")).toBeVisible();
@@ -861,7 +856,22 @@ test.describe("admin foundation", () => {
       await expect(createdItem).toContainText(editedTitle);
       await expect(createdItem).toContainText("/" + editedSlug);
       await expect(createdItem).toContainText("E2E QA");
-      await expect(createdItem).toContainText("Order: 5");
+      await expect(page.getByTestId("admin-content-action-notice-state")).toHaveText(
+        "Content item updated and course order normalized."
+      );
+      const visibleModuleRows = page.getByTestId("admin-content-item");
+      const normalizedModuleOrders = await visibleModuleRows.evaluateAll((rows) =>
+        rows
+          .map((row) => {
+            const match = row.textContent?.match(/Order:\s*(\d+)/);
+            return match ? Number.parseInt(match[1], 10) : null;
+          })
+          .filter((value): value is number => value !== null)
+      );
+      expect(normalizedModuleOrders).toHaveLength(await visibleModuleRows.count());
+      expect([...normalizedModuleOrders].sort((left, right) => left - right)).toEqual(
+        Array.from({ length: normalizedModuleOrders.length }, (_, index) => index)
+      );
 
       await createdItem.getByRole("button", { name: "Edit" }).click();
       const editFormDirty = createdItem.getByTestId("admin-content-edit-form");

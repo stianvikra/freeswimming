@@ -2681,6 +2681,11 @@ export default function AdminContentManager() {
       return;
     }
 
+    if (!isEditDirty) {
+      setActionNotice("No changes to save.");
+      return;
+    }
+
     const normalizedTitle = editFormState.title.trim();
     const normalizedSlug = editFormState.slug.trim();
     const normalizedSummary = editFormState.summary.trim();

@@ -1198,6 +1198,20 @@ describe("AdminContentManager state rendering", () => {
         },
       },
     });
+
+    const lessonPatchCalls = () =>
+      fetchMock.mock.calls.filter(
+        ([input, init]) =>
+          String(input) === "/api/admin/content/lesson-1" && init?.method === "PATCH"
+      );
+    await waitFor(() => expect(lessonPatchCalls()).toHaveLength(1));
+    await screen.findByText("Content item updated.");
+
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    const noChangesNotice = await screen.findByTestId("admin-content-action-notice-state");
+    expect(noChangesNotice).toHaveTextContent("No changes to save.");
+    expect(lessonPatchCalls()).toHaveLength(1);
   });
 
   it("preserves inactive lesson experience container content when hidden", async () => {
