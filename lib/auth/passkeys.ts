@@ -130,6 +130,10 @@ export function getPasskeyErrorMessage(error: PasskeyErrorLike | null | undefine
   return "Passkey action could not be completed right now.";
 }
 
+function normalizeAuthenticatorAssuranceLevel(value: unknown): "aal1" | "aal2" | null {
+  return value === "aal1" || value === "aal2" ? value : null;
+}
+
 export async function loadPasskeySecuritySnapshot(supabase: SupabaseClient<Database>): Promise<
   | {
       ok: true;
@@ -168,8 +172,8 @@ export async function loadPasskeySecuritySnapshot(supabase: SupabaseClient<Datab
   return {
     ok: true,
     snapshot: {
-      currentLevel: assuranceResult.data?.currentLevel ?? null,
-      nextLevel: assuranceResult.data?.nextLevel ?? null,
+      currentLevel: normalizeAuthenticatorAssuranceLevel(assuranceResult.data?.currentLevel),
+      nextLevel: normalizeAuthenticatorAssuranceLevel(assuranceResult.data?.nextLevel),
       passkeys,
     },
   };

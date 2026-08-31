@@ -291,7 +291,11 @@ async function exerciseFoundationNavigation(page: Page) {
   );
 
   await openTabWithFallback(tabCommerce, "Commerce", "commerce");
-  await expect(page.getByRole("heading", { name: "Commerce" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-commerce-manager-header")
+      .getByRole("heading", { name: "Product catalog", exact: true })
+  ).toBeVisible();
 
   await openTabWithFallback(tabOperations, "Operations", "operations");
   await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
@@ -318,7 +322,11 @@ async function exerciseFoundationNavigation(page: Page) {
   await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
 
   await openTabWithFallback(tabContent, "Content", "content");
-  await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-content-manager-header")
+      .getByRole("heading", { name: "Content", exact: true })
+  ).toBeVisible();
   const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
   const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
   await expect(courseWorkspaceTab).toBeVisible();
@@ -409,7 +417,11 @@ test.describe("admin foundation", () => {
       const activeSectionLabel = page.getByTestId("admin-active-section-label");
       await expect(activeSectionLabel).toHaveText("Content");
       const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
-      await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
+      await expect(
+        page
+          .getByTestId("admin-content-manager-header")
+          .getByRole("heading", { name: "Content", exact: true })
+      ).toBeVisible();
       const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
       await expect(allContentTab).toBeVisible();
       await allContentTab.click();
@@ -536,6 +548,12 @@ test.describe("admin foundation", () => {
       await allContentTab.click();
       await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
       await expect(page.getByTestId("admin-course-list-visibility-toggle")).toBeVisible();
+      const mirrorDetailsToggle = page.getByTestId("admin-mirror-summary");
+      if ((await mirrorDetailsToggle.getAttribute("aria-expanded")) !== "true") {
+        await mirrorDetailsToggle.click();
+      }
+      await expect(mirrorDetailsToggle).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByTestId("admin-mirror-details")).toBeVisible();
       await expect(mirrorLessonCard).toBeVisible();
       await mirrorLessonCard.click();
       await expect(listTypeFilter).toHaveValue("course_lesson");

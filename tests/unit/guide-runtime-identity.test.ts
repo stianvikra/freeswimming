@@ -30,6 +30,26 @@ describe("guide runtime identity", () => {
     });
   });
 
+  it("parses legacy slug suffixes in linear time without changing delimiter semantics", () => {
+    expect(resolveGuideSessionRuntimeId({}, "GUIDE-SESSION-S08")).toEqual({
+      runtimeId: "S08",
+      source: "legacy_slug",
+    });
+    expect(resolveGuideDrillRuntimeId({}, "guide-drill-x!copy-DRILL-d09")).toEqual({
+      runtimeId: "D09",
+      source: "legacy_slug",
+    });
+
+    expect(resolveGuideSessionRuntimeId({}, "guide-session-x-session-s08")).toEqual({
+      runtimeId: null,
+      source: "unresolved",
+    });
+    expect(resolveGuideDrillRuntimeId({}, `${"-drill-a".repeat(10_000)}!`)).toEqual({
+      runtimeId: null,
+      source: "unresolved",
+    });
+  });
+
   it("resolves the next guide runtime id from the highest known canonical id", () => {
     expect(
       resolveNextGuideRuntimeId({
