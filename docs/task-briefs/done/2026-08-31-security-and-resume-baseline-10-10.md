@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-08-31-security-and-resume-baseline-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-08-31`
 - `updated`: `2026-08-31`
@@ -13,7 +13,7 @@
 
 - `last_audited`: `2026-08-31`
 - `base`: `main@9dec3baa`
-- `audit_status`: `ready`
+- `audit_status`: `completed`
 - `decision`: Execute one bounded security and release-baseline repair before new product work.
 - `reason`: Fresh audit evidence found security-patched direct dependencies, two open CodeQL high alerts, repeatedly failing Admin nightly E2E, and overly broad local secret-file permissions while local `main` remains clean and equal to `origin/main`.
 - `must_refresh_before_execution_if`: `origin/main`, the affected dependency advisories, the two CodeQL alerts, Admin E2E workflow/contracts, or the repo release-gate scripts change before execution completes.
@@ -122,7 +122,7 @@ Systemic findings:
 Return path:
 
 - Base/last merged workstream: `main@9dec3baa`, after runtime PR `#1239` and docs closeout PR `#1240`.
-- Current active maintenance child: this brief.
+- Completed maintenance child: this brief, merged through PR `#1246` as `d118d71f`.
 - Parked unrelated in-progress brief: `docs/task-briefs/in-progress/2026-05-08-visual-coaching-manual-fcp-motion-pilot-template-system-10-10.md`.
 - Product return path after this baseline is green: re-audit `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md` and select one bounded child; do not start it inside this PR.
 
@@ -253,7 +253,7 @@ Return path:
 
 ## Session Continuity And Recovery
 
-- Canonical source of truth: this in-progress brief.
+- Canonical closeout record: this completed brief.
 - Recovery order:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -314,8 +314,31 @@ Use `http://127.0.0.1:3000` with the temporary local visual-harness route only f
 - `2026-08-31 | final local E2E hardening` - full run `20260831-181028` exposed an isolated Next dev-server `ECONNRESET`/truncated-JSON runtime overlay in an unchanged course-support test; the permitted targeted rerun passed `1/1`, proving no product regression. Full run `20260831-182023` then exposed a separate real timing race: `/en/course` could open the header menu before its deterministic client-side replacement to the canonical lesson route, whose remount closed the dialog before the focus assertion. The shared core-route helper now waits for both the canonical lesson URL and the mature `data-has-resolved-requested-lesson=true` readiness contract before interaction; the unchanged keyboard/focus assertion passes `3/3` repeated targeted runs. No product/rendering file changed after the approved capture | next: run the full `verify:pre-pr`, then commit/push and require fresh PR CI/Admin E2E/pre-merge evidence.
 
 - `2026-08-31 | final local pre-PR green` - the saved-value exact locator and canonical course-route readiness hardening passed the full `verify:pre-pr` lane in `artifacts/test-runs/20260831-183220/verify.log`: branch-current and quality gates, `261/261` unit files with `1739/1739` tests, Next `16.3.3` build with `72/72` generated pages, route performance budgets (worst margin `16.8%`, weekly hold `1/2`), and Playwright `111 passed / 567 expected skips`. The only post-gate change is this docs-only evidence checkpoint; no product/rendering file changed after the owner-approved capture | next: lint this evidence checkpoint, commit/push, then require fresh PR CI, authenticated Admin E2E, and `verify:pre-merge`.
+- `2026-08-31 | merged` - PR `#1246` passed all `9/9` required GitHub checks and CodeQL, authenticated Admin E2E run `33415512649` passed `9` tests with `1` expected skip, and the full local `verify:pre-merge` lane passed on exact branch HEAD `5ed3250f`; owner approved merge, PR `#1246` was squash-merged as `d118d71f`, local `main` was fast-forwarded to the same commit, and the feature ref was pruned | next: complete and auto-merge this single repo-managed docs-only lifecycle closeout.
 
 ## Completion Record
 
-- `status`: pending implementation, PR, CI, and pre-merge evidence.
-- `10/10 claim`: no; closeout evidence not complete.
+- `completed`: `2026-08-31`
+- `merged_pr`: `#1246`
+- `squash_commit`: `d118d71f`
+- `result`: Closed Security And Resume Baseline by removing the known production dependency and CodeQL exposure, restoring a trustworthy Admin CI baseline, and preventing unchanged lesson saves from creating duplicate requests or revisions.
+- `validation`: production `npm audit --omit=dev` reported `0` vulnerabilities; targeted security/Admin tests passed; owner-approved screenshot evidence confirmed create-to-edit and unchanged-save feedback; `npm run verify:pre-pr` passed the full lane with `1739/1739` unit tests, `72/72` production pages, and `111` Playwright tests; PR `#1246` completed `9/9` required checks plus authenticated Admin E2E; `npm run verify:pre-merge` passed the full lane on exact branch HEAD `5ed3250f`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                            | Gaps / Notes                                                                                                    |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1246` shipped one bounded security/resume baseline while preserving routes, IA, navigation, and existing user jobs.                                            | None.                                                                                                           |
+| UX flow clarity                               | `5/5`          | Approved screenshot evidence and direct tests prove create-to-edit retains its success status and unchanged save reports `No changes to save.` locally.             | None.                                                                                                           |
+| Business logic correctness and data integrity | `5/5`          | Unit coverage proves one changed PATCH followed by zero additional PATCH requests or revisions for the unchanged save.                                              | None.                                                                                                           |
+| Admin editor ergonomics                       | `5/5`          | Create opens the lesson editor with polite confirmation; precise current-contract assertions cover headings, metrics, runtime identity, and saved fields.           | None.                                                                                                           |
+| Performance (CWV + payloads)                  | `5/5`          | Both full local gates passed all four route budgets; worst margin remained `16.8%`, with no new dependency or measured regression.                                  | Ratchet decision remains `hold`, weekly run `1/2`; tightening belongs to the established performance cadence.   |
+| Data placement and sync boundaries            | `5/5`          | Local normalized dirty state gates writes; a changed server response resets the canonical baseline and an unchanged form performs no network write.                 | None.                                                                                                           |
+| Reliability and failure handling              | `5/5`          | Repeated targeted runs removed the course remount race without weakening focus coverage; ordinary CI and authenticated Admin E2E are green without new skips.       | None.                                                                                                           |
+| Security and authz                            | `5/5`          | Secure package versions resolved, production audit is clean, CodeQL passed, hostile-input parsing is bounded, and unknown assurance levels fail closed.             | None in production scope.                                                                                       |
+| Privacy and compliance                        | `5/5`          | Three ignored local environment files are `0600`; no values were read, printed, moved, changed, or committed; policy-impact review found no public-policy change.   | None.                                                                                                           |
+| Content governance                            | `5/5`          | The lifecycle brief and PR record advisories, decisions, evidence, residual risk, rollback, forward compatibility, and this final closeout.                         | None.                                                                                                           |
+| Admin workflow and editability                | `5/5`          | Unit and authenticated E2E evidence cover create-to-edit, precise content identity, canonical order, changed save, and unchanged-save zero-write behavior.          | None.                                                                                                           |
+| Incident response and support operations      | `5/5`          | PR evidence names the dependency, CodeQL, Admin E2E, artifact, residual-risk, and six-commit rollback boundaries for deterministic triage.                          | None.                                                                                                           |
+| Stack-fit and dependency discipline           | `5/5`          | Next/config `16.3.3`, Nodemailer `9.0.6`, Supabase JS `2.112.4`, and SSR `0.10.3` were reviewed and validated without adding a package.                             | Dev-transitive `4 high / 1 low` and future majors remain explicitly deferred to separate maintenance decisions. |
+| Testing and QA automation                     | `5/5`          | Full gates passed `1739/1739` unit tests, `72/72` generated pages, `111` Playwright tests, `9/9` required checks, and authenticated Admin E2E.                      | None.                                                                                                           |
+| DevOps and rollback readiness                 | `5/5`          | Branch currency, clean squash merge `d118d71f`, green pre-merge evidence, no migration/secret mutation, and a documented commit-level rollback path were confirmed. | None.                                                                                                           |
