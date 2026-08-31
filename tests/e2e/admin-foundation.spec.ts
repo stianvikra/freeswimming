@@ -730,7 +730,9 @@ test.describe("admin foundation", () => {
       await expect(fixtureLessonEditForm.getByText("Technical fallback fields")).toBeVisible();
       await fixtureLessonEditForm.getByText("Technical fallback fields").click();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
-      await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
+      await expect(
+        fixtureLessonEditForm.getByText(lessonFixtureRuntimeId, { exact: true })
+      ).toBeVisible();
       const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel(
         "Show What good looks and feels like on lesson page"
       );
@@ -789,7 +791,7 @@ test.describe("admin foundation", () => {
         .getByLabel("Pass criteria (one per line)")
         .fill(checkpointCriteriaText);
       await fixtureLessonEditForm
-        .getByRole("textbox", { name: "Next step" })
+        .getByRole("textbox", { name: "Next step", exact: true })
         .fill(`Repeat drill quality x3 ${unique}`);
       await fixtureLessonEditForm.getByRole("button", { name: "Save changes" }).click();
       await expect(page.getByText("Content item updated.")).toBeVisible();
