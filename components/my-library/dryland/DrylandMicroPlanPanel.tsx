@@ -45,6 +45,7 @@ import {
   type DrylandMicroReleaseMode,
 } from "@/lib/dryland/micro-plans";
 import { formatSecondsLabel, type DrylandSessionSummary } from "@/lib/dryland/shared";
+import { getBrowserLocalDayTimezone } from "@/lib/my-library/local-day";
 
 type Props = {
   initialPlan: DrylandMicroPlanRecord | null;
@@ -971,7 +972,7 @@ export default function DrylandMicroPlanPanel({
     setSuccess("");
 
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const timezone = getBrowserLocalDayTimezone();
       const response = await fetch("/api/my-library/dryland/micro-plans", {
         method: "POST",
         headers: {
@@ -1016,7 +1017,7 @@ export default function DrylandMicroPlanPanel({
   const patchPlan = useCallback(
     async (body: Record<string, unknown>, options: PatchPlanOptions = {}) => {
       if (!plan) return null;
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const timezone = getBrowserLocalDayTimezone();
       const requestBody = {
         selectedDate: getLocalDateKey(),
         timezone,

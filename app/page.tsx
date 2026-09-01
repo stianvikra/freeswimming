@@ -3,6 +3,7 @@ import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
+import LocalDayTimezoneSynchronizer from "@/components/my-library/LocalDayTimezoneSynchronizer";
 import { BRAND_USAGE } from "@/lib/brand";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
 import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
@@ -12,6 +13,7 @@ import {
   buildTodayRoutineQuickActions,
   type TodayRoutineQuickAction,
 } from "@/lib/my-library/today";
+import { getRequestReadLocalDayContext } from "@/lib/my-library/local-day-server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +48,16 @@ export default async function HomePage() {
   let showDashboardCta = false;
   let routineQuickActions: TodayRoutineQuickAction[] = [];
   if (supabase && user) {
+    const localDayContext = await getRequestReadLocalDayContext();
     const [adminRole, drylandLibrarySnapshot, habitSnapshot] = await Promise.all([
       resolveAdminRoleFromSupabase(supabase, user, {
         allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
       }),
       loadDrylandLibrarySnapshot(supabase, user.id, null),
-      loadHabitSnapshot(supabase, user.id),
+      loadHabitSnapshot(supabase, user.id, {
+        selectedDate: localDayContext.todayDate,
+        todayDate: localDayContext.todayDate,
+      }),
     ]);
     showDashboardCta = Boolean(adminRole);
     routineQuickActions = buildTodayRoutineQuickActions(
@@ -61,7 +67,8 @@ export default async function HomePage() {
         microPlanSchemaReady: drylandLibrarySnapshot.microPlanSchemaReady,
         recentSessions: drylandLibrarySnapshot.recentSessions,
       },
-      habitSnapshot
+      habitSnapshot,
+      localDayContext.now
     );
   }
 
@@ -71,6 +78,7 @@ export default async function HomePage() {
 
   return (
     <SiteChrome>
+      {supabase && user ? <LocalDayTimezoneSynchronizer /> : null}
       <PageTemplate showBack={false} withBottomSafeArea={false} topInset="tight">
         <div className="space-y-4 sm:space-y-5">
           <section className="flex flex-col items-center space-y-3 text-center sm:space-y-4">

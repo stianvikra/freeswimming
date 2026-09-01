@@ -2,14 +2,23 @@ import type React from "react";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage from "@/app/page";
+import MyLibraryRoutinesPage from "@/app/my-library/routines/page";
+
+const ROUTINES_TODAY = "2026-05-14";
+const ROUTINES_NOW_ISO = "2026-05-13T10:30:00.000Z";
+const ROUTINES_LOCAL_DAY = { selectedDate: ROUTINES_TODAY, todayDate: ROUTINES_TODAY };
+
+type RoutinesWorkspaceProps = { habitSnapshot: { selectedDate: string }; nowIso: string };
 
 const {
   getServerSupabaseUserIfAuthCookiePresentMock,
+  getRequestReadLocalDayContextMock,
   loadDrylandLibrarySnapshotMock,
   loadHabitSnapshotMock,
   resolveAdminRoleFromSupabaseMock,
 } = vi.hoisted(() => ({
   getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
+  getRequestReadLocalDayContextMock: vi.fn(),
   loadDrylandLibrarySnapshotMock: vi.fn(),
   loadHabitSnapshotMock: vi.fn(),
   resolveAdminRoleFromSupabaseMock: vi.fn(),
@@ -29,6 +38,10 @@ vi.mock("@/lib/dryland/server", () => ({
 
 vi.mock("@/lib/habits/server", () => ({
   loadHabitSnapshot: loadHabitSnapshotMock,
+}));
+
+vi.mock("@/lib/my-library/local-day-server", () => ({
+  getRequestReadLocalDayContext: getRequestReadLocalDayContextMock,
 }));
 
 vi.mock("next/link", () => ({
@@ -57,6 +70,10 @@ vi.mock("@/components/PageTemplate", () => ({
 
 vi.mock("@/components/brand/BrandImage", () => ({
   default: () => <span data-testid="brand-image" />,
+}));
+
+vi.mock("@/components/my-library/LocalDayTimezoneSynchronizer", () => ({
+  default: () => <span data-testid="local-day-timezone-synchronizer" />,
 }));
 
 function actionHrefs() {
@@ -100,6 +117,10 @@ describe("HomePage routines entrypoint", () => {
         totalCount: 0,
       },
     });
+    getRequestReadLocalDayContextMock.mockResolvedValue({
+      todayDate: ROUTINES_TODAY,
+      now: new Date(ROUTINES_NOW_ISO),
+    });
   });
 
   afterEach(() => {
@@ -124,6 +145,7 @@ describe("HomePage routines entrypoint", () => {
     expect(screen.getByRole("link", { name: /Contact/i })).toHaveClass("fs-library-card");
     expect(screen.getByTestId("home-auth-link")).toHaveClass("fs-cta-secondary");
     expect(resolveAdminRoleFromSupabaseMock).not.toHaveBeenCalled();
+    expect(getRequestReadLocalDayContextMock).not.toHaveBeenCalled();
     expect(loadDrylandLibrarySnapshotMock).not.toHaveBeenCalled();
     expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
   });
@@ -153,6 +175,7 @@ describe("HomePage routines entrypoint", () => {
     expect(microSessionsLink).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(habitsLink).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(screen.getByTestId("home-auth-link")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("local-day-timezone-synchronizer")).toBeInTheDocument();
     expect(actionHrefs()).toEqual([
       "/en/course",
       "/my-library/dryland?micro=setup#micro-sessions",
@@ -165,7 +188,7 @@ describe("HomePage routines entrypoint", () => {
       allowlistedEmailsRaw: undefined,
     });
     expect(loadDrylandLibrarySnapshotMock).toHaveBeenCalledWith(supabase, user.id, null);
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(supabase, user.id);
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(supabase, user.id, ROUTINES_LOCAL_DAY);
   });
 
   it("keeps the dashboard exit admin-gated while using token actions", async () => {
@@ -186,5 +209,33 @@ describe("HomePage routines entrypoint", () => {
     expect(dashboardLink).toHaveAttribute("href", "/admin");
     expect(dashboardLink).toHaveClass("fs-cta-secondary");
     expect(dashboardLink.getAttribute("class")).toContain("fs-color-brand-50");
+  });
+
+  it("uses the shared local-day context for My Routines snapshot and clock", async () => {
+    const user = { id: "user-1" };
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase: {},
+      user,
+    });
+    loadHabitSnapshotMock.mockResolvedValue({ selectedDate: ROUTINES_TODAY });
+    const page = await MyLibraryRoutinesPage();
+
+    const workspace = (page.props.children as React.ReactElement<RoutinesWorkspaceProps>[])[1];
+    expect(workspace.props.habitSnapshot.selectedDate).toBe(ROUTINES_TODAY);
+    expect(workspace.props.nowIso).toBe(ROUTINES_NOW_ISO);
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      user.id,
+      ROUTINES_LOCAL_DAY
+    );
+  });
+
+  it("redirects anonymous My Routines visitors before local-day resolution", async () => {
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({ supabase: null, user: null });
+
+    await expect(MyLibraryRoutinesPage()).rejects.toMatchObject({
+      digest: expect.stringContaining("/auth/sign-in?next=%2Fmy-library%2Froutines"),
+    });
+    expect(getRequestReadLocalDayContextMock).not.toHaveBeenCalled();
   });
 });

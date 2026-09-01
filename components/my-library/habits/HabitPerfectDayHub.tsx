@@ -24,6 +24,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  buildLocalDayTimezoneCookie,
+  readLocalDayTimezoneCookie,
+} from "@/components/my-library/LocalDayTimezoneSynchronizer";
+import {
   useEffect,
   useId,
   useCallback,
@@ -65,6 +69,7 @@ import {
   getMyLibraryCalendarIsoWeek,
   getMyLibraryCalendarPeriodStartDate,
 } from "@/lib/my-library/calendar";
+import { getBrowserLocalDayTimezone } from "@/lib/my-library/local-day";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 import { playAppSoundProfile, type AppSoundPlaybackResult } from "@/lib/audio/client-sound";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
@@ -73,11 +78,13 @@ type Props = {
   initialSnapshot: HabitSnapshot;
   preferMobileActiveFocus?: boolean;
   todayDate?: string;
+  localDayTimezone: string;
   userId?: string;
 };
 
 type ApiResponse = {
   ok?: boolean;
+  code?: string;
   error?: string;
   snapshot?: HabitSnapshot;
   reviewedDates?: string[];
@@ -1594,10 +1601,15 @@ export default function HabitPerfectDayHub({
   initialSnapshot,
   preferMobileActiveFocus = false,
   todayDate = initialSnapshot.selectedDate,
+  localDayTimezone,
   userId,
 }: Props) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [appliedInitialSnapshot, setAppliedInitialSnapshot] = useState(initialSnapshot);
+  const [appliedTodayDate, setAppliedTodayDate] = useState(
+    todayDate || initialSnapshot.selectedDate
+  );
   const [draft, setDraft] = useState<HabitDraft>(() =>
     buildDefaultDraft(initialSnapshot.selectedDate)
   );
@@ -1634,6 +1646,12 @@ export default function HabitPerfectDayHub({
   const timedTargetProgressRef = useRef<Record<string, number>>({});
   const timedTargetSignalKeysRef = useRef<Set<string>>(new Set());
   const catchUpAssistantShownKeysRef = useRef<Set<string>>(new Set());
+  const addStartDateTouchedRef = useRef(false);
+  const appliedLocalDayTimezoneRef = useRef(localDayTimezone);
+  const appliedTodayDateRef = useRef(todayDate || initialSnapshot.selectedDate);
+  const preserveCheckInInputsForSnapshotRef = useRef<HabitSnapshot | null>(null);
+  const requestedLocalDayRefreshKeyRef = useRef<string | null>(null);
+  const pendingServerLocalDayReconciliationRef = useRef(false);
   const saveTimedSourcesRef = useRef<
     ((item: HabitDayItem, input: SaveTimedSourcesInput) => Promise<void>) | null
   >(null);
@@ -1649,7 +1667,7 @@ export default function HabitPerfectDayHub({
   const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
   const weekSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const calendarWindow = buildMyLibraryCalendarWindow(snapshot.selectedDate);
-  const safeTodayDate = todayDate || snapshot.selectedDate;
+  const safeTodayDate = appliedTodayDate || snapshot.selectedDate;
   const todayWeekStartDate = getMyLibraryCalendarPeriodStartDate(safeTodayDate, "week");
   const isSelectedToday = snapshot.selectedDate === safeTodayDate;
   const isHistoricalDate = snapshot.selectedDate < safeTodayDate;
@@ -1709,12 +1727,40 @@ export default function HabitPerfectDayHub({
       return;
     }
 
+    const nextTodayDate = todayDate || initialSnapshot.selectedDate;
+    const isTimezoneReconciliation =
+      appliedLocalDayTimezoneRef.current !== undefined &&
+      localDayTimezone !== undefined &&
+      appliedLocalDayTimezoneRef.current !== localDayTimezone;
+    const isLocalDayReconciliation =
+      isTimezoneReconciliation || pendingServerLocalDayReconciliationRef.current;
+
+    preserveCheckInInputsForSnapshotRef.current = isLocalDayReconciliation ? initialSnapshot : null;
     setSnapshot(initialSnapshot);
+    setAppliedInitialSnapshot(initialSnapshot);
+    setAppliedTodayDate(nextTodayDate);
+    appliedLocalDayTimezoneRef.current = localDayTimezone;
+    const previousTodayDate = appliedTodayDateRef.current;
+    appliedTodayDateRef.current = nextTodayDate;
+    pendingServerLocalDayReconciliationRef.current = false;
     confirmedSelectedDateRef.current = initialSnapshot.selectedDate;
     setRequestedDate((current) => (current === initialSnapshot.selectedDate ? null : current));
     setFailedRequestedDate(null);
-    setDraft(buildDefaultDraft(initialSnapshot.selectedDate));
     setError(initialSnapshot.loadError);
+
+    if (isLocalDayReconciliation) {
+      if (previousTodayDate !== nextTodayDate) {
+        setDraft((current) =>
+          !addStartDateTouchedRef.current && current.startDate === previousTodayDate
+            ? { ...current, startDate: nextTodayDate }
+            : current
+        );
+      }
+      return;
+    }
+
+    addStartDateTouchedRef.current = false;
+    setDraft(buildDefaultDraft(initialSnapshot.selectedDate));
     setIsAddHabitOpen(false);
     setEditingHabitId(null);
     setEditDraft(null);
@@ -1725,13 +1771,18 @@ export default function HabitPerfectDayHub({
     setIsPastHabitsExpanded(false);
     setHabitNotices({});
     setNotice(null);
-  }, [initialSnapshot]);
+  }, [initialSnapshot, localDayTimezone, todayDate]);
 
   useEffect(() => {
     setReviewedAbsenceDates(getReviewedAbsenceDatesForSnapshot(snapshot, userId, safeTodayDate));
   }, [safeTodayDate, snapshot, userId]);
 
   useEffect(() => {
+    if (preserveCheckInInputsForSnapshotRef.current === snapshot) {
+      preserveCheckInInputsForSnapshotRef.current = null;
+      return;
+    }
+    preserveCheckInInputsForSnapshotRef.current = null;
     setCheckInInputs(buildInputState(snapshot));
   }, [snapshot]);
 
@@ -1966,6 +2017,10 @@ export default function HabitPerfectDayHub({
     .join(",");
 
   useEffect(() => {
+    if (appliedInitialSnapshot !== initialSnapshot) return;
+    if (localDayTimezone !== undefined && localDayTimezone !== getBrowserLocalDayTimezone()) {
+      return;
+    }
     if (!shouldShowCatchUpAssistant) return;
     const analyticsKey = `${snapshot.selectedDate}:${catchUpEntryKey}`;
     if (catchUpAssistantShownKeysRef.current.has(analyticsKey)) return;
@@ -1981,10 +2036,13 @@ export default function HabitPerfectDayHub({
       reviewMode: "date_first",
     });
   }, [
+    appliedInitialSnapshot,
     catchUpDateCount,
     catchUpDates,
     catchUpEntries,
     catchUpEntryKey,
+    initialSnapshot,
+    localDayTimezone,
     shouldShowCatchUpAssistant,
     snapshot.selectedDate,
   ]);
@@ -2169,6 +2227,62 @@ export default function HabitPerfectDayHub({
     return payload.snapshot;
   }
 
+  function isHabitMutationReady() {
+    const browserTimezone = getBrowserLocalDayTimezone();
+    const timezoneIsCurrent = localDayTimezone === browserTimezone;
+    const snapshotIsApplied = appliedInitialSnapshot === initialSnapshot;
+
+    if (timezoneIsCurrent && snapshotIsApplied && !pendingServerLocalDayReconciliationRef.current) {
+      requestedLocalDayRefreshKeyRef.current = null;
+      return true;
+    }
+
+    if (!timezoneIsCurrent) {
+      const refreshKey = `timezone:${localDayTimezone}->${browserTimezone}`;
+      if (requestedLocalDayRefreshKeyRef.current !== refreshKey) {
+        requestedLocalDayRefreshKeyRef.current = refreshKey;
+        if (readLocalDayTimezoneCookie(document.cookie) !== browserTimezone) {
+          document.cookie = buildLocalDayTimezoneCookie(
+            browserTimezone,
+            window.location.protocol === "https:"
+          );
+          router.refresh();
+        }
+      }
+      return false;
+    }
+
+    return false;
+  }
+
+  function requestServerLocalDayReconciliation() {
+    pendingServerLocalDayReconciliationRef.current = true;
+    const refreshKey = `server-stale:${localDayTimezone}:${appliedTodayDate}`;
+    if (requestedLocalDayRefreshKeyRef.current === refreshKey) return;
+    requestedLocalDayRefreshKeyRef.current = refreshKey;
+    router.refresh();
+  }
+
+  async function fetchHabitMutation(input: string, init: RequestInit) {
+    if (!isHabitMutationReady()) {
+      throw new Error(
+        "Your local day is updating. Habits will be ready to save again in a moment."
+      );
+    }
+    const response = await fetch(input, init);
+    if (response.status === 409) {
+      try {
+        const payload = (await response.clone().json()) as ApiResponse;
+        if (payload.code === "STALE_LOCAL_DAY_CONTEXT") {
+          requestServerLocalDayReconciliation();
+        }
+      } catch {
+        // The normal response handler owns malformed or non-JSON error feedback.
+      }
+    }
+    return response;
+  }
+
   async function createHabit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!snapshot.schemaReady) return;
@@ -2187,7 +2301,7 @@ export default function HabitPerfectDayHub({
     setError(null);
     try {
       const existingHabitIds = new Set(snapshot.activeHabits.map((habit) => habit.id));
-      const response = await fetch("/api/my-library/habits", {
+      const response = await fetchHabitMutation("/api/my-library/habits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2203,6 +2317,8 @@ export default function HabitPerfectDayHub({
           cadenceDayPolicy: draft.cadenceDayPolicy,
           scheduleDays: getScheduleDaysForDraft(draft),
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           isPerfectDayItem: draft.isPerfectDayItem,
         }),
       });
@@ -2210,6 +2326,7 @@ export default function HabitPerfectDayHub({
       const createdHabit =
         nextSnapshot.activeHabits.find((habit) => !existingHabitIds.has(habit.id)) ??
         nextSnapshot.activeHabits.find((habit) => habit.title === draft.title.trim());
+      addStartDateTouchedRef.current = false;
       setDraft(buildDefaultDraft(nextSnapshot.selectedDate));
       setIsAddHabitOpen(false);
       setRecentlyCreatedHabitId(createdHabit?.id ?? null);
@@ -2245,12 +2362,17 @@ export default function HabitPerfectDayHub({
     const habitMode = editDraft.habitMode;
     const timerTargetSeconds = getTimerTargetSeconds(editDraft);
     const habitType = getResolvedDraftHabitType(editDraft);
+    const existingHabit = [...snapshot.activeHabits, ...snapshot.archivedHabits].find(
+      (habit) => habit.id === habitId
+    );
+    const changedStartDate =
+      existingHabit?.startDate === editDraft.startDate ? undefined : editDraft.startDate;
 
     setPendingKey(`edit-${habitId}`);
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch(`/api/my-library/habits/${habitId}`, {
+      const response = await fetchHabitMutation(`/api/my-library/habits/${habitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2262,7 +2384,7 @@ export default function HabitPerfectDayHub({
           targetValueNumeric: habitMode === "quit" ? "0" : editDraft.targetValueNumeric,
           targetUnit: habitMode === "quit" ? "times" : editDraft.targetUnit,
           targetTime: editDraft.targetTime,
-          startDate: editDraft.startDate,
+          ...(changedStartDate === undefined ? {} : { startDate: changedStartDate }),
           timerEnabled: habitMode === "timed",
           timerTargetSeconds,
           cadencePeriod: editDraft.cadencePeriod,
@@ -2271,6 +2393,8 @@ export default function HabitPerfectDayHub({
           scheduleDays: getScheduleDaysForDraft(editDraft),
           isPerfectDayItem: editDraft.isPerfectDayItem,
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
         }),
       });
       await applyResponse(response, "Could not update that habit right now.");
@@ -2295,12 +2419,14 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch(`/api/my-library/habits/${habitId}`, {
+      const response = await fetchHabitMutation(`/api/my-library/habits/${habitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "archived",
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
         }),
       });
       await applyResponse(response, "Could not end that habit right now.");
@@ -2324,12 +2450,14 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch(`/api/my-library/habits/${habitId}`, {
+      const response = await fetchHabitMutation(`/api/my-library/habits/${habitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "active",
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
         }),
       });
       await applyResponse(response, "Could not restore that habit right now.");
@@ -2351,7 +2479,8 @@ export default function HabitPerfectDayHub({
       habitId: habit.id,
       checkInDate: snapshot.selectedDate,
       selectedDate: snapshot.selectedDate,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      renderedTodayDate: appliedTodayDate,
+      timezone: getBrowserLocalDayTimezone(),
     };
 
     if (habit.habitType === "binary") {
@@ -2367,7 +2496,7 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -2395,14 +2524,15 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           habitId: habit.id,
           checkInDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           timerSeconds: input.timerSeconds,
           manualMinutes: input.manualMinutes,
         }),
@@ -2433,14 +2563,15 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           valueBoolean: false,
         }),
       });
@@ -2460,14 +2591,15 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           status: "skipped",
         }),
       });
@@ -2533,13 +2665,15 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           habitId: habit.id,
           checkInDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           clearTimedCompletion: true,
         }),
       });
@@ -2622,13 +2756,15 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch("/api/my-library/habits/check-ins", {
+      const response = await fetchHabitMutation("/api/my-library/habits/check-ins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
           clear: true,
         }),
       });
@@ -2651,12 +2787,14 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
-      const response = await fetch(`/api/my-library/habits/${habit.id}/reset-stats`, {
+      const response = await fetchHabitMutation(`/api/my-library/habits/${habit.id}/reset-stats`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           effectiveDate: snapshot.selectedDate,
           selectedDate: snapshot.selectedDate,
+          renderedTodayDate: appliedTodayDate,
+          timezone: getBrowserLocalDayTimezone(),
         }),
       });
       await applyResponse(response, "Could not reset habit stats right now.");
@@ -2677,12 +2815,14 @@ export default function HabitPerfectDayHub({
   }
 
   async function saveReviewedAbsenceDates(nextDates: string[], action: "mark" | "finish") {
-    const response = await fetch("/api/my-library/habits/absence-review", {
+    const response = await fetchHabitMutation("/api/my-library/habits/absence-review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         dates: nextDates,
         selectedDate: snapshot.selectedDate,
+        renderedTodayDate: appliedTodayDate,
+        timezone: getBrowserLocalDayTimezone(),
         action,
       }),
     });
@@ -4210,9 +4350,10 @@ export default function HabitPerfectDayHub({
                     type="date"
                     value={draft.startDate}
                     max={snapshot.selectedDate}
-                    onChange={(event) =>
-                      setDraft((current) => ({ ...current, startDate: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      addStartDateTouchedRef.current = true;
+                      setDraft((current) => ({ ...current, startDate: event.target.value }));
+                    }}
                     className={habitFieldClass}
                   />
                 </label>
@@ -4837,7 +4978,11 @@ export default function HabitPerfectDayHub({
                           <input
                             type="date"
                             value={editDraft.startDate}
-                            max={snapshot.selectedDate}
+                            max={
+                              habit.startDate > snapshot.selectedDate
+                                ? habit.startDate
+                                : snapshot.selectedDate
+                            }
                             onChange={(event) =>
                               setEditDraft((current) =>
                                 current ? { ...current, startDate: event.target.value } : current

@@ -2,12 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
+import LocalDayTimezoneSynchronizer from "@/components/my-library/LocalDayTimezoneSynchronizer";
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
 import { loadHabitSnapshot } from "@/lib/habits/server";
-import {
-  getTodayCalendarDate,
-  normalizeMyLibraryCalendarDateParam,
-} from "@/lib/my-library/calendar";
+import { normalizeMyLibraryCalendarDateParam } from "@/lib/my-library/calendar";
+import { getRequestReadLocalDayContext } from "@/lib/my-library/local-day-server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -26,18 +25,25 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
     redirect("/auth/sign-in?next=%2Fmy-library%2Fhabits");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const [resolvedSearchParams, localDayContext] = await Promise.all([
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
+    getRequestReadLocalDayContext(),
+  ]);
   const viewParam = resolvedSearchParams.view;
   const viewValues = Array.isArray(viewParam) ? viewParam : viewParam ? [viewParam] : [];
   const preferMobileActiveFocus = viewValues.includes("active");
-  const todayDate = getTodayCalendarDate();
+  const todayDate = localDayContext.todayDate;
   const selectedDate = normalizeMyLibraryCalendarDateParam(resolvedSearchParams.date, todayDate);
-  const initialSnapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
+  const initialSnapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate,
+    todayDate,
+  });
   const selectedDateLabel =
     initialSnapshot.selectedDate === todayDate ? "today" : initialSnapshot.selectedDate;
 
   return (
     <SiteChrome>
+      <LocalDayTimezoneSynchronizer />
       <section
         data-testid="habits-workspace"
         className={`mx-auto w-full max-w-[1040px] px-4 pb-8 sm:px-6 sm:pt-28 sm:pb-10 ${
@@ -46,6 +52,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
       >
         <TrackEventOnMount
           eventName="habits_viewed"
+          localDayTimezone={localDayContext.timezone}
           payload={{
             activeHabitCount: initialSnapshot.activeHabits.length,
             perfectDayPercent: initialSnapshot.daySummary.completionPercent,
@@ -85,6 +92,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
             initialSnapshot={initialSnapshot}
             preferMobileActiveFocus={preferMobileActiveFocus}
             todayDate={todayDate}
+            localDayTimezone={localDayContext.timezone}
             userId={user.id}
           />
         </div>

@@ -4,9 +4,14 @@ import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_MOTIVATION_RESET_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
   buildHabitMotivationResetInsert,
-  normalizeHabitDate,
   type HabitMotivationResetRequestBody,
 } from "@/lib/habits/shared";
+import {
+  clampLocalDayDateToToday,
+  isLocalDayDateKey,
+  validateRenderedLocalDayDate,
+} from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 type Props = {
@@ -47,12 +52,71 @@ export async function POST(request: Request, { params }: Props) {
     );
   }
 
-  let body: HabitMotivationResetRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as HabitMotivationResetRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as HabitMotivationResetRequestBody;
+
+  const effectiveDateInput =
+    body.effectiveDate !== undefined ? body.effectiveDate : body.selectedDate;
+  if (effectiveDateInput !== undefined && !isLocalDayDateKey(effectiveDateInput)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid reset date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: new Date(),
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Choose a valid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const renderedLocalDay = validateRenderedLocalDayDate(
+    body.renderedTodayDate,
+    localDayContext.todayDate
+  );
+  if (renderedLocalDay.status === "invalid") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "INVALID_DATE",
+          error: "The rendered local day is invalid. Refresh the page and try again.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+  if (renderedLocalDay.status !== "current") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "STALE_LOCAL_DAY_CONTEXT",
+          error: "Your local day changed. Refresh the page and try again.",
+        },
+        { status: 409 }
+      )
     );
   }
 
@@ -85,16 +149,24 @@ export async function POST(request: Request, { params }: Props) {
     );
   }
 
+  if (!isLocalDayDateKey(habitResult.data.start_date)) {
+    console.error("[HabitsApi] Habit has an invalid persisted start date", { habitId });
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not reset habit stats right now." }, { status: 500 })
+    );
+  }
+
   let insertPayload;
   try {
     insertPayload = buildHabitMotivationResetInsert(
       user.id,
       {
         id: habitResult.data.id,
-        startDate: normalizeHabitDate(habitResult.data.start_date),
+        startDate: habitResult.data.start_date,
         status: habitResult.data.status === "archived" ? "archived" : "active",
       },
-      body
+      body,
+      localDayContext.todayDate
     );
   } catch (error) {
     return applySupabaseCookies(
@@ -130,9 +202,15 @@ export async function POST(request: Request, { params }: Props) {
     );
   }
 
-  const selectedDate = normalizeHabitDate(body.selectedDate ?? insertPayload.effective_date);
+  const selectedDate = clampLocalDayDateToToday(
+    body.selectedDate ?? insertPayload.effective_date,
+    localDayContext.todayDate
+  );
   const actionSource = getHabitMutationActionSource(body.actionSource);
-  const snapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate,
+    todayDate: localDayContext.todayDate,
+  });
   trackAnalyticsEvent({
     eventName: "habit_stats_reset_created",
     channel: "server",

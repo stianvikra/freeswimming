@@ -34,11 +34,9 @@ import {
 import { buildDrylandSessionRecord } from "@/lib/dryland/shared";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT } from "@/lib/habits/server";
-import {
-  buildHabitDefinitionInsert,
-  normalizeHabitDate,
-  type HabitDefinitionRow,
-} from "@/lib/habits/shared";
+import { buildHabitDefinitionInsert, type HabitDefinitionRow } from "@/lib/habits/shared";
+import { isLocalDayDateKey } from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database, Json } from "@/types/database";
 
@@ -97,21 +95,19 @@ function isStaleMicroPlan(plan: ReturnType<typeof buildDrylandMicroPlanRecord>, 
   return Number.isFinite(weekEndsAtMs) && weekEndsAtMs <= now.getTime();
 }
 
-function isDateInMicroPlanWeek(
+function isActionInMicroPlanWeek(
   plan: ReturnType<typeof buildDrylandMicroPlanRecord>,
-  selectedDate: unknown
+  actionNow: Date
 ) {
-  if (typeof selectedDate !== "string") return false;
-  const normalizedDate = normalizeHabitDate(selectedDate);
-  const selectedDateNoonMs = Date.parse(`${normalizedDate}T12:00:00.000Z`);
+  const actionNowMs = actionNow.getTime();
   const weekStartsAtMs = Date.parse(plan.weekStartsAt);
   const weekEndsAtMs = Date.parse(plan.weekEndsAt);
   return (
-    Number.isFinite(selectedDateNoonMs) &&
+    Number.isFinite(actionNowMs) &&
     Number.isFinite(weekStartsAtMs) &&
     Number.isFinite(weekEndsAtMs) &&
-    selectedDateNoonMs >= weekStartsAtMs &&
-    selectedDateNoonMs < weekEndsAtMs
+    actionNowMs >= weekStartsAtMs &&
+    actionNowMs < weekEndsAtMs
   );
 }
 
@@ -132,12 +128,51 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  let body: DrylandMicroPlanPatchRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as DrylandMicroPlanPatchRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as DrylandMicroPlanPatchRequestBody;
+
+  const mutationNow = new Date();
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: mutationNow,
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Invalid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+  const currentActionDate = localDayContext.todayDate;
+
+  if (body.selectedDate !== undefined && !isLocalDayDateKey(body.selectedDate)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Invalid selected date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  if (body.habitStartDate !== undefined && !isLocalDayDateKey(body.habitStartDate)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+        { status: 400 }
+      )
     );
   }
 
@@ -180,7 +215,6 @@ export async function PATCH(request: Request, context: RouteContext) {
   let nextBlocks = currentPlan.blocks;
   let nextStatus: DrylandMicroPlanStatus = currentPlan.status;
   const updatePayload: DrylandMicroPlanUpdate = {};
-  const mutationNow = new Date();
   let shouldAttemptHabitCredit = false;
   let shouldRemoveHabitCredit = false;
   let shouldResumePausedHabitLinkForCredit = false;
@@ -265,7 +299,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const selectedDate = normalizeHabitDate(body.selectedDate);
     let habitInsertPayload;
     try {
       habitInsertPayload = buildHabitDefinitionInsert(
@@ -275,8 +308,8 @@ export async function PATCH(request: Request, context: RouteContext) {
           habitMode: "build",
           habitType: "binary",
           category: "movement",
-          startDate: body.habitStartDate ?? selectedDate,
-          selectedDate,
+          startDate: body.habitStartDate ?? currentActionDate,
+          selectedDate: currentActionDate,
           cadencePeriod: "weekly",
           cadenceTargetCount: 1,
           cadenceDayPolicy: "any",
@@ -291,7 +324,8 @@ export async function PATCH(request: Request, context: RouteContext) {
           ],
           isPerfectDayItem: false,
         },
-        activeHabitRows.reduce((max, row) => Math.max(max, row.sort_order ?? 0), 0) + 1
+        activeHabitRows.reduce((max, row) => Math.max(max, row.sort_order ?? 0), 0) + 1,
+        localDayContext.todayDate
       );
     } catch (error) {
       return applySupabaseCookies(
@@ -307,7 +341,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     if (
       isDrylandMicroWeeklyProgramComplete(currentPlan.blocks) &&
-      !isDateInMicroPlanWeek(currentPlan, selectedDate)
+      !isActionInMicroPlanWeek(currentPlan, mutationNow)
     ) {
       return applySupabaseCookies(
         noStoreJson(
@@ -353,7 +387,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         dryland_micro_plan_id: planId,
         habit_id: habitRow.id,
         status: "active",
-        starts_on: habitInsertPayload.start_date ?? selectedDate,
+        starts_on: habitInsertPayload.start_date ?? currentActionDate,
         resumed_at: mutationNow.toISOString(),
       })
       .select(MICRO_SESSION_HABIT_LINK_SELECT)
@@ -392,8 +426,9 @@ export async function PATCH(request: Request, context: RouteContext) {
             planId,
             blockId: completedBlockId,
             link: linkRecord,
-            selectedDate,
-            timezone: body.timezone,
+            selectedDate: currentActionDate,
+            todayDate: localDayContext.todayDate,
+            timezone: localDayContext.timezone,
             completedAt: mutationNow.toISOString(),
           })
         : {
@@ -824,7 +859,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         !wasWeeklyProgramComplete &&
         isWeeklyProgramComplete
       ) {
-        if (!isDateInMicroPlanWeek(currentPlan, body.selectedDate)) {
+        if (!isActionInMicroPlanWeek(currentPlan, mutationNow)) {
           return applySupabaseCookies(
             noStoreJson(
               { ok: false, error: "This completion does not belong to the Micro Session week." },
@@ -841,7 +876,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         wasWeeklyProgramComplete &&
         !isWeeklyProgramComplete
       ) {
-        if (!isDateInMicroPlanWeek(currentPlan, body.selectedDate)) {
+        if (!isActionInMicroPlanWeek(currentPlan, mutationNow)) {
           return applySupabaseCookies(
             noStoreJson(
               { ok: false, error: "This update does not belong to the Micro Session week." },
@@ -1101,8 +1136,9 @@ export async function PATCH(request: Request, context: RouteContext) {
           planId,
           blockId: creditBlockId,
           link: updatedHabitLink,
-          selectedDate: body.selectedDate,
-          timezone: body.timezone,
+          selectedDate: currentActionDate,
+          todayDate: localDayContext.todayDate,
+          timezone: localDayContext.timezone,
           completedAt: mutationNow.toISOString(),
         })
       : shouldRemoveHabitCredit && updatedHabitLink
@@ -1110,7 +1146,8 @@ export async function PATCH(request: Request, context: RouteContext) {
             userId: user.id,
             planId,
             link: updatedHabitLink,
-            selectedDate: body.selectedDate,
+            selectedDate: currentActionDate,
+            todayDate: localDayContext.todayDate,
           })
         : undefined;
 

@@ -11,10 +11,12 @@ import {
 
 const {
   getServerSupabaseUserIfAuthCookiePresentMock,
+  getRequestReadLocalDayContextMock,
   loadMyLibraryCalendarComparisonMock,
   loadMyLibraryCalendarPlanMock,
 } = vi.hoisted(() => ({
   getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
+  getRequestReadLocalDayContextMock: vi.fn(),
   loadMyLibraryCalendarComparisonMock: vi.fn(),
   loadMyLibraryCalendarPlanMock: vi.fn(),
 }));
@@ -45,6 +47,10 @@ vi.mock("@/components/my-library/CalendarPlanWeekHub", () => ({
   ),
 }));
 
+vi.mock("@/components/my-library/LocalDayTimezoneSynchronizer", () => ({
+  default: () => <div data-testid="local-day-timezone-synchronizer" />,
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   getServerSupabaseUserIfAuthCookiePresent: getServerSupabaseUserIfAuthCookiePresentMock,
 }));
@@ -55,6 +61,10 @@ vi.mock("@/lib/my-library/calendar-comparison", () => ({
 
 vi.mock("@/lib/my-library/calendar-plan", () => ({
   loadMyLibraryCalendarPlan: loadMyLibraryCalendarPlanMock,
+}));
+
+vi.mock("@/lib/my-library/local-day-server", () => ({
+  getRequestReadLocalDayContext: getRequestReadLocalDayContextMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -129,6 +139,13 @@ describe("MyLibraryCalendarPage", () => {
     });
     loadMyLibraryCalendarComparisonMock.mockResolvedValue(buildModel());
     loadMyLibraryCalendarPlanMock.mockResolvedValue(buildPlanModel());
+    getRequestReadLocalDayContextMock.mockResolvedValue({
+      status: "resolved",
+      source: "cookie",
+      timezone: "America/Los_Angeles",
+      todayDate: "2026-06-19",
+      now: new Date("2026-06-20T01:00:00.000Z"),
+    });
   });
 
   afterEach(() => {
@@ -149,6 +166,7 @@ describe("MyLibraryCalendarPage", () => {
     );
 
     expect(screen.getByTestId("site-chrome")).toBeInTheDocument();
+    expect(screen.getByTestId("local-day-timezone-synchronizer")).toBeInTheDocument();
     expect(screen.getByTestId("calendar-workspace")).toHaveClass(
       "max-w-[1080px]",
       "pt-16",
@@ -176,6 +194,7 @@ describe("MyLibraryCalendarPage", () => {
       signedInUser.id,
       expect.objectContaining({
         selectedDate: "2026-05-20",
+        todayDate: "2026-06-19",
         selectedSource: "habits",
         selectedPeriod: "month",
         compareToDate: "2026-04-20",
@@ -200,6 +219,42 @@ describe("MyLibraryCalendarPage", () => {
       expect.objectContaining({
         selectedSource: "unmapped",
         selectedPeriod: "unmapped",
+      })
+    );
+  });
+
+  it("falls back to local today for impossible comparison and plan dates", async () => {
+    render(
+      await MyLibraryCalendarPage({
+        searchParams: Promise.resolve({
+          date: "2026-02-31",
+          compareTo: "2026-04-31",
+        }),
+      })
+    );
+
+    expect(loadMyLibraryCalendarComparisonMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      expect.objectContaining({
+        selectedDate: "2026-06-19",
+        compareToDate: null,
+      })
+    );
+
+    cleanup();
+    render(
+      await MyLibraryCalendarPage({
+        searchParams: Promise.resolve({ view: "plan", date: "2026-02-31" }),
+      })
+    );
+
+    expect(loadMyLibraryCalendarPlanMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      expect.objectContaining({
+        selectedDate: "2026-06-19",
+        todayDate: "2026-06-19",
       })
     );
   });
@@ -230,7 +285,7 @@ describe("MyLibraryCalendarPage", () => {
       signedInUser.id,
       {
         selectedDate: "2026-06-22",
-        todayDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        todayDate: "2026-06-19",
         selectedProgramId: "program-1",
       }
     );

@@ -85,6 +85,13 @@ function buildResetRow(overrides: Partial<HabitMotivationResetRow>): HabitMotiva
   };
 }
 
+function buildHabitWriteDateContext() {
+  return {
+    now: new Date("2026-05-10T12:00:00.000Z"),
+    todayDate: "2026-05-10",
+  };
+}
+
 describe("habits domain helpers", () => {
   it("builds avoidance habits as at-most raw targets", () => {
     const insert = buildHabitDefinitionInsert(
@@ -96,7 +103,8 @@ describe("habits domain helpers", () => {
         targetValueNumeric: 0,
         targetUnit: "times",
       },
-      2
+      2,
+      "2026-05-10"
     );
 
     expect(insert).toMatchObject({
@@ -113,15 +121,86 @@ describe("habits domain helpers", () => {
   });
 
   it("fails closed for unsupported habit lifecycle statuses", () => {
-    expect(buildHabitDefinitionUpdate({ status: "archived" })).toMatchObject({
+    expect(buildHabitDefinitionUpdate({ status: "archived" }, "2026-05-10")).toMatchObject({
       status: "archived",
     });
-    expect(buildHabitDefinitionUpdate({ status: "active" })).toMatchObject({
+    expect(buildHabitDefinitionUpdate({ status: "active" }, "2026-05-10")).toMatchObject({
       status: "active",
     });
-    expect(() => buildHabitDefinitionUpdate({ status: "deleted" })).toThrow(
+    expect(() => buildHabitDefinitionUpdate({ status: "deleted" }, "2026-05-10")).toThrow(
       "Unsupported habit status."
     );
+  });
+
+  it("requires real explicit local-day context for definition write validators", () => {
+    expect(() => buildHabitDefinitionInsert("user-1", { title: "Read" }, 1, "2026-02-31")).toThrow(
+      "Habit write today date must be a real YYYY-MM-DD date."
+    );
+    expect(() => buildHabitDefinitionUpdate({ status: "active" }, "not-a-date")).toThrow(
+      "Habit write today date must be a real YYYY-MM-DD date."
+    );
+  });
+
+  it("guards definition start dates against server-local today, not selectedDate", () => {
+    expect(() =>
+      buildHabitDefinitionInsert(
+        "user-1",
+        {
+          title: "Invalid selected date",
+          selectedDate: "2026-02-31",
+        },
+        1,
+        "2026-05-10"
+      )
+    ).toThrow("Choose a valid start date.");
+
+    expect(() =>
+      buildHabitDefinitionInsert(
+        "user-1",
+        {
+          title: "Invalid-date habit",
+          startDate: "2026-02-31",
+        },
+        1,
+        "2026-05-10"
+      )
+    ).toThrow("Choose a valid start date.");
+
+    expect(() =>
+      buildHabitDefinitionInsert(
+        "user-1",
+        {
+          title: "Future habit",
+          startDate: "2026-05-11",
+          selectedDate: "2026-05-11",
+        },
+        1,
+        "2026-05-10"
+      )
+    ).toThrow("Choose today or an earlier start date.");
+
+    expect(() =>
+      buildHabitDefinitionUpdate(
+        {
+          startDate: "2026-05-11",
+          selectedDate: "2026-05-11",
+        },
+        "2026-05-10"
+      )
+    ).toThrow("Choose today or an earlier start date.");
+
+    expect(
+      buildHabitDefinitionInsert(
+        "user-1",
+        {
+          title: "Today habit",
+          startDate: "2026-05-10",
+          selectedDate: "2999-01-01",
+        },
+        1,
+        "2026-05-10"
+      )
+    ).toMatchObject({ start_date: "2026-05-10" });
   });
 
   it("builds quit habits with start dates and days-since evaluation", () => {
@@ -134,7 +213,8 @@ describe("habits domain helpers", () => {
         startDate: "2026-05-07",
         selectedDate: "2026-05-10",
       },
-      3
+      3,
+      "2026-05-10"
     );
     const habit = buildHabitDefinitionView(
       buildHabitRow({
@@ -485,6 +565,22 @@ describe("habits domain helpers", () => {
         "2026-05-10"
       )
     ).toThrow("Choose a reset date on or after the habit start date.");
+    expect(() =>
+      buildHabitMotivationResetInsert(
+        "user-1",
+        habit,
+        { effectiveDate: "2026-02-31" },
+        "2026-05-10"
+      )
+    ).toThrow("Choose a valid reset date.");
+    expect(() =>
+      buildHabitMotivationResetInsert(
+        "user-1",
+        habit,
+        { effectiveDate: "2026-05-10" },
+        "2026-02-31"
+      )
+    ).toThrow("Habit write today date must be a real YYYY-MM-DD date.");
   });
 
   it("counts quit slips and archived habit history without active mutations", () => {
@@ -660,7 +756,8 @@ describe("habits domain helpers", () => {
         startDate: "2026-05-10",
         selectedDate: "2026-05-10",
       },
-      4
+      4,
+      "2026-05-10"
     );
 
     expect(insert).toMatchObject({
@@ -683,7 +780,7 @@ describe("habits domain helpers", () => {
         timerSeconds: 125,
         manualMinutes: 5,
       },
-      new Date("2026-05-10T12:00:00.000Z")
+      buildHabitWriteDateContext()
     );
 
     expect(insert).toMatchObject({
@@ -694,16 +791,71 @@ describe("habits domain helpers", () => {
       status: "logged",
       completed_at: "2026-05-10T12:00:00.000Z",
     });
+    expect(() =>
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-02-31",
+          valueBoolean: true,
+        },
+        buildHabitWriteDateContext()
+      )
+    ).toThrow("Choose a valid check-in date.");
+  });
+
+  it("uses explicit local today for missing check-in dates and validates its write context", () => {
+    const insert = buildHabitCheckInInsert(
+      "user-1",
+      {
+        habitId: "11111111-1111-4111-8111-111111111111",
+        valueBoolean: true,
+        timezone: "Pacific/Kiritimati",
+      },
+      {
+        now: new Date("2026-05-10T12:30:00.000Z"),
+        todayDate: "2026-05-11",
+      }
+    );
+
+    expect(insert).toMatchObject({
+      check_in_date: "2026-05-11",
+      completed_at: "2026-05-10T12:30:00.000Z",
+    });
+    expect(() =>
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          valueBoolean: true,
+        },
+        { now: new Date("invalid"), todayDate: "2026-05-10" }
+      )
+    ).toThrow("Habit write instant must be a valid Date.");
+    expect(() =>
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          valueBoolean: true,
+        },
+        { now: new Date("2026-05-10T12:00:00.000Z"), todayDate: "2026-02-31" }
+      )
+    ).toThrow("Habit write today date must be a real YYYY-MM-DD date.");
   });
 
   it("allows zero manual minutes and rejects unsupported manual minute values", () => {
     expect(
-      buildHabitCheckInInsert("user-1", {
-        habitId: "11111111-1111-4111-8111-111111111111",
-        checkInDate: "2026-05-10",
-        timerSeconds: 120,
-        manualMinutes: 0,
-      })
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 120,
+          manualMinutes: 0,
+        },
+        buildHabitWriteDateContext()
+      )
     ).toMatchObject({
       value_numeric: 2,
       timer_seconds: 120,
@@ -712,21 +864,29 @@ describe("habits domain helpers", () => {
     });
 
     expect(() =>
-      buildHabitCheckInInsert("user-1", {
-        habitId: "11111111-1111-4111-8111-111111111111",
-        checkInDate: "2026-05-10",
-        timerSeconds: 120,
-        manualMinutes: 1.5,
-      })
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 120,
+          manualMinutes: 1.5,
+        },
+        buildHabitWriteDateContext()
+      )
     ).toThrow("Manual time must be whole minutes between 0 and 1440.");
 
     expect(() =>
-      buildHabitCheckInInsert("user-1", {
-        habitId: "11111111-1111-4111-8111-111111111111",
-        checkInDate: "2026-05-10",
-        timerSeconds: 120,
-        manualMinutes: 1441,
-      })
+      buildHabitCheckInInsert(
+        "user-1",
+        {
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 120,
+          manualMinutes: 1441,
+        },
+        buildHabitWriteDateContext()
+      )
     ).toThrow("Manual time must be whole minutes between 0 and 1440.");
   });
 
@@ -776,7 +936,8 @@ describe("habits domain helpers", () => {
         cadenceDayPolicy: "any",
         scheduleDays: ["monday"],
       },
-      1
+      1,
+      "2026-05-10"
     );
     const monthly = buildHabitDefinitionInsert(
       "user-1",
@@ -786,7 +947,8 @@ describe("habits domain helpers", () => {
         cadenceTargetCount: 5,
         cadenceDayPolicy: "any",
       },
-      2
+      2,
+      "2026-05-10"
     );
 
     expect(weekly).toMatchObject({
@@ -812,7 +974,8 @@ describe("habits domain helpers", () => {
           cadenceTargetCount: 5,
           cadenceDayPolicy: "fixed",
         },
-        1
+        1,
+        "2026-05-10"
       )
     ).toThrow("Monthly fixed dates are not available yet.");
   });
@@ -1171,7 +1334,8 @@ describe("habits domain helpers", () => {
         targetValueNumeric: 2,
         targetUnit: "litres",
       },
-      2
+      2,
+      "2026-05-10"
     );
     const pluralHabit = buildHabitDefinitionView(
       buildHabitRow({

@@ -3,7 +3,7 @@ import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 
-const LAST_UPDATED = "June 9, 2026";
+const LAST_UPDATED = "August 31, 2026";
 
 const pageShellClass = "space-y-6 sm:space-y-7";
 const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
@@ -56,6 +56,13 @@ export default function CookiesPage() {
             </p>
             <ul className={`mt-3 list-disc space-y-2 pl-5 ${bodyTextClass}`}>
               <li>Session cookies used by Supabase authentication.</li>
+              <li>
+                The functional <code>fs_timezone</code> cookie stores only your browser&apos;s IANA
+                timezone (for example, <code>Europe/Oslo</code>) for up to 360 days. It keeps Today,
+                history, and date checks aligned with your local day. It is JavaScript-readable so
+                the app can detect changes without a refresh loop, is validated by the server, and
+                is not used to identify or track you.
+              </li>
               <li>Local browser storage for course/guide progress and UX recovery state.</li>
             </ul>
           </section>
@@ -95,7 +102,10 @@ export default function CookiesPage() {
             <h2 className={sectionHeadingClass}>How to control storage</h2>
             <ul className={`mt-3 list-disc space-y-2 pl-5 ${bodyTextClass}`}>
               <li>Sign out to end authenticated sessions.</li>
-              <li>Clear site data in your browser settings to remove local progress state.</li>
+              <li>
+                Clear site data in your browser settings to remove local progress state and the
+                timezone cookie. The app recreates the timezone cookie on a later signed-in visit.
+              </li>
               <li>
                 Use{" "}
                 <Link href="/contact" className={linkClass}>

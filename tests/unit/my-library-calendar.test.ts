@@ -55,9 +55,11 @@ describe("my library calendar contract", () => {
   it("normalizes comparison dates to today but allows future plan dates", () => {
     expect(normalizeMyLibraryCalendarDateParam("2026-05-04", "2026-05-10")).toBe("2026-05-04");
     expect(normalizeMyLibraryCalendarDateParam("2026-05-11", "2026-05-10")).toBe("2026-05-10");
+    expect(normalizeMyLibraryCalendarDateParam("2026-02-31", "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarDateParam("not-a-date", "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarDateParam(undefined, "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarPlanDateParam("2026-06-22", "2026-05-10")).toBe("2026-06-22");
+    expect(normalizeMyLibraryCalendarPlanDateParam("2026-02-31", "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarPlanDateParam("not-a-date", "2026-05-10")).toBe("2026-05-10");
   });
 

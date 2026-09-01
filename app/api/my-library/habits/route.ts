@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
-import {
-  buildHabitDefinitionInsert,
-  normalizeHabitDate,
-  type HabitCreateRequestBody,
-} from "@/lib/habits/shared";
+import { buildHabitDefinitionInsert, type HabitCreateRequestBody } from "@/lib/habits/shared";
+import { isLocalDayDateKey, validateRenderedLocalDayDate } from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database } from "@/types/database";
 
@@ -34,7 +32,14 @@ export async function GET(request: Request) {
   }
 
   const selectedDate = new URL(request.url).searchParams.get("date");
-  const snapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
+  const localDayContext = await getRequestLocalDayContext({ now: new Date() });
+  if (localDayContext.status !== "resolved") {
+    throw new Error("Read-only local-day context cannot contain an invalid explicit timezone.");
+  }
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate,
+    todayDate: localDayContext.todayDate,
+  });
   return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
 }
 
@@ -50,12 +55,81 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: HabitCreateRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as HabitCreateRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as HabitCreateRequestBody;
+
+  if (body.startDate !== undefined && !isLocalDayDateKey(body.startDate)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+        { status: 400 }
+      )
+    );
+  }
+  if (
+    body.startDate === undefined &&
+    body.selectedDate !== undefined &&
+    !isLocalDayDateKey(body.selectedDate)
+  ) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: new Date(),
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Choose a valid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const renderedLocalDay = validateRenderedLocalDayDate(
+    body.renderedTodayDate,
+    localDayContext.todayDate
+  );
+  if (renderedLocalDay.status === "invalid") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "INVALID_DATE",
+          error: "The rendered local day is invalid. Refresh the page and try again.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+  if (renderedLocalDay.status !== "current") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "STALE_LOCAL_DAY_CONTEXT",
+          error: "Your local day changed. Refresh the page and try again.",
+        },
+        { status: 409 }
+      )
     );
   }
 
@@ -95,7 +169,12 @@ export async function POST(request: Request) {
   try {
     const nextSortOrder =
       activeRows.reduce((max, row) => Math.max(max, row.sort_order ?? 0), 0) + 1;
-    insertPayload = buildHabitDefinitionInsert(user.id, body, nextSortOrder);
+    insertPayload = buildHabitDefinitionInsert(
+      user.id,
+      body,
+      nextSortOrder,
+      localDayContext.todayDate
+    );
   } catch (error) {
     return applySupabaseCookies(
       noStoreJson(
@@ -148,10 +227,9 @@ export async function POST(request: Request) {
     },
   });
 
-  const snapshot = await loadHabitSnapshot(
-    supabase,
-    user.id,
-    normalizeHabitDate(body.selectedDate)
-  );
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate: body.selectedDate,
+    todayDate: localDayContext.todayDate,
+  });
   return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
 }

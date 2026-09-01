@@ -1,8 +1,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
+  refresh: vi.fn(),
 }));
 const analyticsState = vi.hoisted(() => ({
   sendClientAnalyticsEvent: vi.fn(),
@@ -13,8 +15,9 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/analytics/client", () => analyticsState);
 
-import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
+import HabitPerfectDayHubComponent from "@/components/my-library/habits/HabitPerfectDayHub";
 import { APP_SOUND_ASSETS } from "@/lib/audio/client-sound";
+import { getBrowserLocalDayTimezone } from "@/lib/my-library/local-day";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
@@ -29,6 +32,15 @@ import {
   type HabitMotivationResetView,
   type HabitSnapshot,
 } from "@/lib/habits/shared";
+
+type HabitPerfectDayHubProps = ComponentProps<typeof HabitPerfectDayHubComponent>;
+
+function HabitPerfectDayHub({
+  localDayTimezone = getBrowserLocalDayTimezone(),
+  ...props
+}: Omit<HabitPerfectDayHubProps, "localDayTimezone"> & { localDayTimezone?: string }) {
+  return <HabitPerfectDayHubComponent {...props} localDayTimezone={localDayTimezone} />;
+}
 
 function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
   return {
@@ -874,6 +886,75 @@ function openAddHabitForm() {
   expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
 }
 
+type LocalDayHubOptions = {
+  snapshot?: HabitSnapshot;
+  selectedDate?: string;
+  todayDate?: string;
+  timezone?: string;
+  userId?: string;
+  withHabit?: boolean;
+};
+
+function buildLocalDayHub(options: LocalDayHubOptions = {}) {
+  const selectedDate = options.selectedDate ?? options.snapshot?.selectedDate ?? "2026-05-10";
+  return (
+    <HabitPerfectDayHub
+      initialSnapshot={
+        options.snapshot ?? buildSnapshot({ selectedDate, withHabit: options.withHabit })
+      }
+      todayDate={options.todayDate ?? selectedDate}
+      localDayTimezone={options.timezone}
+      userId={options.userId}
+    />
+  );
+}
+
+function openAddHabitDraft(name: string) {
+  openAddHabitForm();
+  const input = screen.getByLabelText("Name");
+  fireEvent.change(input, { target: { value: name } });
+  return input;
+}
+
+function openHabitEditForm() {
+  fireEvent.click(screen.getByRole("button", { name: "Details" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit this habit" }));
+}
+
+async function expectAddHabitDraft(name: string, startDate: string) {
+  await waitFor(() => {
+    const input = screen.getByLabelText("Name");
+    expect(input).toHaveValue(name);
+    expect(document.activeElement).toBe(input);
+    expect(screen.getByLabelText("Start date")).toHaveValue(startDate);
+    expect(screen.getByRole("button", { name: "Create habit" })).toBeVisible();
+  });
+}
+
+function mockBrowserTimezone(timeZone = "Europe/Oslo") {
+  vi.spyOn(Intl.DateTimeFormat.prototype, "resolvedOptions").mockReturnValue({
+    locale: "en-US",
+    calendar: "gregory",
+    numberingSystem: "latn",
+    timeZone,
+  });
+}
+
+function successfulSnapshotResponse(snapshot: HabitSnapshot) {
+  return { ok: true, json: async () => ({ ok: true, snapshot }) } as Response;
+}
+
+function readFetchBody(index = 0) {
+  return JSON.parse(vi.mocked(fetch).mock.calls[index]?.[1]?.body as string) as Record<
+    string,
+    unknown
+  >;
+}
+
+function clearLocalDayTimezoneCookie() {
+  document.cookie = "fs_timezone=; Path=/; Max-Age=0; SameSite=Lax";
+}
+
 type MockAudioElement = {
   src?: string;
   preload: string;
@@ -908,13 +989,16 @@ function installAudioElementMock(options?: { playRejects?: boolean }) {
 describe("HabitPerfectDayHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    clearLocalDayTimezoneCookie();
     navigationState.push.mockClear();
+    navigationState.refresh.mockClear();
     analyticsState.sendClientAnalyticsEvent.mockClear();
     window.localStorage.clear();
   });
 
   afterEach(() => {
     cleanup();
+    clearLocalDayTimezoneCookie();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -1357,6 +1441,151 @@ describe("HabitPerfectDayHub", () => {
     });
   });
 
+  it.each`
+    scenario                                                           | fromDate        | fromTimezone     | toDate          | toTimezone               | draft                      | dateChanges                     | expectedDate
+    ${"preserves an open draft and moves untouched Today eastward"}    | ${"2026-05-09"} | ${"UTC"}         | ${"2026-05-10"} | ${"Europe/Oslo"}         | ${"Morning mobility"}      | ${[]}                           | ${"2026-05-10"}
+    ${"moves untouched Today backward during westward reconciliation"} | ${"2026-05-10"} | ${"Europe/Oslo"} | ${"2026-05-09"} | ${"America/Los_Angeles"} | ${"Evening mobility"}      | ${[]}                           | ${"2026-05-09"}
+    ${"preserves a user-edited date"}                                  | ${"2026-05-09"} | ${"UTC"}         | ${"2026-05-10"} | ${"Europe/Oslo"}         | ${"Edited-date mobility"}  | ${["2026-05-08"]}               | ${"2026-05-08"}
+    ${"preserves a date touched away from and back to old Today"}      | ${"2026-05-09"} | ${"UTC"}         | ${"2026-05-10"} | ${"Europe/Oslo"}         | ${"Touched-date mobility"} | ${["2026-05-08", "2026-05-09"]} | ${"2026-05-09"}
+  `("$scenario while preserving Add habit draft and focus", async (testCase) => {
+    const { rerender } = render(
+      buildLocalDayHub({ selectedDate: testCase.fromDate, timezone: testCase.fromTimezone })
+    );
+    const nameInput = openAddHabitDraft(testCase.draft);
+    const startDateInput = screen.getByLabelText("Start date");
+    testCase.dateChanges.forEach((value: string) =>
+      fireEvent.change(startDateInput, { target: { value } })
+    );
+    nameInput.focus();
+    expect(document.activeElement).toBe(nameInput);
+
+    rerender(buildLocalDayHub({ selectedDate: testCase.toDate, timezone: testCase.toTimezone }));
+
+    await expectAddHabitDraft(testCase.draft, testCase.expectedDate);
+  });
+
+  it("blocks a stale timezone write, syncs the cookie once, and saves after reconciliation", async () => {
+    mockBrowserTimezone();
+    const correctedSnapshot = buildSnapshot({ selectedDate: "2026-05-10" });
+    vi.mocked(fetch).mockResolvedValue(successfulSnapshotResponse(correctedSnapshot));
+    const { rerender } = render(buildLocalDayHub({ selectedDate: "2026-05-09", timezone: "UTC" }));
+
+    const nameInput = openAddHabitDraft("Timezone-safe habit");
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("habits-action-error")).toHaveTextContent(
+        "Your local day is updating"
+      );
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+    expect(document.cookie).toContain("fs_timezone=Europe%2FOslo");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create habit" })).toBeEnabled());
+    expect(fetch).not.toHaveBeenCalled();
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+
+    nameInput.focus();
+    rerender(buildLocalDayHub({ snapshot: correctedSnapshot, timezone: "Europe/Oslo" }));
+
+    await expectAddHabitDraft("Timezone-safe habit", "2026-05-10");
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(readFetchBody()).toMatchObject({
+      selectedDate: "2026-05-10",
+      renderedTodayDate: "2026-05-10",
+      timezone: "Europe/Oslo",
+    });
+  });
+
+  it("refreshes once on a stale server day and preserves the draft until corrected", async () => {
+    const correctedSnapshot = buildSnapshot({ selectedDate: "2026-05-10" });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            code: "STALE_LOCAL_DAY_CONTEXT",
+            error: "Your local day changed. Refresh Habits before saving.",
+          }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json" },
+          }
+        )
+      )
+      .mockResolvedValueOnce(successfulSnapshotResponse(correctedSnapshot));
+    const { rerender } = render(buildLocalDayHub({ selectedDate: "2026-05-09" }));
+
+    openAddHabitDraft("Midnight-safe habit");
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("habits-action-error")).toHaveTextContent("Your local day changed");
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create habit" })).toBeEnabled());
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+    const nameInput = screen.getByLabelText("Name");
+    nameInput.focus();
+
+    rerender(buildLocalDayHub({ snapshot: correctedSnapshot }));
+
+    await expectAddHabitDraft("Midnight-safe habit", "2026-05-10");
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(readFetchBody(1)).toMatchObject({
+      selectedDate: "2026-05-10",
+      renderedTodayDate: "2026-05-10",
+    });
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves an open Habit edit draft and focus during timezone reconciliation", async () => {
+    const { rerender } = render(
+      buildLocalDayHub({ selectedDate: "2026-05-09", timezone: "UTC", withHabit: true })
+    );
+
+    openHabitEditForm();
+    const titleInput = screen.getByDisplayValue("Read");
+    fireEvent.change(titleInput, { target: { value: "Read in Oslo" } });
+    titleInput.focus();
+    expect(document.activeElement).toBe(titleInput);
+
+    rerender(
+      buildLocalDayHub({ selectedDate: "2026-05-10", timezone: "Europe/Oslo", withHabit: true })
+    );
+
+    await waitFor(() => {
+      const reconciledTitleInput = screen.getByDisplayValue("Read in Oslo");
+      expect(document.activeElement).toBe(reconciledTitleInput);
+      expect(
+        screen.getByTestId("habit-edit-form-11111111-1111-4111-8111-111111111111")
+      ).toBeVisible();
+    });
+  });
+
+  it("resets an open Habit form for a normal snapshot update", async () => {
+    const { rerender } = render(buildLocalDayHub({ timezone: "Europe/Oslo" }));
+
+    openAddHabitDraft("Unsaved normal refresh draft");
+
+    rerender(buildLocalDayHub({ timezone: "Europe/Oslo" }));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText("Name")).toBeNull();
+      expect(screen.getByRole("button", { name: "Add habit" })).toBeVisible();
+    });
+  });
+
   it("swipes the blue week bar container to nearby habit weeks", () => {
     render(
       <HabitPerfectDayHub
@@ -1439,6 +1668,12 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      checkInDate: "2026-05-09",
+      selectedDate: "2026-05-09",
+      renderedTodayDate: "2026-05-10",
+    });
+    expect(navigationState.refresh).not.toHaveBeenCalled();
   });
 
   it("uses selected-day count copy on historical habit dates", () => {
@@ -1568,6 +1803,45 @@ describe("HabitPerfectDayHub", () => {
     expect(within(assistant).getByTestId("habits-absence-review-date-2026-05-07")).toBeVisible();
   });
 
+  it("sends one catch-up shown event after stale timezone data is reconciled", async () => {
+    mockBrowserTimezone();
+    const { rerender } = render(
+      buildLocalDayHub({
+        snapshot: buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-09" }),
+        timezone: "UTC",
+        userId: "user-1",
+      })
+    );
+
+    await waitFor(() => {
+      expect(
+        analyticsState.sendClientAnalyticsEvent.mock.calls.filter(
+          ([eventName]) => eventName === "habit_catch_up_assistant_shown"
+        )
+      ).toHaveLength(0);
+    });
+
+    rerender(
+      buildLocalDayHub({
+        snapshot: buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-10" }),
+        timezone: "Europe/Oslo",
+        userId: "user-1",
+      })
+    );
+
+    await waitFor(() => {
+      const catchUpShownCalls = analyticsState.sendClientAnalyticsEvent.mock.calls.filter(
+        ([eventName]) => eventName === "habit_catch_up_assistant_shown"
+      );
+      expect(catchUpShownCalls).toHaveLength(1);
+      expect(catchUpShownCalls[0]?.[1]).toMatchObject({
+        selectedDate: "2026-05-10",
+        catchUpDayCount: 5,
+        catchUpEntryCount: 5,
+      });
+    });
+  });
+
   it("dismisses the prominent absence review without writing habit history", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -1606,6 +1880,7 @@ describe("HabitPerfectDayHub", () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
       dates: ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"],
       selectedDate: "2026-05-10",
+      timezone: getBrowserLocalDayTimezone(),
       action: "finish",
     });
     expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
@@ -1944,9 +2219,11 @@ describe("HabitPerfectDayHub", () => {
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
       habitMode: string;
       isPerfectDayItem: boolean;
+      timezone: string;
     };
     expect(body.habitMode).toBe("build");
     expect(body.isPerfectDayItem).toBe(true);
+    expect(body.timezone).toBe(getBrowserLocalDayTimezone());
     const createdStatus = await screen.findByRole("status");
     expect(createdStatus).toHaveAttribute("aria-live", "polite");
     expect(createdStatus).toHaveTextContent("Habit added");
@@ -2703,6 +2980,9 @@ describe("HabitPerfectDayHub", () => {
         body: expect.stringContaining('"valueBoolean":true'),
       })
     );
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timezone: getBrowserLocalDayTimezone(),
+    });
     const success = screen.getByTestId("habit-action-success-11111111-1111-4111-8111-111111111111");
     expect(success).toHaveAttribute("role", "status");
     expect(success).toHaveAttribute("aria-live", "polite");
@@ -2791,6 +3071,10 @@ describe("HabitPerfectDayHub", () => {
           body: expect.stringContaining('"clear":true'),
         })
       );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timezone: getBrowserLocalDayTimezone(),
+      clear: true,
     });
     expect(await screen.findByText("Check-in reset.")).toBeVisible();
   });
@@ -3232,6 +3516,7 @@ describe("HabitPerfectDayHub", () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
       status: "archived",
       selectedDate: "2026-05-07",
+      timezone: getBrowserLocalDayTimezone(),
     });
     expect(
       await screen.findByText("Habit ended. Check-ins and reset history stayed saved.")
@@ -3273,6 +3558,7 @@ describe("HabitPerfectDayHub", () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
       status: "active",
       selectedDate: "2026-05-07",
+      timezone: getBrowserLocalDayTimezone(),
     });
     expect(
       await screen.findByText("Habit restored. Check-ins and reset history were kept.")
@@ -3331,6 +3617,7 @@ describe("HabitPerfectDayHub", () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
       effectiveDate: "2026-05-10",
       selectedDate: "2026-05-10",
+      timezone: getBrowserLocalDayTimezone(),
     });
     expect(screen.getByText("Habit stats reset. Earlier check-ins stayed saved.")).toBeVisible();
   });
@@ -3688,6 +3975,8 @@ describe("HabitPerfectDayHub", () => {
       cadenceTargetCount: number;
       scheduleDays: string[];
       isPerfectDayItem: boolean;
+      timezone: string;
+      startDate?: string;
     };
     expect(body.title).toBe("Read deeply");
     expect(body.cadencePeriod).toBe("weekly");
@@ -3695,6 +3984,8 @@ describe("HabitPerfectDayHub", () => {
     expect(body.cadenceTargetCount).toBe(3);
     expect(body.scheduleDays).toEqual(["monday", "wednesday", "friday"]);
     expect(body.isPerfectDayItem).toBe(true);
+    expect(body.timezone).toBe(getBrowserLocalDayTimezone());
+    expect(body.startDate).toBeUndefined();
     expect(
       await screen.findByText("Habit updated. Check-ins and history were kept.")
     ).toBeVisible();
@@ -3730,5 +4021,25 @@ describe("HabitPerfectDayHub", () => {
       isPerfectDayItem: boolean;
     };
     expect(body.isPerfectDayItem).toBe(false);
+  });
+
+  it.each`
+    scenario                                                                   | selectedDate    | field          | value                      | omitsStartDate
+    ${"omits an unchanged future stored start date during a travel-safe edit"} | ${"2026-05-03"} | ${"title"}     | ${"Read while travelling"} | ${true}
+    ${"keeps an explicitly changed start date in the edit payload"}            | ${"2026-05-10"} | ${"startDate"} | ${"2026-05-05"}            | ${false}
+  `("$scenario", async ({ selectedDate, field, value, omitsStartDate }) => {
+    const snapshot = buildSnapshot({ withHabit: true, selectedDate });
+    vi.mocked(fetch).mockResolvedValue(successfulSnapshotResponse(snapshot));
+    render(buildLocalDayHub({ snapshot }));
+    openHabitEditForm();
+    const input =
+      field === "title" ? screen.getByDisplayValue("Read") : screen.getByLabelText("Start date");
+    fireEvent.change(input, { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const body = readFetchBody();
+    expect(body).toMatchObject({ [field]: value, timezone: getBrowserLocalDayTimezone() });
+    if (omitsStartDate) expect(body).not.toHaveProperty("startDate");
   });
 });

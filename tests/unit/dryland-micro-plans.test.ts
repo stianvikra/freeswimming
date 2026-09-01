@@ -15,6 +15,7 @@ import {
   type DrylandMicroBlockSnapshot,
 } from "@/lib/dryland/micro-plans";
 import {
+  loadDrylandMicroHabitLinkRecord,
   recordMicroSessionHabitCredit,
   removeMicroSessionHabitCredit,
 } from "@/lib/dryland/micro-habit-linkage";
@@ -527,6 +528,7 @@ describe("dryland micro plans", () => {
       blockId: "unit-1",
       link: buildHabitLink({ status: "paused", pausedAt: "2026-05-10T09:00:00.000Z" }),
       selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
       timezone: "Europe/Oslo",
       completedAt: "2026-05-10T10:00:00.000Z",
     });
@@ -534,6 +536,107 @@ describe("dryland micro plans", () => {
     expect(result).toEqual({
       status: "paused",
       message: "Habit paused - weekly program did not count.",
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for an invalid persisted Micro Session Habit start date", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "link-1",
+        user_id: "user-1",
+        dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        status: "active",
+        starts_on: "not-a-date",
+        paused_at: null,
+        resumed_at: "2026-05-10T08:00:00.000Z",
+        ended_at: null,
+        created_at: "2026-05-10T08:00:00.000Z",
+        updated_at: "2026-05-10T08:00:00.000Z",
+      },
+      error: null,
+    });
+    const limit = vi.fn(() => ({ maybeSingle }));
+    const order = vi.fn(() => ({ limit }));
+    const statusIn = vi.fn(() => ({ order }));
+    const eqPlan = vi.fn(() => ({ in: statusIn }));
+    const eqUser = vi.fn(() => ({ eq: eqPlan }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    const from = vi.fn(() => ({ select }));
+
+    const link = await loadDrylandMicroHabitLinkRecord(
+      { from } as never,
+      "user-1",
+      "22222222-2222-4222-8222-222222222222"
+    );
+
+    expect(link).toMatchObject({
+      status: "unsupported",
+      startsOn: "",
+      canCount: false,
+    });
+    expect(from).toHaveBeenCalledTimes(1);
+
+    const writeFrom = vi.fn();
+    const credit = await recordMicroSessionHabitCredit({ from: writeFrom } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      blockId: "unit-1",
+      link,
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+      timezone: "Europe/Oslo",
+      completedAt: "2026-05-10T10:00:00.000Z",
+    });
+    expect(credit.status).toBe("blocked");
+    expect(writeFrom).not.toHaveBeenCalled();
+
+    const removal = await removeMicroSessionHabitCredit({ from: writeFrom } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      link,
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
+    expect(removal).toEqual({
+      status: "blocked",
+      message: "Micro Session updated, but the linked Habit boundary was invalid.",
+    });
+    expect(writeFrom).not.toHaveBeenCalled();
+
+    await expect(
+      loadDrylandMicroHabitLinkRecord(
+        { from } as never,
+        "user-1",
+        "22222222-2222-4222-8222-222222222222",
+        { required: true }
+      )
+    ).rejects.toThrow("Linked Habit start date is invalid.");
+    expect(consoleError).toHaveBeenCalledWith(
+      "[DrylandMicroHabitLink] Invalid persisted link start date",
+      {
+        linkId: "link-1",
+        planId: "22222222-2222-4222-8222-222222222222",
+      }
+    );
+  });
+
+  it("does not remove credit for an unsupported persisted link", async () => {
+    const from = vi.fn();
+
+    const result = await removeMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      link: buildHabitLink({ status: "unsupported", startsOn: "2026-05-10" }),
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
+
+    expect(result).toEqual({
+      status: "blocked",
+      message: "Micro Session updated, but the linked Habit boundary was invalid.",
     });
     expect(from).not.toHaveBeenCalled();
   });
@@ -587,6 +690,7 @@ describe("dryland micro plans", () => {
       blockId: "unit-1",
       link: buildHabitLink(),
       selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
       timezone: "Europe/Oslo",
       completedAt: "2026-05-10T10:00:00.000Z",
     });
@@ -611,6 +715,27 @@ describe("dryland micro plans", () => {
     );
   });
 
+  it("blocks future linked Habit credit before any database query", async () => {
+    const from = vi.fn();
+
+    const result = await recordMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      blockId: "unit-1",
+      link: buildHabitLink(),
+      selectedDate: "2026-05-11",
+      todayDate: "2026-05-10",
+      timezone: "Europe/Oslo",
+      completedAt: "2026-05-10T22:30:00.000Z",
+    });
+
+    expect(result).toEqual({
+      status: "blocked",
+      message: "Micro Session saved, but future Habit credit was not counted.",
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("removes the auto weekly Habit check-in when the Micro Session program is no longer complete", async () => {
     const deleteLte = vi.fn().mockResolvedValue({ error: null });
     const deleteGte = vi.fn(() => ({ lte: deleteLte }));
@@ -626,6 +751,7 @@ describe("dryland micro plans", () => {
       planId: "22222222-2222-4222-8222-222222222222",
       link: buildHabitLink(),
       selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
     });
 
     expect(result).toEqual({
@@ -641,5 +767,23 @@ describe("dryland micro plans", () => {
     );
     expect(deleteGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
     expect(deleteLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
+  });
+
+  it("blocks future linked Habit credit removal before any database query", async () => {
+    const from = vi.fn();
+
+    const result = await removeMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      link: buildHabitLink(),
+      selectedDate: "2026-05-11",
+      todayDate: "2026-05-10",
+    });
+
+    expect(result).toEqual({
+      status: "blocked",
+      message: "Micro Session updated, but future Habit credit was not changed.",
+    });
+    expect(from).not.toHaveBeenCalled();
   });
 });

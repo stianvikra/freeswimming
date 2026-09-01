@@ -5,9 +5,14 @@ import { HABIT_CHECK_IN_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
   buildTimedTotalMinutes,
   buildHabitCheckInInsert,
-  normalizeHabitDate,
   type HabitCheckInRequestBody,
 } from "@/lib/habits/shared";
+import {
+  clampLocalDayDateToToday,
+  isLocalDayDateKey,
+  validateRenderedLocalDayDate,
+} from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -63,14 +68,20 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: HabitCheckInRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as HabitCheckInRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
     );
   }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as HabitCheckInRequestBody;
 
   if (typeof body.habitId !== "string" || !UUID_PATTERN.test(body.habitId)) {
     return applySupabaseCookies(
@@ -78,12 +89,60 @@ export async function POST(request: Request) {
     );
   }
 
-  const checkInDate = normalizeHabitDate(body.checkInDate);
-  const snapshotDate = normalizeHabitDate(
-    body.selectedDate,
-    new Date(`${checkInDate}T00:00:00.000Z`)
+  if (body.checkInDate !== undefined && !isLocalDayDateKey(body.checkInDate)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid check-in date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: new Date(),
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Choose a valid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const renderedLocalDay = validateRenderedLocalDayDate(
+    body.renderedTodayDate,
+    localDayContext.todayDate
   );
-  const todayDate = normalizeHabitDate(undefined);
+  if (renderedLocalDay.status === "invalid") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "INVALID_DATE",
+          error: "The rendered local day is invalid. Refresh the page and try again.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+  if (renderedLocalDay.status !== "current") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "STALE_LOCAL_DAY_CONTEXT",
+          error: "Your local day changed. Refresh the page and try again.",
+        },
+        { status: 409 }
+      )
+    );
+  }
+
+  const todayDate = localDayContext.todayDate;
+  const checkInDate = isLocalDayDateKey(body.checkInDate) ? body.checkInDate : todayDate;
+  const snapshotDate = clampLocalDayDateToToday(body.selectedDate ?? checkInDate, todayDate);
   if (checkInDate > todayDate) {
     return applySupabaseCookies(
       noStoreJson(
@@ -216,7 +275,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
+    const snapshot = await loadHabitSnapshot(supabase, user.id, {
+      selectedDate: snapshotDate,
+      todayDate,
+    });
     trackAnalyticsEvent({
       eventName: "habit_check_in_reset",
       channel: "server",
@@ -350,7 +412,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
+    const snapshot = await loadHabitSnapshot(supabase, user.id, {
+      selectedDate: snapshotDate,
+      todayDate,
+    });
     trackAnalyticsEvent({
       eventName: "habit_check_in_reset",
       channel: "server",
@@ -399,7 +464,14 @@ export async function POST(request: Request) {
 
   let upsertPayload;
   try {
-    upsertPayload = buildHabitCheckInInsert(user.id, { ...body, checkInDate });
+    upsertPayload = buildHabitCheckInInsert(
+      user.id,
+      { ...body, checkInDate, timezone: localDayContext.timezone },
+      {
+        now: localDayContext.now,
+        todayDate,
+      }
+    );
   } catch (error) {
     return applySupabaseCookies(
       noStoreJson(
@@ -464,7 +536,10 @@ export async function POST(request: Request) {
     }
   }
 
-  const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate: snapshotDate,
+    todayDate,
+  });
   trackAnalyticsEvent({
     eventName:
       upsertPayload.status === "skipped"

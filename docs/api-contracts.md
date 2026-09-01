@@ -1212,7 +1212,7 @@ environment allowlist role from a profile-backed role.
 ```
 
 - `blockStatus`: `queued`, `completed`, or `skipped`
-- `selectedDate` + `timezone`: optional for legacy Micro Session updates, required by the current client when a linked Habit may receive credit.
+- `selectedDate` + `timezone`: optional for legacy Micro Session updates and sent by the current client when a linked Habit may receive or lose credit. `selectedDate` is retained only as the legacy action-capability/presence signal and is validated when supplied; it does not choose the current-action date. The server derives that date from its own instant plus the effective timezone and uses it for Micro week validation and linked Habit credit/removal. A supplied timezone must be a valid IANA zone; invalid explicit values return `400` before a write.
 - Body for plan pause/resume:
 
 ```json
@@ -1299,12 +1299,28 @@ environment allowlist role from a profile-backed role.
 ### Status Codes
 
 - `200`: plan updated, active weekly surface cleared, linked Habit created, or Habit linkage paused/resumed
-- `400`: invalid JSON, plan id, block id, block status, plan status, Habit linkage status, recurring Habit input, or source dryland session id
+- `400`: invalid JSON, plan id, block id, block status, plan status, Habit linkage status, recurring Habit input, selected date, explicit IANA timezone, or source dryland session id
 - `401`: unauthenticated
 - `404`: micro plan, linked Habit, or linked source session not found for this user
 - `503`: micro-plan, linkage, or Habit schema not live in the environment
 
 ## Habits Tracking And Recovery
+
+### Canonical Local-Day Context
+
+Habits reads and protected writes use one request-scoped local-day context across Habits, signed-in Home/My Routines, Calendar summaries, and linked Micro Session Habit credit:
+
+1. a valid explicit IANA `timezone` in a mutation body;
+2. otherwise a valid functional `fs_timezone` request cookie;
+3. otherwise deterministic `UTC` fallback.
+
+The server owns the current instant and derives `todayDate` as a strict `YYYY-MM-DD` key in the effective timezone. Invalid explicit timezone input returns `400` and performs no write. A missing or malformed cookie never authorizes or identifies a user; reads fall back to UTC without `500`, and the relevant signed-in client surface may repair the cookie. The cookie contains only an IANA zone and is not persisted as profile truth. Historical `start_date`, `check_in_date`, review dates, reset dates, and source-backed credit dates are never re-keyed when the device timezone changes.
+
+Every Habits mutation body also carries `renderedTodayDate`, copied from the server-rendered local-day context rather than derived from the browser clock. After validating the explicit timezone, the server derives the current local day again and requires an exact match before any domain/database write or snapshot refresh. A missing or stale value returns `409` with `code = STALE_LOCAL_DAY_CONTEXT`; a supplied malformed date returns `400` with `code = INVALID_DATE`. The client may refresh once after the `409`, but it must not retry the mutation automatically.
+
+`selectedDate` controls the requested history snapshot only. Missing, invalid, or future snapshot dates are clamped to the same effective local `today`; they never prove that a future definition/check-in/review/reset date is valid. Mutation responses reuse the same captured instant and local-day context as their write guard.
+
+All currently supported Habit types inherit this boundary through the shared definition/check-in contracts. A future type, mode, cadence, or status that changes due/done, review, streak, Perfect Day, or Calendar counting requires an explicit database/type/view-model mapping, negative tests, and Help/support update before release; labels may change through shared display mappings without changing stable IDs or historical date keys.
 
 ### Habit Definition Eligibility
 
@@ -1314,6 +1330,8 @@ accept `isPerfectDayItem`.
 - Missing `isPerfectDayItem` defaults to `true` on create and is preserved on update when omitted.
 - `true` means the habit participates in Perfect Day denominator, streak, and consistency calculations when it is scheduled for a date.
 - `false` means the habit is tracking-only for Perfect Day math; normal check-ins, history, source-backed credit, and habit detail editing still work.
+- Create and start-date updates require `startDate <=` server-derived effective local `today`, independently of client-controlled `selectedDate`. Matching future `startDate` and `selectedDate` values return `400` before insert/update.
+- Both definition routes require `renderedTodayDate` to match the server-derived effective local `today` before create/update/archive/restore work starts.
 
 ### Check-In Request
 
@@ -1327,6 +1345,7 @@ accept `isPerfectDayItem`.
   "habitId": "11111111-1111-4111-8111-111111111111",
   "checkInDate": "2026-06-10",
   "selectedDate": "2026-06-14",
+  "renderedTodayDate": "2026-06-14",
   "timezone": "Europe/Oslo",
   "valueBoolean": true,
   "actionSource": "catch_up"
@@ -1335,7 +1354,7 @@ accept `isPerfectDayItem`.
 
 - `checkInDate` is the habit history date being written.
 - `selectedDate` is optional and controls which snapshot the route returns after the write; historical corrections can write a past `checkInDate` while returning the caller's selected snapshot.
-- Future `checkInDate` values are rejected with `400`; client-side disabled future dates are defense-in-depth only.
+- Future `checkInDate` values are rejected against effective local `today` with `400`; client-side disabled future dates are defense-in-depth only.
 - Habits UI may prefill count/numeric entry fields from the habit target value, but no value is persisted until this check-in route is submitted.
 - `actionSource` is optional and still accepts legacy/diagnostic values such as `catch_up`; the current absence review UI does not use it because `Done with this day`, `Close review`, and Today-card `Dismiss` write no habit history. Unknown values are treated as normal Habits writes.
 - `status: "skipped"` stores an intentional `Rest day`; it is not counted as done or missed.
@@ -1350,12 +1369,14 @@ accept `isPerfectDayItem`.
 {
   "dates": ["2026-06-08", "2026-06-09"],
   "selectedDate": "2026-06-14",
+  "renderedTodayDate": "2026-06-14",
+  "timezone": "Europe/Oslo",
   "action": "finish"
 }
 ```
 
 - Auth: signed-in user session required.
-- `dates` must be a non-empty list of ISO dates, maximum 31 values, and every date must be today or earlier.
+- `dates` must be a non-empty list of ISO dates, maximum 31 values, and every date must be effective local `today` or earlier.
 - The route upserts owner-scoped `habit_absence_review_acknowledgements` rows with `review_scope = "weekly_absence_review"` and `status = "reviewed"`.
 - The prominent Habits absence review UI is reserved for past dates with due unresolved habits and no recorded habit action; partial-use days stay in history but do not become the daily review queue.
 - On Today, `Start review` navigates to the first unchecked review date, while `Dismiss` acknowledges all visible review dates and hides the prompt without editing habit history.
@@ -1371,11 +1392,14 @@ accept `isPerfectDayItem`.
 {
   "effectiveDate": "2026-06-14",
   "selectedDate": "2026-06-14",
+  "renderedTodayDate": "2026-06-14",
+  "timezone": "Europe/Oslo",
   "actionSource": "catch_up"
 }
 ```
 
 - Reset stats creates a server-canonical `habit_motivation_resets` boundary for one active habit and never deletes `habit_check_ins`.
+- `effectiveDate` must be effective local `today` or earlier and not precede the habit start date; future values return `400` before insert.
 - Habits absence review does not call this route; `Reset habit stats` remains a per-habit Details action.
 - Source-backed Micro Session Habits still receive Habit credit only from the Micro Session owner-scoped source path; Habits does not expose manual `Mark done` for those linked rows.
 - Current absence-review client analytics use date-first events such as `habit_catch_up_assistant_shown`, `habit_absence_review_day_marked`, and `habit_absence_review_finished`; review acknowledgements never write habit history.

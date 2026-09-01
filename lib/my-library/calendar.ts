@@ -1,3 +1,9 @@
+import {
+  getLocalDayDateKey,
+  isLocalDayDateKey,
+  LOCAL_DAY_UTC_TIMEZONE,
+} from "@/lib/my-library/local-day";
+
 export const MY_LIBRARY_CALENDAR_SOURCE_FILTERS = [
   "all",
   "habits",
@@ -66,7 +72,6 @@ export type MyLibraryCalendarComparisonWindow = {
   canGoNext: boolean;
 };
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_WINDOW_DAYS = 7;
 const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   month: "short",
@@ -80,10 +85,8 @@ const FULL_MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-GB", {
 });
 
 function parseCalendarDate(value: string): Date | null {
-  if (!DATE_PATTERN.test(value)) return null;
-  const parsed = Date.parse(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(parsed)) return null;
-  return new Date(parsed);
+  if (!isLocalDayDateKey(value)) return null;
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 function toDateKey(date: Date): string {
@@ -109,8 +112,8 @@ function maxCalendarDate(left: string, right: string): string {
   return left >= right ? left : right;
 }
 
-export function getTodayCalendarDate(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
+export function getTodayCalendarDate(now = new Date(), timezone = LOCAL_DAY_UTC_TIMEZONE): string {
+  return getLocalDayDateKey(now, timezone);
 }
 
 export function isValidMyLibraryCalendarDateKey(value: unknown): value is string {

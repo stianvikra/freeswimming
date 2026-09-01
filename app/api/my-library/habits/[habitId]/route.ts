@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
-import {
-  buildHabitDefinitionUpdate,
-  normalizeHabitDate,
-  type HabitUpdateRequestBody,
-} from "@/lib/habits/shared";
+import { buildHabitDefinitionUpdate, type HabitUpdateRequestBody } from "@/lib/habits/shared";
+import { isLocalDayDateKey, validateRenderedLocalDayDate } from "@/lib/my-library/local-day";
+import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database } from "@/types/database";
 
@@ -47,18 +45,75 @@ export async function PATCH(request: Request, { params }: Props) {
     );
   }
 
-  let body: HabitUpdateRequestBody;
+  let parsedBody: unknown;
   try {
-    body = (await request.json()) as HabitUpdateRequestBody;
+    parsedBody = await request.json();
   } catch {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
     );
   }
+  if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Invalid JSON body." }, { status: 400 })
+    );
+  }
+  const body = parsedBody as HabitUpdateRequestBody;
+
+  if (body.startDate !== undefined && !isLocalDayDateKey(body.startDate)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_DATE", error: "Choose a valid start date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const localDayContext = await getRequestLocalDayContext({
+    explicitTimezone: body.timezone,
+    now: new Date(),
+  });
+  if (localDayContext.status === "invalid_explicit") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, code: "INVALID_TIMEZONE", error: "Choose a valid timezone." },
+        { status: 400 }
+      )
+    );
+  }
+
+  const renderedLocalDay = validateRenderedLocalDayDate(
+    body.renderedTodayDate,
+    localDayContext.todayDate
+  );
+  if (renderedLocalDay.status === "invalid") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "INVALID_DATE",
+          error: "The rendered local day is invalid. Refresh the page and try again.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+  if (renderedLocalDay.status !== "current") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: "STALE_LOCAL_DAY_CONTEXT",
+          error: "Your local day changed. Refresh the page and try again.",
+        },
+        { status: 409 }
+      )
+    );
+  }
 
   let updatePayload;
   try {
-    updatePayload = buildHabitDefinitionUpdate(body);
+    updatePayload = buildHabitDefinitionUpdate(body, localDayContext.todayDate);
   } catch (error) {
     return applySupabaseCookies(
       noStoreJson(
@@ -175,11 +230,10 @@ export async function PATCH(request: Request, { params }: Props) {
     );
   }
 
-  const snapshot = await loadHabitSnapshot(
-    supabase,
-    user.id,
-    normalizeHabitDate(body.selectedDate)
-  );
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate: body.selectedDate,
+    todayDate: localDayContext.todayDate,
+  });
   trackAnalyticsEvent({
     eventName: "habit_updated",
     channel: "server",

@@ -1,3 +1,4 @@
+import { isLocalDayDateKey } from "@/lib/my-library/local-day";
 import type { Database } from "@/types/database";
 
 export const HABIT_TYPE_VALUES = [
@@ -318,6 +319,8 @@ export type HabitCreateRequestBody = {
   scheduleDays?: unknown;
   isPerfectDayItem?: unknown;
   selectedDate?: unknown;
+  renderedTodayDate?: unknown;
+  timezone?: unknown;
 };
 
 export type HabitUpdateRequestBody = Partial<HabitCreateRequestBody> & {
@@ -328,6 +331,7 @@ export type HabitCheckInRequestBody = {
   habitId?: unknown;
   checkInDate?: unknown;
   selectedDate?: unknown;
+  renderedTodayDate?: unknown;
   timezone?: unknown;
   valueNumeric?: unknown;
   valueBoolean?: unknown;
@@ -344,7 +348,14 @@ export type HabitCheckInRequestBody = {
 export type HabitMotivationResetRequestBody = {
   effectiveDate?: unknown;
   selectedDate?: unknown;
+  renderedTodayDate?: unknown;
   actionSource?: unknown;
+  timezone?: unknown;
+};
+
+export type HabitWriteDateContext = {
+  now: Date;
+  todayDate: string;
 };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -365,6 +376,18 @@ function normalizeText(value: unknown, maxLength: number): string | null {
 function normalizeOptionalText(value: unknown, maxLength: number): string | null {
   const normalized = normalizeText(value, maxLength);
   return normalized;
+}
+
+function requireHabitWriteTodayDate(value: unknown): asserts value is string {
+  if (!isLocalDayDateKey(value)) {
+    throw new Error("Habit write today date must be a real YYYY-MM-DD date.");
+  }
+}
+
+function requireHabitWriteInstant(value: unknown): asserts value is Date {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    throw new Error("Habit write instant must be a valid Date.");
+  }
 }
 
 export function normalizeHabitDate(value: unknown, fallback = new Date()): string {
@@ -526,6 +549,9 @@ function getSelectedDateFallback(value: unknown): Date {
 }
 
 function normalizeHabitStartDate(value: unknown, selectedDate: string): string {
+  if (value !== undefined && !isLocalDayDateKey(value)) {
+    throw new Error("Choose a valid start date.");
+  }
   return normalizeHabitDate(value, buildUtcDate(selectedDate));
 }
 
@@ -755,21 +781,30 @@ function getHabitShape(
 export function buildHabitDefinitionInsert(
   userId: string,
   body: HabitCreateRequestBody,
-  sortOrder: number
+  sortOrder: number,
+  todayDate: string
 ): HabitDefinitionInsert {
+  requireHabitWriteTodayDate(todayDate);
   const title = normalizeText(body.title, 80);
   if (!title || title.length < 2) {
     throw new Error("Give the habit a short name.");
   }
 
-  const selectedDate = normalizeHabitDate(body.selectedDate);
+  if (
+    body.startDate === undefined &&
+    body.selectedDate !== undefined &&
+    !isLocalDayDateKey(body.selectedDate)
+  ) {
+    throw new Error("Choose a valid start date.");
+  }
+  const selectedDate = isLocalDayDateKey(body.selectedDate) ? body.selectedDate : todayDate;
   const requestedHabitType = getHabitType(body.habitType);
   const habitMode = getHabitMode(body.habitMode, {
     habitType: requestedHabitType,
     timerEnabled: body.timerEnabled,
   });
   const startDate = normalizeHabitStartDate(body.startDate, selectedDate);
-  if (isAfterHabitDate(startDate, selectedDate)) {
+  if (isAfterHabitDate(startDate, todayDate)) {
     throw new Error("Choose today or an earlier start date.");
   }
 
@@ -816,7 +851,11 @@ export function buildHabitDefinitionInsert(
   };
 }
 
-export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitDefinitionUpdate {
+export function buildHabitDefinitionUpdate(
+  body: HabitUpdateRequestBody,
+  todayDate: string
+): HabitDefinitionUpdate {
+  requireHabitWriteTodayDate(todayDate);
   const update: HabitDefinitionUpdate = {};
 
   if ("title" in body) {
@@ -851,9 +890,9 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
   }
 
   if ("startDate" in body) {
-    const selectedDate = normalizeHabitDate(body.selectedDate);
+    const selectedDate = normalizeHabitDate(body.selectedDate, buildUtcDate(todayDate));
     const startDate = normalizeHabitStartDate(body.startDate, selectedDate);
-    if (isAfterHabitDate(startDate, selectedDate)) {
+    if (isAfterHabitDate(startDate, todayDate)) {
       throw new Error("Choose today or an earlier start date.");
     }
     update.start_date = startDate;
@@ -912,10 +951,17 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
 export function buildHabitCheckInInsert(
   userId: string,
   body: HabitCheckInRequestBody,
-  now = new Date()
+  dateContext: HabitWriteDateContext
 ): HabitCheckInInsert {
+  const now = dateContext?.now;
+  const todayDate = dateContext?.todayDate;
+  requireHabitWriteInstant(now);
+  requireHabitWriteTodayDate(todayDate);
   const habitId = normalizeText(body.habitId, 80);
   if (!habitId) throw new Error("Choose a habit.");
+  if (body.checkInDate !== undefined && !isLocalDayDateKey(body.checkInDate)) {
+    throw new Error("Choose a valid check-in date.");
+  }
 
   const hasTimerSeconds = "timerSeconds" in body;
   const hasManualMinutes = "manualMinutes" in body;
@@ -952,7 +998,7 @@ export function buildHabitCheckInInsert(
   return {
     user_id: userId,
     habit_id: habitId,
-    check_in_date: normalizeHabitDate(body.checkInDate, now),
+    check_in_date: isLocalDayDateKey(body.checkInDate) ? body.checkInDate : todayDate,
     timezone: normalizeHabitTimezone(body.timezone),
     value_numeric: valueNumeric,
     value_boolean: valueBoolean,
@@ -973,16 +1019,19 @@ export function buildHabitMotivationResetInsert(
   userId: string,
   habit: Pick<HabitDefinitionView, "id" | "startDate" | "status">,
   body: HabitMotivationResetRequestBody,
-  todayDate = normalizeHabitDate(undefined)
+  todayDate: string
 ): HabitMotivationResetInsert {
+  requireHabitWriteTodayDate(todayDate);
   if (habit.status !== "active") {
     throw new Error("Reset stats is only available for active habits.");
   }
 
-  const effectiveDate = normalizeHabitDate(
-    body.effectiveDate ?? body.selectedDate,
-    buildUtcDate(todayDate)
-  );
+  const effectiveDateInput =
+    body.effectiveDate !== undefined ? body.effectiveDate : body.selectedDate;
+  if (effectiveDateInput !== undefined && !isLocalDayDateKey(effectiveDateInput)) {
+    throw new Error("Choose a valid reset date.");
+  }
+  const effectiveDate = normalizeHabitDate(effectiveDateInput, buildUtcDate(todayDate));
   if (effectiveDate > todayDate) {
     throw new Error("Choose today or an earlier reset date.");
   }
