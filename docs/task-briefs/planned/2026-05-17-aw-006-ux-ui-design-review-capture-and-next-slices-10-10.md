@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-06-09`
+- `updated`: `2026-09-01`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
@@ -801,3 +801,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-06-09 | in-progress | owner said execute queue refresh from clean synced main@6395b027 after PR #1037 and repo-managed closeout PR #1038; branch aw-006-post-1038-queue-refresh updates canonical AW-006 queue/status docs only, with no runtime/UI scope and no active AW-006 implementation slice selected | next: run changed-brief lint, route/label/support sweep, docs-only verify:pre-pr, then commit/push/open PR`
 - `2026-08-31 | planned | owner authorized creation of planned Habits Child X at docs/task-briefs/planned/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md for H-070/H-079 only; it defines a validated local-day boundary without starting runtime/UI implementation, and no AW-006 implementation child is active | next: wait for explicit execute/build/implement/kjør before moving Child X to in-progress`
 - `2026-08-31 | in-progress | owner said "kjør Child X"; active brief is docs/task-briefs/in-progress/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md on codex/aw-006-habits-canonical-local-day-boundary for H-070/H-079 only | next: complete scoped implementation, focused validation, and screenshot approval stop before PR gates`
+- `2026-09-01 | closeout | PR #1248 shipped Child X as squash commit 8cec2b77; H-070/H-079 are resolved at docs/task-briefs/done/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md, no AW-006 implementation child is active, and no next Habits slice is selected or implied | next: complete this repo-managed docs-only closeout, rerun post-merge preflight, then perform the mandatory chat handoff before any fresh audit and owner selection`

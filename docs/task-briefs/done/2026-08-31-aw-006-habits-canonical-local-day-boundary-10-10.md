@@ -3,27 +3,27 @@
 ## Metadata
 
 - `id`: `2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-08-31`
-- `updated`: `2026-08-31`
+- `updated`: `2026-09-01`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `parent_child`: `Child X`
 - `target_findings`: `H-070`, `H-079`
-- `execution_mode`: `active; owner said "kjør Child X" on 2026-08-31`
+- `execution_mode`: `completed; PR #1248 squash-merged as 8cec2b77 after owner approval and green release gates`
 - `intended_branch`: `codex/aw-006-habits-canonical-local-day-boundary`
 - `strict_10_10_mode`: `yes; screenshot approval stop applies if product-rendering files or visible date state change`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-08-31`
-- `base`: current runtime/docs audited at clean synced `main@e8e366ce`; the parent planning refresh is an uncommitted docs-only change in the same working tree.
-- `audit_status`: `ready`
-- `decision`: Execute this as the single active Child X for H-070/H-079 on `codex/aw-006-habits-canonical-local-day-boundary`; no second Habits child may become active.
-- `reason`: The current app derives several Habits and Calendar `today` values from UTC while the browser already sends an IANA timezone for some writes. Create/update also checks `startDate` only against client-controlled `selectedDate`, so matching future values can bypass the intended guard. Local Next.js 16 documentation confirms that these already dynamic server surfaces can read a validated request cookie asynchronously, while a small client boundary can reconcile the browser timezone without a database setting.
+- `last_audited`: `2026-09-01`
+- `base`: completed runtime merged at clean synced `main@8cec2b77`; original implementation started from `main@e8e366ce`.
+- `audit_status`: `completed`
+- `decision`: Completed as the single Child X for H-070/H-079 in PR `#1248`; no second Habits child was activated.
+- `reason`: The original audit found UTC-derived `today` values across Habits and Calendar plus a create/update guard that trusted client-controlled `selectedDate`. PR `#1248` closed both problems with a validated request-time timezone contract and server-owned local-day write boundary, without database persistence or a broad app-shell rewrite.
 - `transport_decision`: Browser IANA timezone is reconciled into a functional `fs_timezone` cookie. Server reads validate the cookie; explicit valid mutation timezone takes precedence; missing context falls back to UTC; invalid explicit mutation timezone returns typed `400`.
 - `must_refresh_before_execution_if`: Refresh if Next.js request-cookie/cache behavior, `components/SiteChrome.tsx`, `/my-library/habits`, `/my-library/calendar`, Home/My Routines loaders, `lib/habits/shared.ts`, `lib/habits/server.ts`, Habits or Micro Sessions linked-Habit routes, Calendar date helpers, scorecard categories, Help/support contracts, screenshot rules, or validation lanes change after `main@e8e366ce`.
 - `scope_stop`: If execution proves that a validated request cookie cannot provide the required boundary without profile/database persistence, a broad app-shell rewrite, or a new external dependency, stop and revise this brief before continuing.
@@ -118,6 +118,7 @@ Critical target categories for a `10/10` claim:
 | Admin editor ergonomics                       | `N/A`        | N/A because no admin editor, publish flow, operator queue, or admin CRUD changes.                                                                                                | explicit admin-editor scope rationale                    | `N/A`                   |
 | Accessibility (a11y)                          | `supporting` | Supporting only: reconciliation must not steal focus, create noisy announcements, or alter existing accessible names/semantics.                                                  | component/browser assertions and screenshot review       | `4/5`                   |
 | Performance (CWV + payloads)                  | `target`     | Zero extra refresh when cookie matches, at most one refresh per detected zone change, no new DB query/dependency/history expansion, and existing route/performance budgets pass. | synchronizer tests, query/dependency diff, perf gate     | `5/5`                   |
+| Performance                                   | `target`     | Alias row for brief-lint closeout normalization of `Performance (CWV + payloads)`; the same threshold and evidence apply.                                                        | synchronizer tests, query/dependency diff, perf gate     | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Server clock plus validated request timezone derives today; cookie stores timezone only; database dates remain canonical; no profile persistence or historical rewrite.          | data contract, storage diff, tests                       | `5/5`                   |
 | Caching and invalidation strategy             | `target`     | Existing dynamic/no-store behavior is preserved; timezone change refreshes only once; mutation snapshots use the same date context; no cross-zone cache reuse.                   | route/cache audit and tests                              | `5/5`                   |
 | Reliability and failure handling              | `target`     | Missing timezone uses UTC, invalid cookie fails soft, invalid explicit timezone returns `400`, sync cannot loop, and covered paths produce zero unexpected `500`.                | unit/route/browser negative paths                        | `5/5`                   |
@@ -284,7 +285,7 @@ Validation checkpoint:
 
 - Focused Vitest passed `16/270`; compacted combined regression passed `5` files / `204` tests, and independent P0-P2 review closed UTC+14 Sunday Micro and touched-away-and-back Add-date edges. Typecheck, lint (`0` errors/`8` unrelated existing warnings), brief/quality lint, and diff check passed.
 - Owner-approved, command-scoped, read-only production Supabase smoke passed the focused auth-backed Playwright reconciliation `1/1`: UTC wrote `fs_timezone=Europe/Oslo` exactly once and matching-cookie reload wrote it zero times; no Habit mutation ran. Direct cookie-write instrumentation replaced a brittle assertion that counted two normal Next reload RSC requests.
-- Full-public `verify:pre-pr` passed on `6f34c38c` at `artifacts/test-runs/20260901-020616`: `264` unit files / `1836` tests, build, performance budgets, and Playwright `111` passed / `573` configuration/auth skips; required CI and bypass-token pre-merge also passed. The test-only assertion refinement requires the same current-SHA gates to rerun before final readiness.
+- Final current-SHA `verify:pre-pr` passed on `ea213b81` at `artifacts/test-runs/20260901-025103`: `264` unit files / `1836` tests, build, performance budgets, and Playwright `111` passed / `573` expected configuration/auth skips. PR `#1248` then passed all required CI, and `verify:pre-merge` passed on the same head with private site-lock `6/6` before the owner-approved squash merge.
 
 ## Screenshot Handoff Requirements
 
@@ -305,20 +306,21 @@ Captured evidence approved by the owner:
 
 ## Automation, Git, And Continuity Contract
 
-- Child X started from `main@e8e366ce` on `codex/aw-006-habits-canonical-local-day-boundary`. Automation owns implementation, tests, screenshot stop, gates, git/PR/CI, and readiness; merge still requires explicit approval. Recovery is status, last 10 commits, then this checkpoint log. After merge, complete repo-managed closeout, sync/prune, and assess chat handoff.
+- Child X started from `main@e8e366ce` on `codex/aw-006-habits-canonical-local-day-boundary` and shipped through PR `#1248` as squash commit `8cec2b77`. The owner approved both the screenshot handoff and merge after green local and CI gates. Recovery is status, last 10 commits, then this checkpoint log; this docs-only closeout returns control to the parent.
 
 ## Return Contract
 
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `resolved_findings`: `none at planned creation; target closeout is H-070/H-079 only`
+- `resolved_findings`: `H-070/H-079 resolved in PR #1248, squash commit 8cec2b77`
 - `deferred_findings`: `H-063, H-071, H-072, H-073, H-074, H-075, H-080, and every other parent finding not explicitly owned above`
-- `return_checkpoint`: update exact local-day source/fallback, affected consumers, tests, screenshot evidence, scorecard scores, commit/PR, and any accepted gap.
-- `next_return_target`: parent intake after merge/closeout; no second Habits child may become active from this brief.
+- `return_checkpoint`: completed with the exact local-day source/fallback, affected consumers, tests, screenshot evidence, scorecard scores, commit/PR, and no accepted Child X gap.
+- `next_return_target`: parent intake updated; `selected_child` reset to `none`; no next Habits child is selected.
 
 ## Checkpoint Log
 
+- `2026-09-01 | done | PR #1248 shipped Child X as squash commit 8cec2b77 after owner-approved after/reference screenshots, current-SHA verify:pre-pr, green required CI, verify:pre-merge, and explicit owner merge approval; H-070/H-079 are resolved, selected_child returns to none, and every other parent finding remains deferred | next: complete the repo-managed docs-only closeout, rerun post-merge preflight, then perform the mandatory chat handoff before selecting another Habits child`
 - `2026-09-01 | authenticated-browser-green | owner approved one read-only production smoke after local fake-config and preview magic-link paths could not authenticate; the corrected command loaded local env without printing secrets, focused Playwright passed 1/1 with one timezone-cookie write then zero after reload, no Habit mutation ran, and direct cookie-write evidence replaced brittle Next RSC traffic counting; diff remains below 4000 and no production rendering/style/asset changed after approved screenshots | next: amend, rerun current-SHA verify:pre-pr, push/CI, rerun pre-merge, finalize PR evidence, and report readiness without merging`
 - `2026-09-01 | pre-pr-green | commit e4aeb786 at base e8e366ce passed full-public verify:pre-pr in artifacts/test-runs/20260901-013456: 265 unit files / 1807 tests, build, performance budgets, and Playwright 111 passed/573 configuration/auth skips; independent review also closed UTC+14 Sunday Micro and touched-away-and-back Add-date edges before that gate | next: superseded by the PR-size rework checkpoint above`
 - `2026-09-01 | screenshot-approved | owner replied "Godkjent" to the required after/reference handoff with no visual correction; artifact folder and production-rendering stability remain unchanged | next: fetch origin/main, run verify:pre-pr, commit/push/open PR, monitor required CI, then run verify:pre-merge and report merge readiness without merging`
@@ -327,3 +329,34 @@ Captured evidence approved by the owner:
 - `2026-08-31 | implementation-review | branch remains uncommitted at base e8e366ce; shared local-day/request-cookie context, page/snapshot consumers, protected Habits and linked Micro writes, analytics reconciliation, travel-safe unchanged start-date edits, strict real-date handling, docs/support/cookie copy, and focused tests are implemented; in-app Help/Guide is N/A because no relevant Habits guide exists; focused Playwright was added but the local auth-backed run skipped on the documented Supabase egress guard and is not claimed green | next: finish final integration audit, run the root-owned focused suite and quality/brief linters, capture the required deterministic local visual harness, then stop for owner screenshot approval before verify:pre-pr`
 - `2026-08-31 | in-progress | owner said "kjør Child X"; created branch codex/aw-006-habits-canonical-local-day-boundary from main@e8e366ce, moved this brief to in-progress, and selected it as the only active Habits child; implementation remains scoped to H-070/H-079 with the screenshot approval stop before verify:pre-pr | next: implement shared local-day context, protected write guards, page/cookie reconciliation, focused tests, docs, and screenshot handoff`
 - `2026-08-31 | planned-validated | owner authorized plan-only Child X creation on main@e8e366ce; current code, tests, parent, scorecard, forward-compatibility checklist, readiness radar, and local Next.js 16 cookie/request docs were audited; this brief owns H-070/H-079 only and selects validated fs_timezone request context with explicit-mutation precedence and UTC fallback; git diff --check, lint:briefs:all, and verify:docs-only passed for the four-file planning diff; selected_child remains none, and no branch, runtime code, screenshot, commit, push, or PR started | next: wait for explicit execute/build/implement/kjør before moving to in-progress`
+
+## Completion Record
+
+- `completed`: `2026-09-01`
+- `merged_pr`: `#1248`
+- `squash_commit`: `8cec2b77`
+- `result`: Closed AW-006 Child X by making the server clock plus a validated request-local IANA timezone the shared local-day boundary across Habits, signed-in Home, My Routines, Calendar, Review Actual, protected Habit writes, and linked Micro Session Habit credit/removal. Definition start dates and other covered writes now reject future local dates independently of client-selected view dates, without rewriting history or adding profile/database persistence.
+- `validation`: Focused Vitest (`16` files / `270` tests plus final combined regression `5` files / `204` tests); typecheck; lint with `0` errors and `8` unrelated existing warnings; brief/quality lint; `git diff --check`; owner-approved read-only production-auth Playwright smoke `1/1`; current-SHA `npm run verify:pre-pr` on `ea213b81` at `artifacts/test-runs/20260901-025103` with `264` unit files / `1836` tests, build, performance budgets, and Playwright `111` passed / `573` expected configuration/auth skips; required GitHub CI for PR `#1248`; and `npm run verify:pre-merge`, including private site-lock `6/6`.
+- `screenshot_artifacts`: `output/habits-local-day-boundary-2026-08-31-221335`; captured `2026-08-31 22:20`, approved by owner `2026-09-01`; comparison type `after/reference`; no production rendering, style, asset, or export file changed after capture.
+- `resolved_findings`: `H-070`, `H-079`.
+- `remaining_gaps`: None in Child X. `H-063`, `H-071`, `H-072`, `H-073`, `H-074`, `H-075`, and `H-080` remain explicitly outside scope.
+- `10/10 claim`: yes - all 15 critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | H-070/H-079 closed across the named read/write consumers in PR `#1248` without widening the Habits backlog.                                                 | None.        |
+| UX flow clarity                               | `5/5`          | Shared local Today/week, zero refresh when the cookie matches, at most one reconciliation refresh, preserved form/focus, and approved screenshots.          | None.        |
+| Business logic correctness and data integrity | `5/5`          | Deterministic local date keys, server-owned write boundary, matching-future bypass and covered future writes rejected before mutation; no history re-key.   | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No new DB query, dependency, history expansion, or refresh loop; build and performance budgets passed.                                                      | None.        |
+| Performance                                   | `5/5`          | Alias row for the critical-category parser; the same evidence as `Performance (CWV + payloads)` applies.                                                    | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server instant plus validated request timezone derives Today; the cookie stores timezone only; database rows and history remain canonical.                  | None.        |
+| Caching and invalidation strategy             | `5/5`          | Existing dynamic/no-store isolation was preserved; timezone changes refresh once; snapshots and mutations share the same context.                           | None.        |
+| Reliability and failure handling              | `5/5`          | Missing/invalid cookie falls back to UTC, invalid explicit zone returns `400`, stale rendered day returns `409`, and negative paths avoid unexpected `500`. | None.        |
+| Security and authz                            | `5/5`          | Protected writes remain authenticated, owner-scoped, validated, and fail closed before database mutation.                                                   | None.        |
+| Privacy and compliance                        | `5/5`          | `fs_timezone` contains only an IANA zone with bounded functional-cookie attributes and disclosure; no raw timezone analytics or habit-content logging.      | None.        |
+| Content governance                            | `5/5`          | API contract, user-flow map, support runbook, cookie disclosure, parent, queue, inventory, and child lifecycle agree with shipped behavior.                 | None.        |
+| Incident response and support operations      | `5/5`          | Support guidance explains timezone source/fallback, rejected dates, safe diagnosis, and no-history-rewrite behavior.                                        | None.        |
+| i18n operational readiness                    | `5/5`          | Runtime-supported IANA zones are data-driven; date keys remain locale-independent; labels remain view-model-owned.                                          | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Next.js 16 request APIs, existing Habits/Calendar contracts, shared helpers, and the current test stack; no dependency or migration.                 | None.        |
+| Testing and QA automation                     | `5/5`          | Deterministic zone/DST and read/write negatives, production-auth smoke, full pre-PR lane, required CI, and pre-merge gate passed.                           | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration, secret, or external service; rollback is a normal revert that safely ignores/removes the cookie and preserves history.                        | None.        |
