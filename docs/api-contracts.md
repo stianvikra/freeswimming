@@ -280,6 +280,8 @@
 ```
 
 - `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
+- `habitDefinitions` and `habitCheckIns` are owner-private data-rights evidence. The export preserves stable Habit IDs, titles, notes, child history, and raw `habitType`, `habitMode`, and definition `status` values 1:1, including values that the current app does not yet support. The fail-closed runtime classifier must not normalize, omit, or relabel these rows, and this compatibility behavior does not change the export schema version or shape.
+- Raw unsupported Habit values are an authenticated-export exception. Normal Habits, Home/My Routines, Calendar, Micro Session credit, analytics, and routine logs use only supported semantics or bounded review/error keys; they never copy raw unknown values from this export contract.
 - `trainingActivityEvents` contains private canonical activity-history foundation rows and compatibility aliases only. It never includes raw provider files, OAuth tokens, raw provider payloads, cookies, IP addresses, User-Agent strings, or full provider responses.
 - Generic training activity rows are not Calendar completion truth, Perfect Day truth, analytics KPI truth, or automated replanning truth unless a later slice explicitly maps the row and its source/sport/status. Calendar Trends Swimming counts only trusted manual swimming activity-history rows through this explicit mapping; unknown, unmapped, unsupported, duplicate, orphaned, schema-drift, provider-evidence-only, non-swim, and needs-review rows stay out of swim Trends and completion totals.
 - `providerConnections`, `providerActivityEvidence`, and `providerImportRuns` contain private provider evidence summaries only. They never include OAuth tokens, provider secrets, raw provider payloads, raw FIT/GPX/TCX files, cookies, IP addresses, User-Agent strings, or full provider response bodies.
@@ -1236,6 +1238,8 @@ environment allowlist role from a profile-backed role.
 - The server creates one active weekly build/binary Habit with `isPerfectDayItem: false`, then creates one owner-scoped Micro Session/Habit link.
 - The linked Habit receives one weekly credit automatically when every non-archived unit in the current Micro Session is completed. `skipped` units do not count as completed.
 - If the user undoes a completed unit while the active weekly program is no longer complete, the server removes only the auto-generated Micro Session Habit credit for that plan/week. Manual Habit check-ins are not removed.
+- If the linked Habit has an unsupported definition type, mode, or status, the primary Micro Session completion still saves and returns `200`. Its nested `habitCredit` result is `status = "blocked"`, `code = "UNSUPPORTED_HABIT_DEFINITION"`; no new Habit check-in or Habit-success event is created.
+- Micro Session undo stays independent too. It may retract only an existing owner-, Habit-, plan-, `source_kind = "micro_session"`-, and calendar-week-scoped credit, even while the linked definition needs review, so stale derived success cannot reappear after a later mapping. It may not update or delete any manual or differently sourced Habit history. The nested result is `removed` only when a matching row was actually deleted; no match is reported as `blocked` without claiming a removal.
 - Body for pausing/resuming Habit counting without pausing the Micro Session:
 
 ```json
@@ -1247,6 +1251,7 @@ environment allowlist role from a profile-backed role.
 ```
 
 - `habitLinkStatus`: `active` or `paused`
+- A link whose owner-scoped Habit definition is unsupported is read-only. Direct pause/resume or stale-week renewal returns `409 / UNSUPPORTED_HABIT_DEFINITION` before a link, plan, or analytics write.
 - Resuming a paused linked Habit after the Micro Session week is stale may replace the old open plan with a current-week Micro Session from the same source sessions. Old completed/skipped blocks stay in the completed plan history; paused weeks are not backfilled.
 
 - Body for clearing the active weekly surface without deleting saved Dryland Sessions:
@@ -1286,6 +1291,7 @@ environment allowlist role from a profile-backed role.
       "status": "active",
       "habitId": "55555555-5555-4555-8555-555555555555",
       "habitTitle": "Evening mobility",
+      "habitDefinitionSupport": "supported",
       "canCount": true
     }
   },
@@ -1296,12 +1302,31 @@ environment allowlist role from a profile-backed role.
 }
 ```
 
+Unsupported linked Habit credit is a nested outcome, not a route-wide failure:
+
+```json
+{
+  "ok": true,
+  "plan": {
+    "status": "completed"
+  },
+  "habitCredit": {
+    "status": "blocked",
+    "code": "UNSUPPORTED_HABIT_DEFINITION",
+    "message": "Micro Session saved, but the linked Habit needs review and did not count."
+  }
+}
+```
+
+`plan.habitLink.habitDefinitionSupport` is `supported`, `unsupported`, or `unavailable`. Only `unsupported` means the owner-scoped Habit row was found but its type/mode/status needs an explicit mapping; `unavailable` preserves the existing missing/schema/query fallback without claiming a future-value conflict. Neither branch exposes a raw unknown value.
+
 ### Status Codes
 
 - `200`: plan updated, active weekly surface cleared, linked Habit created, or Habit linkage paused/resumed
 - `400`: invalid JSON, plan id, block id, block status, plan status, Habit linkage status, recurring Habit input, selected date, explicit IANA timezone, or source dryland session id
 - `401`: unauthenticated
 - `404`: micro plan, linked Habit, or linked source session not found for this user
+- `409`: the owner-scoped linked Habit definition needs review before pause/resume or renewal
 - `503`: micro-plan, linkage, or Habit schema not live in the environment
 
 ## Habits Tracking And Recovery
@@ -1321,6 +1346,17 @@ Every Habits mutation body also carries `renderedTodayDate`, copied from the ser
 `selectedDate` controls the requested history snapshot only. Missing, invalid, or future snapshot dates are clamped to the same effective local `today`; they never prove that a future definition/check-in/review/reset date is valid. Mutation responses reuse the same captured instant and local-day context as their write guard.
 
 All currently supported Habit types inherit this boundary through the shared definition/check-in contracts. A future type, mode, cadence, or status that changes due/done, review, streak, Perfect Day, or Calendar counting requires an explicit database/type/view-model mapping, negative tests, and Help/support update before release; labels may change through shared display mappings without changing stable IDs or historical date keys.
+
+### Supported Habit Definition Boundary
+
+Persisted definitions enter normal Habit semantics only when `habit_type`, `habit_mode`, and definition `status` all match the canonical supported value sets. A row with an unknown, `null`, malformed, deprecated, or unmapped value in any of those three fields remains server-canonical but is exposed to private product surfaces only as a generic read-only `Needs review` descriptor. Its title and stable ID remain visible to the owner, history remains preserved, and raw unknown values never enter normal UI, analytics, or routine logs.
+
+Unsupported rows contribute `0` to active/archived collections, due/done, Perfect Day, streak/consistency, Motivation, Home/My Routines summaries, Calendar Plan/Trends, linked Micro Session credit, and `habits_viewed.activeHabitCount`. Direct check-in, reset, archive, restore, or update actions are unavailable.
+
+- Explicit unknown or `null` `habitType`/`habitMode` create or update input returns `400` with `code = "UNSUPPORTED_HABIT_DEFINITION_VALUE"` before any write or success event. Omitted create values retain the existing compatibility defaults; omitted update values inherit the already validated supported row.
+- `PATCH`, check-in, or stats reset against an owner-scoped unsupported stored definition returns `409` with `code = "UNSUPPORTED_HABIT_DEFINITION"` before insert, update, delete, upsert, snapshot-success analytics, or another Habit mutation.
+- Missing or cross-owner IDs remain non-disclosing `404`; the unsupported conflict is returned only after the owner-scoped definition has been found.
+- A later supported mapping may make the same stable row usable again. Reads never rewrite, normalize, replace, or repurpose the stored definition or its history.
 
 ### Habit Definition Eligibility
 

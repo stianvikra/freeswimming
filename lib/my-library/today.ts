@@ -14,14 +14,14 @@ export const TODAY_SURFACE_TABS = [
 export type TodaySurfaceTabId = (typeof TODAY_SURFACE_TABS)[number]["id"];
 
 export type TodaySurfaceState = {
-  state: "ready" | "complete" | "setup" | "paused" | "syncing" | "error";
+  state: "ready" | "complete" | "setup" | "paused" | "syncing" | "error" | "review";
   title: string;
   detail: string;
   progressLabel: string;
-  progressPercent: number;
+  progressPercent: number | null;
   actionLabel: string;
   href: string;
-  editHref: string;
+  editHref: string | null;
 };
 
 export type TodayRoutineQuickAction = {
@@ -200,6 +200,35 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   const perfectDayTotal = habitSnapshot.daySummary.perfectDayItemCount;
   const satisfiedCount = habitSnapshot.daySummary.satisfiedPerfectDayItemCount;
   const activeCount = habitSnapshot.activeHabits.length;
+  const unsupportedCount = habitSnapshot.unsupportedHabits?.length ?? 0;
+
+  if (unsupportedCount > 0) {
+    const reviewLabel = `${pluralize(unsupportedCount, "habit")} ${
+      unsupportedCount === 1 ? "needs" : "need"
+    } review`;
+    const supportedProgressLabel =
+      perfectDayTotal > 0
+        ? `${satisfiedCount}/${perfectDayTotal} supported`
+        : activeCount > 0
+          ? pluralize(activeCount, "supported habit")
+          : null;
+
+    return {
+      state: "review",
+      title: "Habits",
+      detail:
+        activeCount > 0
+          ? `Known Habit progress is still available. ${reviewLabel} before all Habits can count.`
+          : `Saved Habit history is preserved. ${reviewLabel} before Habits can count progress.`,
+      progressLabel: supportedProgressLabel
+        ? `${reviewLabel} · ${supportedProgressLabel}`
+        : reviewLabel,
+      progressPercent: null,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: null,
+    };
+  }
 
   if (activeCount === 0) {
     return {
@@ -294,6 +323,7 @@ function buildHabitsQuickHref(state: TodaySurfaceState) {
 
 function buildHabitsQuickSubtitle(state: TodaySurfaceState) {
   if (state.state === "complete") return "Done today";
+  if (state.state === "review") return state.progressLabel;
   if (state.state === "ready") return state.progressLabel;
   if (state.state === "syncing") return "Syncing";
   if (state.state === "error") return "Open to retry";

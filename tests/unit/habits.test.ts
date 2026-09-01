@@ -10,13 +10,17 @@ import {
   buildHabitMotivationResetView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
+  classifyHabitDefinition,
   getHabitMotivationRangeStartDate,
+  UNSUPPORTED_HABIT_DEFINITION_CODE,
+  UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE,
   type HabitCheckInRow,
   type HabitDefinitionRow,
   type HabitMotivationResetRow,
+  type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 
-function buildHabitRow(overrides: Partial<HabitDefinitionRow>): HabitDefinitionRow {
+function buildHabitRow(overrides: Partial<HabitDefinitionRow>): SupportedHabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
     user_id: "user-1",
@@ -43,7 +47,7 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow>): HabitDefinitionR
     created_at: "2026-05-10T08:00:00.000Z",
     updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
-  };
+  } as SupportedHabitDefinitionRow;
 }
 
 function buildCheckInRow(overrides: Partial<HabitCheckInRow>): HabitCheckInRow {
@@ -93,6 +97,102 @@ function buildHabitWriteDateContext() {
 }
 
 describe("habits domain helpers", () => {
+  it("classifies unknown definition type, mode, status, and mixed rows without coercion", () => {
+    const cases = [
+      {
+        row: buildHabitRow({ habit_type: "future_type" }),
+        unsupportedFields: ["unknown_habit_type"],
+      },
+      {
+        row: buildHabitRow({ habit_mode: "future_mode" }),
+        unsupportedFields: ["unknown_habit_mode"],
+      },
+      {
+        row: buildHabitRow({ status: "future_status" }),
+        unsupportedFields: ["unknown_definition_status"],
+      },
+      {
+        row: buildHabitRow({
+          habit_type: "future_type",
+          habit_mode: "future_mode",
+          status: "future_status",
+        }),
+        unsupportedFields: [
+          "unknown_habit_type",
+          "unknown_habit_mode",
+          "unknown_definition_status",
+        ],
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const definition = classifyHabitDefinition(testCase.row);
+      expect(definition).toEqual({
+        kind: "unsupported",
+        descriptor: {
+          id: testCase.row.id,
+          title: testCase.row.title,
+          unsupportedFields: testCase.unsupportedFields,
+        },
+      });
+      expect(JSON.stringify(definition)).not.toContain("future_");
+      expect(() => buildHabitDefinitionView(testCase.row)).toThrow(
+        UNSUPPORTED_HABIT_DEFINITION_CODE
+      );
+    }
+  });
+
+  it("keeps omitted create defaults but rejects explicit unknown or null type and mode", () => {
+    expect(buildHabitDefinitionInsert("user-1", { title: "Read" }, 1, "2026-05-10")).toMatchObject({
+      habit_type: "binary",
+      habit_mode: "build",
+    });
+
+    for (const body of [
+      { title: "Read", habitType: "future_type" },
+      { title: "Read", habitType: null },
+      { title: "Read", habitMode: "future_mode" },
+      { title: "Read", habitMode: null },
+    ]) {
+      expect(() => buildHabitDefinitionInsert("user-1", body, 1, "2026-05-10")).toThrow(
+        expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
+      );
+    }
+  });
+
+  it("inherits supported current type and mode when a shape update omits them", () => {
+    const currentDefinition = classifyHabitDefinition(
+      buildHabitRow({
+        habit_type: "duration",
+        habit_mode: "build",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+      })
+    );
+    expect(currentDefinition.kind).toBe("supported");
+    if (currentDefinition.kind !== "supported") return;
+
+    expect(
+      buildHabitDefinitionUpdate({ targetValueNumeric: 20 }, "2026-05-10", currentDefinition.row)
+    ).toMatchObject({
+      habit_type: "duration",
+      habit_mode: "build",
+      target_value_numeric: 20,
+      target_unit: "minutes",
+    });
+
+    for (const body of [
+      { habitType: "future_type" },
+      { habitType: null },
+      { habitMode: "future_mode" },
+      { habitMode: null },
+    ]) {
+      expect(() => buildHabitDefinitionUpdate(body, "2026-05-10", currentDefinition.row)).toThrow(
+        expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
+      );
+    }
+  });
+
   it("builds avoidance habits as at-most raw targets", () => {
     const insert = buildHabitDefinitionInsert(
       "user-1",

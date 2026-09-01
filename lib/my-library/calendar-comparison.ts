@@ -25,12 +25,14 @@ import {
   buildHabitDaySummary,
   buildHabitDefinitionView,
   buildHabitMotivationResetView,
+  classifyHabitDefinition,
   type HabitCheckInRow,
   type HabitCheckInView,
   type HabitDefinitionRow,
   type HabitDefinitionView,
   type HabitMotivationResetRow,
   type HabitMotivationResetView,
+  type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
   buildMyLibraryCalendarComparisonWindow,
@@ -46,7 +48,7 @@ import type { Database, Json } from "@/types/database";
 type TypedSupabaseClient = SupabaseClient<Database>;
 type CalendarSourceCardSource = Exclude<MyLibraryCalendarSourceFilter, "all"> | "unmapped";
 type CalendarMetricTone = "positive" | "negative" | "neutral";
-type CalendarSourceStatus = "mapped" | "no_data" | "unmapped" | "syncing" | "error";
+type CalendarSourceStatus = "mapped" | "no_data" | "review" | "unmapped" | "syncing" | "error";
 
 export type MyLibraryCalendarComparisonMetric = {
   id: string;
@@ -335,6 +337,7 @@ function buildHabitRangeStats(
   range: MyLibraryCalendarPeriodRange
 ): HabitRangeStats {
   const activeHabits = habits.filter((habit) => habit.status === "active");
+  const supportedHabitIds = new Set(habits.map((habit) => habit.id));
   const habitById = new Map(activeHabits.map((habit) => [habit.id, habit]));
   const dateKeys = listDateKeys(range);
   const daySummaries = dateKeys.map((dateKey) =>
@@ -345,9 +348,12 @@ function buildHabitRangeStats(
     )
   );
   const daysWithHabits = daySummaries.filter((day) => day.perfectDayItemCount > 0);
-  const rangeCheckIns = checkIns.filter((checkIn) => isDateInRange(checkIn.checkInDate, range));
+  const rangeCheckIns = checkIns.filter(
+    (checkIn) => supportedHabitIds.has(checkIn.habitId) && isDateInRange(checkIn.checkInDate, range)
+  );
   const resetMarkers = resetEvents.filter(
     (reset) =>
+      supportedHabitIds.has(reset.habitId) &&
       reset.resetType === "reset_stats" &&
       reset.status === "active" &&
       isDateInRange(reset.effectiveDate, range)
@@ -386,11 +392,13 @@ export function buildHabitsCalendarComparisonSource({
   habits,
   checkIns,
   resetEvents = [],
+  unsupportedHabitCount = 0,
   window,
 }: {
   habits: HabitDefinitionView[];
   checkIns: HabitCheckInView[];
   resetEvents?: HabitMotivationResetView[];
+  unsupportedHabitCount?: number;
   window: MyLibraryCalendarComparisonWindow;
 }): MyLibraryCalendarSourceComparison {
   const current = buildHabitRangeStats(habits, checkIns, resetEvents, window.current);
@@ -405,23 +413,88 @@ export function buildHabitsCalendarComparisonSource({
       current.resetMarkers +
       comparison.resetMarkers >
     0;
+  const hasReview = unsupportedHabitCount > 0;
   const completionDelta = formatPercentDelta(
     current.averageCompletionPercent,
     comparison.averageCompletionPercent
   );
 
+  const metrics: MyLibraryCalendarComparisonMetric[] = [
+    {
+      id: "habit_completion_average",
+      label: "Targets hit",
+      currentLabel: `${current.averageCompletionPercent}%`,
+      comparisonLabel: `${comparison.averageCompletionPercent}%`,
+      deltaLabel: completionDelta.label,
+      tone: completionDelta.tone,
+    },
+    {
+      id: "habit_on_target_slots",
+      label: "Habits on track",
+      currentLabel: `${current.satisfiedHabitSlots}/${current.scheduledHabitSlots}`,
+      comparisonLabel: `${comparison.satisfiedHabitSlots}/${comparison.scheduledHabitSlots}`,
+      deltaLabel: formatSignedDelta(
+        current.satisfiedHabitSlots,
+        comparison.satisfiedHabitSlots,
+        "habit"
+      ).label,
+      tone: formatSignedDelta(current.satisfiedHabitSlots, comparison.satisfiedHabitSlots, "habit")
+        .tone,
+    },
+    buildNumericMetric({
+      id: "habit_perfect_days",
+      label: "Perfect days",
+      current: current.perfectDays,
+      comparison: comparison.perfectDays,
+      unit: "day",
+    }),
+    buildNumericMetric({
+      id: "habit_timed_minutes",
+      label: "Timed minutes",
+      current: current.timedMinutes,
+      comparison: comparison.timedMinutes,
+      unit: "minute",
+    }),
+    {
+      id: "habit_rest_slips",
+      label: "Rest and slips",
+      currentLabel: `${current.restDays} rest / ${current.slips} slips`,
+      comparisonLabel: `${comparison.restDays} rest / ${comparison.slips} slips`,
+      deltaLabel: "Reported only",
+      tone: "neutral",
+    },
+    {
+      id: "habit_reset_markers_metric",
+      label: "Habit resets",
+      currentLabel: pluralize(current.resetMarkers, "marker"),
+      comparisonLabel: pluralize(comparison.resetMarkers, "marker"),
+      deltaLabel: "Markers only",
+      tone: "neutral",
+    },
+  ];
+
+  const reviewSummary = `${pluralize(
+    unsupportedHabitCount,
+    "Habit"
+  )} ${unsupportedHabitCount === 1 ? "needs" : "need"} review and ${
+    unsupportedHabitCount === 1 ? "is" : "are"
+  } not counted.`;
+
   return {
     source: "habits",
     label: "Habits",
-    status: hasData ? "mapped" : "no_data",
+    status: hasReview ? "review" : hasData ? "mapped" : "no_data",
     summary: hasData
       ? `Habits were on target ${current.averageCompletionPercent}% across ${pluralize(
           current.daysWithHabits,
           "tracked day"
-        )}.`
-      : "No Habits data in either compared range.",
-    supportLabel:
-      "Habits counts existing check-ins only, including explicit Micro Session Habit credits. Rest days and slips are reported separately; Micro Sessions still report completed micro blocks in their own source.",
+        )}.${hasReview ? ` ${reviewSummary}` : ""}`
+      : hasReview
+        ? reviewSummary
+        : "No Habits data in either compared range.",
+    supportLabel: `Habits counts existing check-ins only, including explicit Micro Session Habit credits. Rest days and slips are reported separately; Micro Sessions still report completed micro blocks in their own source.${
+      hasReview ? " Definitions that need review and their child history stay out of Trends." : ""
+    }`,
     details: [
       {
         id: "active_habits",
@@ -446,63 +519,18 @@ export function buildHabitsCalendarComparisonSource({
         supportLabel:
           "Reset stats markers restart motivation stats but are not counted as completed habits, rest days, or slips.",
       },
+      ...(hasReview
+        ? [
+            {
+              id: "habit_review",
+              label: "Needs review",
+              value: pluralize(unsupportedHabitCount, "habit"),
+              supportLabel: "These definitions and their saved child history are not counted.",
+            },
+          ]
+        : []),
     ],
-    metrics: [
-      {
-        id: "habit_completion_average",
-        label: "Targets hit",
-        currentLabel: `${current.averageCompletionPercent}%`,
-        comparisonLabel: `${comparison.averageCompletionPercent}%`,
-        deltaLabel: completionDelta.label,
-        tone: completionDelta.tone,
-      },
-      {
-        id: "habit_on_target_slots",
-        label: "Habits on track",
-        currentLabel: `${current.satisfiedHabitSlots}/${current.scheduledHabitSlots}`,
-        comparisonLabel: `${comparison.satisfiedHabitSlots}/${comparison.scheduledHabitSlots}`,
-        deltaLabel: formatSignedDelta(
-          current.satisfiedHabitSlots,
-          comparison.satisfiedHabitSlots,
-          "habit"
-        ).label,
-        tone: formatSignedDelta(
-          current.satisfiedHabitSlots,
-          comparison.satisfiedHabitSlots,
-          "habit"
-        ).tone,
-      },
-      buildNumericMetric({
-        id: "habit_perfect_days",
-        label: "Perfect days",
-        current: current.perfectDays,
-        comparison: comparison.perfectDays,
-        unit: "day",
-      }),
-      buildNumericMetric({
-        id: "habit_timed_minutes",
-        label: "Timed minutes",
-        current: current.timedMinutes,
-        comparison: comparison.timedMinutes,
-        unit: "minute",
-      }),
-      {
-        id: "habit_rest_slips",
-        label: "Rest and slips",
-        currentLabel: `${current.restDays} rest / ${current.slips} slips`,
-        comparisonLabel: `${comparison.restDays} rest / ${comparison.slips} slips`,
-        deltaLabel: "Reported only",
-        tone: "neutral",
-      },
-      {
-        id: "habit_reset_markers_metric",
-        label: "Habit resets",
-        currentLabel: pluralize(current.resetMarkers, "marker"),
-        comparisonLabel: pluralize(comparison.resetMarkers, "marker"),
-        deltaLabel: "Markers only",
-        tone: "neutral",
-      },
-    ],
+    metrics: hasReview && !hasData ? [] : metrics,
   };
 }
 
@@ -1006,15 +1034,31 @@ export async function loadMyLibraryCalendarComparison(
         console.error("[MyLibraryCalendar] Could not load Habits reset markers", resetResult.error);
       }
 
+      const habitRows = (habitResult.data ?? []) as HabitDefinitionRow[];
+      const supportedHabitRows: SupportedHabitDefinitionRow[] = [];
+      let unsupportedHabitCount = 0;
+      for (const row of habitRows) {
+        const definition = classifyHabitDefinition(row);
+        if (definition.kind === "unsupported") {
+          unsupportedHabitCount += 1;
+        } else {
+          supportedHabitRows.push(definition.row);
+        }
+      }
+      const supportedHabitIds = new Set(supportedHabitRows.map((row) => row.id));
+
       habits = buildHabitsCalendarComparisonSource({
-        habits: ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView),
-        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView),
+        habits: supportedHabitRows.map(buildHabitDefinitionView),
+        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
+          .filter((row) => supportedHabitIds.has(row.habit_id))
+          .map(buildHabitCheckInView),
         resetEvents:
           resetEventsReady && !resetResult.error
-            ? ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(
-                buildHabitMotivationResetView
-              )
+            ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
+                .filter((row) => supportedHabitIds.has(row.habit_id))
+                .map(buildHabitMotivationResetView)
             : [],
+        unsupportedHabitCount,
         window,
       });
     }

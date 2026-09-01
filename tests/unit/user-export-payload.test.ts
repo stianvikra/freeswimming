@@ -759,4 +759,150 @@ describe("buildUserExportPayload", () => {
     expect(payload.providerActivityEvidence).toEqual([]);
     expect(payload.providerImportRuns).toEqual([]);
   });
+
+  it("preserves future Habit definition values and child history in the private export", () => {
+    type ExportInput = Parameters<typeof buildUserExportPayload>[0];
+    type ExportHabitDefinition = ExportInput["habitDefinitions"][number];
+    type ExportHabitCheckIn = ExportInput["habitCheckIns"][number];
+
+    const buildDefinition = (
+      id: string,
+      overrides: Partial<ExportHabitDefinition>
+    ): ExportHabitDefinition => ({
+      id,
+      title: `Private habit ${id}`,
+      notes: `Private note ${id}`,
+      habit_mode: "build",
+      habit_type: "binary",
+      category: "other",
+      target_operator: "at_least",
+      target_value_numeric: null,
+      target_unit: null,
+      target_time: null,
+      start_date: "2026-08-31",
+      last_lapse_date: null,
+      timer_enabled: false,
+      timer_target_seconds: null,
+      cadence_period: "daily",
+      cadence_target_count: 1,
+      cadence_day_policy: "fixed",
+      schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      is_perfect_day_item: true,
+      status: "active",
+      sort_order: 1,
+      created_at: "2026-08-31T08:00:00.000Z",
+      updated_at: "2026-08-31T08:00:00.000Z",
+      ...overrides,
+    });
+    const definitions = [
+      buildDefinition("habit-future-type", {
+        habit_type: "future_type" as ExportHabitDefinition["habit_type"],
+      }),
+      buildDefinition("habit-future-mode", {
+        habit_mode: "future_mode" as ExportHabitDefinition["habit_mode"],
+        sort_order: 2,
+      }),
+      buildDefinition("habit-future-status", {
+        status: "future_status" as ExportHabitDefinition["status"],
+        sort_order: 3,
+      }),
+      buildDefinition("habit-future-mixed", {
+        habit_type: "future_type_mixed" as ExportHabitDefinition["habit_type"],
+        habit_mode: "future_mode_mixed" as ExportHabitDefinition["habit_mode"],
+        status: "future_status_mixed" as ExportHabitDefinition["status"],
+        sort_order: 4,
+      }),
+    ];
+    const checkIns: ExportHabitCheckIn[] = definitions.map((definition, index) => ({
+      id: `check-${index + 1}`,
+      habit_id: definition.id,
+      check_in_date: "2026-08-31",
+      timezone: "Europe/Oslo",
+      value_numeric: null,
+      value_boolean: true,
+      value_time: null,
+      note: `Private history ${index + 1}`,
+      status: "logged",
+      source_kind: index === 3 ? "micro_session" : "manual",
+      source_dryland_micro_plan_id: index === 3 ? "micro-plan-1" : null,
+      source_micro_block_id: index === 3 ? "micro-block-1" : null,
+      source_completed_at: index === 3 ? "2026-08-31T09:00:00.000Z" : null,
+      completed_at: "2026-08-31T09:00:00.000Z",
+      created_at: "2026-08-31T09:00:00.000Z",
+      updated_at: "2026-08-31T09:00:00.000Z",
+    }));
+
+    const payload = buildUserExportPayload({
+      userId: "user-private-export",
+      userEmail: "owner@example.com",
+      generatedAt: "2026-09-01T08:00:00.000Z",
+      profile: null,
+      athleteProfile: null,
+      trainingMetrics: [],
+      trainingPreferences: null,
+      personalRecords: [],
+      entitlements: [],
+      courseProgress: [],
+      guideProgress: [],
+      guideSessionProgress: [],
+      goals: [],
+      trainingFocuses: [],
+      trainingNotes: [],
+      downloadLinks: [],
+      drylandSessions: [],
+      habitDefinitions: definitions,
+      habitCheckIns: checkIns,
+      workouts: [],
+      trainingActivityEvents: [],
+      providerConnections: [],
+      providerActivityEvidence: [],
+      providerImportRuns: [],
+    });
+
+    expect(payload.schemaVersion).toBe("2026-06-23-training-activity-export");
+    expect(
+      payload.habitDefinitions.map(({ id, habitType, habitMode, status }) => ({
+        id,
+        habitType,
+        habitMode,
+        status,
+      }))
+    ).toEqual([
+      {
+        id: "habit-future-type",
+        habitType: "future_type",
+        habitMode: "build",
+        status: "active",
+      },
+      {
+        id: "habit-future-mode",
+        habitType: "binary",
+        habitMode: "future_mode",
+        status: "active",
+      },
+      {
+        id: "habit-future-status",
+        habitType: "binary",
+        habitMode: "build",
+        status: "future_status",
+      },
+      {
+        id: "habit-future-mixed",
+        habitType: "future_type_mixed",
+        habitMode: "future_mode_mixed",
+        status: "future_status_mixed",
+      },
+    ]);
+    expect(payload.habitCheckIns).toEqual(
+      checkIns.map((row) =>
+        expect.objectContaining({
+          id: row.id,
+          habitId: row.habit_id,
+          note: row.note,
+          sourceKind: row.source_kind,
+          sourceDrylandMicroPlanId: row.source_dryland_micro_plan_id,
+        })
+      )
+    );
+  });
 });

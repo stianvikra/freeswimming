@@ -278,4 +278,38 @@ describe("CalendarPeriodComparisonHub", () => {
 
     expect(screen.getByText("Habits comparison details")).toBeVisible();
   });
+
+  it("prioritizes a visible review state over a misleading complete Habit trend", () => {
+    const model = buildModel();
+    const habits = model.sourceComparisons[0];
+    const reviewModel: MyLibraryCalendarComparisonModel = {
+      ...model,
+      selectedSource: "habits",
+      sourceComparisons: [
+        {
+          ...habits,
+          status: "review",
+          summary: "Habits were on target 100% across 4 tracked days. 1 Habit needs review.",
+        },
+      ],
+    };
+
+    render(<CalendarPeriodComparisonHub model={reviewModel} />);
+
+    const insight = screen.getByTestId("calendar-insight-summary");
+    expect(within(insight).getByText("Needs review")).toBeVisible();
+    expect(within(insight).getByText("Habits data needs review")).toBeVisible();
+    expect(within(insight).queryByText("Consistency improved")).toBeNull();
+
+    const source = screen.getByTestId("calendar-source-habits");
+    expect(within(source).getByText("Needs review")).toBeVisible();
+
+    const comparisonData = screen.getByTestId("calendar-insight-card-included-sources");
+    expect(within(comparisonData).getByText("Needs review")).toBeVisible();
+    expect(
+      within(comparisonData).getByText(
+        "Habits has saved data that needs review before the comparison is complete."
+      )
+    ).toBeVisible();
+  });
 });

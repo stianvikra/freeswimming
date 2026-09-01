@@ -15,11 +15,16 @@ import {
   type DrylandMicroBlockSnapshot,
 } from "@/lib/dryland/micro-plans";
 import {
+  buildDrylandMicroHabitLinkRecord,
   loadDrylandMicroHabitLinkRecord,
   recordMicroSessionHabitCredit,
   removeMicroSessionHabitCredit,
 } from "@/lib/dryland/micro-habit-linkage";
 import type { DrylandSessionDraft } from "@/lib/dryland/shared";
+import type { HabitDefinitionRow } from "@/lib/habits/shared";
+import type { Database } from "@/types/database";
+
+type MicroSessionHabitLinkRow = Database["public"]["Tables"]["micro_session_habit_links"]["Row"];
 
 function buildHabitLink(
   overrides?: Partial<DrylandMicroHabitLinkRecord>
@@ -28,6 +33,7 @@ function buildHabitLink(
     id: "link-1",
     habitId: "11111111-1111-4111-8111-111111111111",
     status: "active",
+    habitDefinitionSupport: "supported",
     startsOn: "2026-05-10",
     pausedAt: null,
     resumedAt: "2026-05-10T08:00:00.000Z",
@@ -37,6 +43,55 @@ function buildHabitLink(
     habitMode: "build",
     habitCadenceLabel: "Weekly - any day",
     canCount: true,
+    ...overrides,
+  };
+}
+
+function buildHabitDefinitionRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
+  return {
+    id: "11111111-1111-4111-8111-111111111111",
+    user_id: "user-1",
+    title: "Mobility habit",
+    notes: null,
+    habit_mode: "build",
+    habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-05-10",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "weekly",
+    cadence_target_count: 1,
+    cadence_day_policy: "any",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: false,
+    status: "active",
+    sort_order: 1,
+    created_at: "2026-05-10T08:00:00.000Z",
+    updated_at: "2026-05-10T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildMicroHabitLinkRow(
+  overrides: Partial<MicroSessionHabitLinkRow> = {}
+): MicroSessionHabitLinkRow {
+  return {
+    id: "link-1",
+    user_id: "user-1",
+    dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+    habit_id: "11111111-1111-4111-8111-111111111111",
+    status: "active",
+    starts_on: "2026-05-10",
+    paused_at: null,
+    resumed_at: "2026-05-10T08:00:00.000Z",
+    ended_at: null,
+    created_at: "2026-05-10T08:00:00.000Z",
+    updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
   };
 }
@@ -519,6 +574,69 @@ describe("dryland micro plans", () => {
     expect(getDrylandMicroWeeklyProgramCreditBlockId(completed)).toBe(completed.at(-1)?.id);
   });
 
+  it.each([
+    {
+      label: "unknown type",
+      rawValues: ["future_type"],
+      overrides: { habit_type: "future_type" } as unknown as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "unknown mode",
+      rawValues: ["future_mode"],
+      overrides: { habit_mode: "future_mode" } as unknown as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "unknown status",
+      rawValues: ["future_status"],
+      overrides: { status: "future_status" } as unknown as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "mixed unknown values",
+      rawValues: ["future_type", "future_mode", "future_status"],
+      overrides: {
+        habit_type: "future_type",
+        habit_mode: "future_mode",
+        status: "future_status",
+      } as unknown as Partial<HabitDefinitionRow>,
+    },
+  ])(
+    "blocks new Habit credit for $label before any check-in query",
+    async ({ rawValues, overrides }) => {
+      const link = buildDrylandMicroHabitLinkRecord(
+        buildMicroHabitLinkRow(),
+        buildHabitDefinitionRow(overrides)
+      );
+      const from = vi.fn();
+
+      const result = await recordMicroSessionHabitCredit({ from } as never, {
+        userId: "user-1",
+        planId: "22222222-2222-4222-8222-222222222222",
+        blockId: "unit-1",
+        link,
+        selectedDate: "2026-05-10",
+        todayDate: "2026-05-10",
+        timezone: "Europe/Oslo",
+        completedAt: "2026-05-10T10:00:00.000Z",
+      });
+
+      expect(link).toMatchObject({
+        habitDefinitionSupport: "unsupported",
+        habitStatus: "unsupported",
+        habitMode: "unsupported",
+        canCount: false,
+      });
+      expect(result).toEqual({
+        status: "blocked",
+        code: "UNSUPPORTED_HABIT_DEFINITION",
+        message: "Micro Session saved, but the linked Habit needs review and did not count.",
+      });
+      expect(from).not.toHaveBeenCalled();
+      for (const rawValue of rawValues) {
+        expect(JSON.stringify({ link, result })).not.toContain(rawValue);
+      }
+    }
+  );
+
   it("does not create Habit credit while the Micro Session Habit link is paused", async () => {
     const from = vi.fn();
 
@@ -574,6 +692,7 @@ describe("dryland micro plans", () => {
 
     expect(link).toMatchObject({
       status: "unsupported",
+      habitDefinitionSupport: "unavailable",
       startsOn: "",
       canCount: false,
     });
@@ -590,7 +709,11 @@ describe("dryland micro plans", () => {
       timezone: "Europe/Oslo",
       completedAt: "2026-05-10T10:00:00.000Z",
     });
-    expect(credit.status).toBe("blocked");
+    expect(credit).toEqual({
+      status: "blocked",
+      message: "Linked Habit is not active, so the weekly program did not count.",
+    });
+    expect(credit).not.toHaveProperty("code");
     expect(writeFrom).not.toHaveBeenCalled();
 
     const removal = await removeMicroSessionHabitCredit({ from: writeFrom } as never, {
@@ -623,7 +746,7 @@ describe("dryland micro plans", () => {
     );
   });
 
-  it("does not remove credit for an unsupported persisted link", async () => {
+  it("does not remove credit for a structurally unsupported persisted link", async () => {
     const from = vi.fn();
 
     const result = await removeMicroSessionHabitCredit({ from } as never, {
@@ -736,38 +859,119 @@ describe("dryland micro plans", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("removes the auto weekly Habit check-in when the Micro Session program is no longer complete", async () => {
-    const deleteLte = vi.fn().mockResolvedValue({ error: null });
-    const deleteGte = vi.fn(() => ({ lte: deleteLte }));
-    const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
-    const deleteEqSource = vi.fn(() => ({ eq: deleteEqPlan }));
-    const deleteEqHabit = vi.fn(() => ({ eq: deleteEqSource }));
-    const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
-    const deleteMock = vi.fn(() => ({ eq: deleteEqUser }));
-    const from = vi.fn(() => ({ delete: deleteMock }));
+  it.each([
+    {
+      habitDefinitionSupport: "supported" as const,
+      expected: {
+        status: "removed",
+        message: "Habit credit removed for this week.",
+      },
+    },
+    {
+      habitDefinitionSupport: "unsupported" as const,
+      expected: {
+        status: "removed",
+        code: "UNSUPPORTED_HABIT_DEFINITION",
+        message: "Habit credit removed for this week. The linked Habit still needs review.",
+      },
+    },
+  ])(
+    "removes only the provenance-scoped weekly credit for a $habitDefinitionSupport definition",
+    async ({ habitDefinitionSupport, expected }) => {
+      const deleteSelect = vi.fn().mockResolvedValue({ data: [{ id: "credit-1" }], error: null });
+      const deleteLte = vi.fn(() => ({ select: deleteSelect }));
+      const deleteGte = vi.fn(() => ({ lte: deleteLte }));
+      const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
+      const deleteEqSource = vi.fn(() => ({ eq: deleteEqPlan }));
+      const deleteEqHabit = vi.fn(() => ({ eq: deleteEqSource }));
+      const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
+      const deleteMock = vi.fn(() => ({ eq: deleteEqUser }));
+      const from = vi.fn(() => ({ delete: deleteMock }));
 
-    const result = await removeMicroSessionHabitCredit({ from } as never, {
-      userId: "user-1",
-      planId: "22222222-2222-4222-8222-222222222222",
-      link: buildHabitLink(),
-      selectedDate: "2026-05-10",
-      todayDate: "2026-05-10",
-    });
+      const result = await removeMicroSessionHabitCredit({ from } as never, {
+        userId: "user-1",
+        planId: "22222222-2222-4222-8222-222222222222",
+        link: buildHabitLink({
+          habitDefinitionSupport,
+          ...(habitDefinitionSupport === "unsupported"
+            ? {
+                habitStatus: "unsupported" as const,
+                habitMode: "unsupported" as const,
+                canCount: false,
+              }
+            : {}),
+        }),
+        selectedDate: "2026-05-10",
+        todayDate: "2026-05-10",
+      });
 
-    expect(result).toEqual({
-      status: "removed",
-      message: "Habit credit removed for this week.",
-    });
-    expect(deleteEqUser).toHaveBeenCalledWith("user_id", "user-1");
-    expect(deleteEqHabit).toHaveBeenCalledWith("habit_id", "11111111-1111-4111-8111-111111111111");
-    expect(deleteEqSource).toHaveBeenCalledWith("source_kind", "micro_session");
-    expect(deleteEqPlan).toHaveBeenCalledWith(
-      "source_dryland_micro_plan_id",
-      "22222222-2222-4222-8222-222222222222"
-    );
-    expect(deleteGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
-    expect(deleteLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
-  });
+      expect(result).toEqual(expected);
+      expect(deleteEqUser).toHaveBeenCalledWith("user_id", "user-1");
+      expect(deleteEqHabit).toHaveBeenCalledWith(
+        "habit_id",
+        "11111111-1111-4111-8111-111111111111"
+      );
+      expect(deleteEqSource).toHaveBeenCalledWith("source_kind", "micro_session");
+      expect(deleteEqPlan).toHaveBeenCalledWith(
+        "source_dryland_micro_plan_id",
+        "22222222-2222-4222-8222-222222222222"
+      );
+      expect(deleteGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
+      expect(deleteLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
+      expect(deleteSelect).toHaveBeenCalledWith("id");
+    }
+  );
+
+  it.each([
+    {
+      habitDefinitionSupport: "supported" as const,
+      expected: {
+        status: "blocked",
+        message: "Micro Session updated, but no source-backed Habit credit was found.",
+      },
+    },
+    {
+      habitDefinitionSupport: "unsupported" as const,
+      expected: {
+        status: "blocked",
+        code: "UNSUPPORTED_HABIT_DEFINITION",
+        message: "Micro Session updated, but no source-backed Habit credit was found.",
+      },
+    },
+  ])(
+    "reports no matching provenance credit truthfully for a $habitDefinitionSupport definition",
+    async ({ habitDefinitionSupport, expected }) => {
+      const deleteSelect = vi.fn().mockResolvedValue({ data: [], error: null });
+      const deleteLte = vi.fn(() => ({ select: deleteSelect }));
+      const deleteGte = vi.fn(() => ({ lte: deleteLte }));
+      const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
+      const deleteEqSource = vi.fn(() => ({ eq: deleteEqPlan }));
+      const deleteEqHabit = vi.fn(() => ({ eq: deleteEqSource }));
+      const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
+      const deleteMock = vi.fn(() => ({ eq: deleteEqUser }));
+      const from = vi.fn(() => ({ delete: deleteMock }));
+
+      const result = await removeMicroSessionHabitCredit({ from } as never, {
+        userId: "user-1",
+        planId: "22222222-2222-4222-8222-222222222222",
+        link: buildHabitLink({
+          habitDefinitionSupport,
+          ...(habitDefinitionSupport === "unsupported"
+            ? {
+                habitStatus: "unsupported" as const,
+                habitMode: "unsupported" as const,
+                canCount: false,
+              }
+            : {}),
+        }),
+        selectedDate: "2026-05-10",
+        todayDate: "2026-05-10",
+      });
+
+      expect(result).toEqual(expected);
+      expect(deleteSelect).toHaveBeenCalledWith("id");
+    }
+  );
 
   it("blocks future linked Habit credit removal before any database query", async () => {
     const from = vi.fn();

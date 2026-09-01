@@ -42,6 +42,9 @@ export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
 export const HABIT_MOTIVATION_RESET_TYPE_VALUES = ["reset_stats"] as const;
 export const HABIT_MOTIVATION_RESET_STATUS_VALUES = ["active", "voided"] as const;
 export const HABIT_STATUS_VALUES = ["active", "archived"] as const;
+export const UNSUPPORTED_HABIT_DEFINITION_CODE = "UNSUPPORTED_HABIT_DEFINITION" as const;
+export const UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE =
+  "UNSUPPORTED_HABIT_DEFINITION_VALUE" as const;
 export const HABIT_CHECK_IN_SOURCE_KIND_VALUES = ["manual", "timer", "micro_session"] as const;
 export const HABIT_TIMER_MAX_SECONDS = 86_400;
 export const HABIT_MANUAL_TIME_MAX_MINUTES = 1_440;
@@ -114,6 +117,60 @@ export type HabitMotivationResetRow =
 export type HabitMotivationResetInsert =
   Database["public"]["Tables"]["habit_motivation_resets"]["Insert"];
 export type HabitCheckInStatus = "logged" | "skipped" | "unsupported";
+
+export type HabitUnsupportedDefinitionField =
+  | "unknown_habit_type"
+  | "unknown_habit_mode"
+  | "unknown_definition_status";
+
+export type HabitUnsupportedDefinitionView = {
+  id: string;
+  title: string;
+  unsupportedFields: HabitUnsupportedDefinitionField[];
+};
+
+type HabitDefinitionCore = Pick<
+  HabitDefinitionRow,
+  "id" | "title" | "habit_type" | "habit_mode" | "status"
+>;
+
+export type SupportedHabitDefinitionRow<T extends HabitDefinitionCore = HabitDefinitionRow> = Omit<
+  T,
+  "habit_type" | "habit_mode" | "status"
+> & {
+  habit_type: HabitType;
+  habit_mode: HabitMode;
+  status: HabitStatus;
+};
+
+export type HabitDefinitionClassification<T extends HabitDefinitionCore = HabitDefinitionRow> =
+  | { kind: "supported"; row: SupportedHabitDefinitionRow<T> }
+  | { kind: "unsupported"; descriptor: HabitUnsupportedDefinitionView };
+
+export class UnsupportedHabitDefinitionValueError extends Error {
+  readonly code = UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE;
+
+  constructor() {
+    super("This Habit type or tracking mode is not supported yet.");
+    this.name = "UnsupportedHabitDefinitionValueError";
+  }
+}
+
+export function validateHabitDefinitionCoreInput(body: {
+  habitType?: unknown;
+  habitMode?: unknown;
+  status?: unknown;
+}): void {
+  if (body.habitType !== undefined && !isOneOf(HABIT_TYPE_VALUES, body.habitType)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (body.habitMode !== undefined && !isOneOf(HABIT_MODE_VALUES, body.habitMode)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if ("status" in body && !isOneOf(HABIT_STATUS_VALUES, body.status)) {
+    throw new Error("Unsupported habit status.");
+  }
+}
 
 export type HabitMotivationResetView = {
   id: string;
@@ -294,6 +351,7 @@ export type HabitSnapshot = {
   selectedDate: string;
   activeHabits: HabitDefinitionView[];
   archivedHabits: HabitDefinitionView[];
+  unsupportedHabits: HabitUnsupportedDefinitionView[];
   daySummary: HabitDaySummary;
   weekSummary: HabitWeekSummary;
   absenceReviewAcknowledgedDates?: string[];
@@ -364,6 +422,34 @@ const DEFAULT_WEEKDAYS: HabitWeekday[] = [...HABIT_WEEKDAY_VALUES];
 
 function isOneOf<T extends readonly string[]>(values: T, value: unknown): value is T[number] {
   return typeof value === "string" && values.includes(value as T[number]);
+}
+
+export function classifyHabitDefinition<T extends HabitDefinitionCore>(
+  row: T
+): HabitDefinitionClassification<T> {
+  const unsupportedFields: HabitUnsupportedDefinitionField[] = [];
+  if (!isOneOf(HABIT_TYPE_VALUES, row.habit_type)) {
+    unsupportedFields.push("unknown_habit_type");
+  }
+  if (!isOneOf(HABIT_MODE_VALUES, row.habit_mode)) {
+    unsupportedFields.push("unknown_habit_mode");
+  }
+  if (!isOneOf(HABIT_STATUS_VALUES, row.status)) {
+    unsupportedFields.push("unknown_definition_status");
+  }
+
+  if (unsupportedFields.length > 0) {
+    return {
+      kind: "unsupported",
+      descriptor: {
+        id: row.id,
+        title: row.title,
+        unsupportedFields,
+      },
+    };
+  }
+
+  return { kind: "supported", row: row as SupportedHabitDefinitionRow<T> };
 }
 
 function normalizeText(value: unknown, maxLength: number): string | null {
@@ -519,8 +605,12 @@ function normalizeCadenceInput(body: {
   };
 }
 
-function getHabitType(value: unknown): HabitType {
-  return isOneOf(HABIT_TYPE_VALUES, value) ? value : "binary";
+function getHabitTypeInput(value: unknown, fallback: HabitType): HabitType {
+  if (value === undefined) return fallback;
+  if (!isOneOf(HABIT_TYPE_VALUES, value)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  return value;
 }
 
 function getHabitMode(
@@ -530,6 +620,18 @@ function getHabitMode(
   if (isOneOf(HABIT_MODE_VALUES, value)) return value;
   if (input?.timerEnabled === true && input.habitType === "duration") return "timed";
   return "build";
+}
+
+function getHabitModeInput(
+  value: unknown,
+  fallback: HabitMode,
+  input?: { habitType?: HabitType; timerEnabled?: unknown }
+): HabitMode {
+  if (value === undefined) return fallback;
+  if (!isOneOf(HABIT_MODE_VALUES, value)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  return getHabitMode(value, input);
 }
 
 function getHabitCategory(value: unknown): HabitCategory {
@@ -785,6 +887,7 @@ export function buildHabitDefinitionInsert(
   todayDate: string
 ): HabitDefinitionInsert {
   requireHabitWriteTodayDate(todayDate);
+  validateHabitDefinitionCoreInput(body);
   const title = normalizeText(body.title, 80);
   if (!title || title.length < 2) {
     throw new Error("Give the habit a short name.");
@@ -798,8 +901,10 @@ export function buildHabitDefinitionInsert(
     throw new Error("Choose a valid start date.");
   }
   const selectedDate = isLocalDayDateKey(body.selectedDate) ? body.selectedDate : todayDate;
-  const requestedHabitType = getHabitType(body.habitType);
-  const habitMode = getHabitMode(body.habitMode, {
+  const requestedHabitType = getHabitTypeInput(body.habitType, "binary");
+  const defaultHabitMode =
+    body.timerEnabled === true && requestedHabitType === "duration" ? "timed" : "build";
+  const habitMode = getHabitModeInput(body.habitMode, defaultHabitMode, {
     habitType: requestedHabitType,
     timerEnabled: body.timerEnabled,
   });
@@ -853,9 +958,11 @@ export function buildHabitDefinitionInsert(
 
 export function buildHabitDefinitionUpdate(
   body: HabitUpdateRequestBody,
-  todayDate: string
+  todayDate: string,
+  currentHabit?: SupportedHabitDefinitionRow
 ): HabitDefinitionUpdate {
   requireHabitWriteTodayDate(todayDate);
+  validateHabitDefinitionCoreInput(body);
   const update: HabitDefinitionUpdate = {};
 
   if ("title" in body) {
@@ -898,10 +1005,7 @@ export function buildHabitDefinitionUpdate(
     update.start_date = startDate;
   }
 
-  if ("status" in body) {
-    if (!isOneOf(HABIT_STATUS_VALUES, body.status)) {
-      throw new Error("Unsupported habit status.");
-    }
+  if ("status" in body && isOneOf(HABIT_STATUS_VALUES, body.status)) {
     update.status = body.status;
   }
 
@@ -914,23 +1018,31 @@ export function buildHabitDefinitionUpdate(
     "timerEnabled" in body ||
     "timerTargetSeconds" in body
   ) {
-    const requestedHabitType = getHabitType(body.habitType);
-    const habitMode = getHabitMode(body.habitMode, {
-      habitType: requestedHabitType,
-      timerEnabled: body.timerEnabled,
-    });
+    const requestedHabitType = getHabitTypeInput(
+      body.habitType,
+      currentHabit?.habit_type ?? "binary"
+    );
+    const habitMode = getHabitModeInput(
+      body.habitMode,
+      currentHabit?.habit_mode ??
+        (body.timerEnabled === true && requestedHabitType === "duration" ? "timed" : "build"),
+      {
+        habitType: requestedHabitType,
+        timerEnabled: body.timerEnabled,
+      }
+    );
     const shape = getHabitShape(
       habitMode,
       requestedHabitType,
-      body.targetValueNumeric,
-      body.targetUnit,
-      body.targetTime
+      "targetValueNumeric" in body ? body.targetValueNumeric : currentHabit?.target_value_numeric,
+      "targetUnit" in body ? body.targetUnit : currentHabit?.target_unit,
+      "targetTime" in body ? body.targetTime : currentHabit?.target_time
     );
     const timerTargetSeconds = normalizeTimerTargetSeconds(
       habitMode,
       shape.targetValueNumeric,
       shape.targetUnit as HabitUnit | null,
-      body.timerTargetSeconds
+      "timerTargetSeconds" in body ? body.timerTargetSeconds : currentHabit?.timer_target_seconds
     );
     if (habitMode === "timed" && timerTargetSeconds === null) {
       throw new Error("Choose a timer target.");
@@ -1051,55 +1163,74 @@ export function buildHabitMotivationResetInsert(
 }
 
 export function buildHabitDefinitionView(
-  row: HabitDefinitionRow,
+  row: SupportedHabitDefinitionRow,
   options: { microSessionLink?: HabitMicroSessionLinkView | null } | number = {}
 ): HabitDefinitionView {
+  const definition = classifyHabitDefinition(row);
+  if (definition.kind === "unsupported") {
+    throw new Error(UNSUPPORTED_HABIT_DEFINITION_CODE);
+  }
+  const supportedRow = definition.row;
   const viewOptions = typeof options === "object" && options !== null ? options : {};
-  const scheduleDays = normalizeScheduleDays(row.schedule_days);
-  const cadencePeriod = getCadencePeriod(row.cadence_period, scheduleDays);
-  const cadenceDayPolicy = getCadenceDayPolicy(row.cadence_day_policy, cadencePeriod, scheduleDays);
+  const scheduleDays = normalizeScheduleDays(supportedRow.schedule_days);
+  const cadencePeriod = getCadencePeriod(supportedRow.cadence_period, scheduleDays);
+  const cadenceDayPolicy = getCadenceDayPolicy(
+    supportedRow.cadence_day_policy,
+    cadencePeriod,
+    scheduleDays
+  );
   const cadenceTargetCount = normalizeCadenceTargetCount(
-    row.cadence_target_count,
+    supportedRow.cadence_target_count,
     cadencePeriod,
     cadenceDayPolicy,
     scheduleDays
   );
-  const habitType = getHabitType(row.habit_type);
-  const habitMode = getHabitMode(row.habit_mode, {
-    habitType,
-    timerEnabled: row.timer_enabled,
-  });
-  const targetOperator = isOneOf(HABIT_OPERATOR_VALUES, row.target_operator)
-    ? row.target_operator
+  const habitType = supportedRow.habit_type;
+  const habitMode = supportedRow.habit_mode;
+  const targetOperator = isOneOf(HABIT_OPERATOR_VALUES, supportedRow.target_operator)
+    ? supportedRow.target_operator
     : "at_least";
-  const targetUnit = isOneOf(HABIT_UNIT_VALUES, row.target_unit) ? row.target_unit : null;
+  const targetUnit = isOneOf(HABIT_UNIT_VALUES, supportedRow.target_unit)
+    ? supportedRow.target_unit
+    : null;
 
   return {
-    id: row.id,
-    title: row.title,
-    notes: row.notes,
+    id: supportedRow.id,
+    title: supportedRow.title,
+    notes: supportedRow.notes,
     habitMode,
     habitType,
-    category: getHabitCategory(row.category),
+    category: getHabitCategory(supportedRow.category),
     targetOperator,
     targetValueNumeric:
-      typeof row.target_value_numeric === "number" ? row.target_value_numeric : null,
+      typeof supportedRow.target_value_numeric === "number"
+        ? supportedRow.target_value_numeric
+        : null,
     targetUnit,
-    targetTime: row.target_time,
+    targetTime: supportedRow.target_time,
     targetLabel: buildTargetLabel({
       habitMode,
       habitType,
       targetOperator,
       targetValueNumeric:
-        typeof row.target_value_numeric === "number" ? row.target_value_numeric : null,
+        typeof supportedRow.target_value_numeric === "number"
+          ? supportedRow.target_value_numeric
+          : null,
       targetUnit,
-      targetTime: row.target_time,
+      targetTime: supportedRow.target_time,
     }),
-    startDate: normalizeHabitDate(row.start_date, getSelectedDateFallback(row.created_at)),
-    lastLapseDate: row.last_lapse_date ? normalizeHabitDate(row.last_lapse_date) : null,
-    timerEnabled: row.timer_enabled === true,
+    startDate: normalizeHabitDate(
+      supportedRow.start_date,
+      getSelectedDateFallback(supportedRow.created_at)
+    ),
+    lastLapseDate: supportedRow.last_lapse_date
+      ? normalizeHabitDate(supportedRow.last_lapse_date)
+      : null,
+    timerEnabled: supportedRow.timer_enabled === true,
     timerTargetSeconds:
-      typeof row.timer_target_seconds === "number" ? row.timer_target_seconds : null,
+      typeof supportedRow.timer_target_seconds === "number"
+        ? supportedRow.timer_target_seconds
+        : null,
     cadencePeriod,
     cadenceTargetCount,
     cadenceDayPolicy,
@@ -1110,12 +1241,12 @@ export function buildHabitDefinitionView(
       scheduleDays,
     }),
     scheduleDays,
-    isPerfectDayItem: row.is_perfect_day_item,
-    status: row.status === "archived" ? "archived" : "active",
+    isPerfectDayItem: supportedRow.is_perfect_day_item,
+    status: supportedRow.status,
     microSessionLink: viewOptions.microSessionLink ?? null,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    sortOrder: supportedRow.sort_order,
+    createdAt: supportedRow.created_at,
+    updatedAt: supportedRow.updated_at,
   };
 }
 

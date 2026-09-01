@@ -453,6 +453,58 @@ describe("my library calendar plan loader", () => {
     ]);
   });
 
+  it("reviews unsupported Habit definitions and excludes their check-ins and resets", async () => {
+    const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
+    const { from } = buildSupabaseMock({
+      habitDefinitions: [
+        buildHabitDefinitionRow(),
+        buildHabitDefinitionRow({
+          id: unsupportedHabitId,
+          title: "Future Habit",
+          habit_type: "future_type",
+          sort_order: 1,
+        }),
+      ],
+      habitCheckIns: [
+        buildHabitCheckInRow({ check_in_date: "2026-06-20" }),
+        buildHabitCheckInRow({
+          id: "99999999-9999-4999-8999-999999999998",
+          habit_id: unsupportedHabitId,
+          check_in_date: "2026-06-20",
+        }),
+      ],
+      habitResets: [
+        buildHabitResetRow({ effective_date: "2026-06-20" }),
+        buildHabitResetRow({
+          id: "99999999-9999-4999-8999-999999999997",
+          habit_id: unsupportedHabitId,
+          effective_date: "2026-06-20",
+        }),
+      ],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-20",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+    const habitLayer = model.selectedDay.dailyLayers.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({
+      status: "review",
+      tone: "warning",
+      compactLabel: "1/1 habits · review",
+    });
+    expect(habitLayer?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "habit_daily", value: "1/1" }),
+        expect.objectContaining({ id: "habit_resets", value: "1 marker" }),
+        expect.objectContaining({ id: "habit_review", value: "1 habit" }),
+      ])
+    );
+    expect(JSON.stringify(habitLayer)).not.toContain("future_type");
+  });
+
   it("hydrates manual completed activity events as actual outcome truth", async () => {
     const { from } = buildSupabaseMock({
       completedActivityEvents: [buildCompletedActivityEvent()],

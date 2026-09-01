@@ -4,6 +4,8 @@ import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_MOTIVATION_RESET_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
   buildHabitMotivationResetInsert,
+  classifyHabitDefinition,
+  UNSUPPORTED_HABIT_DEFINITION_CODE,
   type HabitMotivationResetRequestBody,
 } from "@/lib/habits/shared";
 import {
@@ -122,7 +124,7 @@ export async function POST(request: Request, { params }: Props) {
 
   const habitResult = await supabase
     .from("habit_definitions")
-    .select("id, habit_mode, start_date, status")
+    .select("id, title, habit_type, habit_mode, start_date, status")
     .eq("user_id", user.id)
     .eq("id", habitId)
     .maybeSingle();
@@ -149,7 +151,22 @@ export async function POST(request: Request, { params }: Props) {
     );
   }
 
-  if (!isLocalDayDateKey(habitResult.data.start_date)) {
+  const habitDefinition = classifyHabitDefinition(habitResult.data);
+  if (habitDefinition.kind === "unsupported") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: UNSUPPORTED_HABIT_DEFINITION_CODE,
+          error: "This Habit needs review before its stats can change.",
+        },
+        { status: 409 }
+      )
+    );
+  }
+
+  const habit = habitDefinition.row;
+  if (!isLocalDayDateKey(habit.start_date)) {
     console.error("[HabitsApi] Habit has an invalid persisted start date", { habitId });
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not reset habit stats right now." }, { status: 500 })
@@ -161,9 +178,9 @@ export async function POST(request: Request, { params }: Props) {
     insertPayload = buildHabitMotivationResetInsert(
       user.id,
       {
-        id: habitResult.data.id,
-        startDate: habitResult.data.start_date,
-        status: habitResult.data.status === "archived" ? "archived" : "active",
+        id: habit.id,
+        startDate: habit.start_date,
+        status: habit.status,
       },
       body,
       localDayContext.todayDate
@@ -216,7 +233,7 @@ export async function POST(request: Request, { params }: Props) {
     channel: "server",
     userId: user.id,
     payload: {
-      habitMode: habitResult.data.habit_mode ?? "build",
+      habitMode: habit.habit_mode,
       effectiveDate: insertPayload.effective_date,
       selectedDate,
       actionSource,

@@ -139,6 +139,7 @@ function buildHabitLink(
     id: "44444444-4444-4444-8444-444444444444",
     habitId: "55555555-5555-4555-8555-555555555555",
     status: "active",
+    habitDefinitionSupport: "supported",
     startsOn: "2026-05-12",
     pausedAt: null,
     resumedAt: "2026-05-12T08:00:00.000Z",
@@ -505,6 +506,127 @@ describe("DrylandMicroPlanPanel", () => {
       );
     });
     expect(await screen.findByText("Habit completed for this week: Mobility habit")).toBeVisible();
+  });
+
+  it("keeps an unsupported linked Habit read-only while Micro completion still succeeds", async () => {
+    const basePlan = buildPlan();
+    const unsupportedLink = buildHabitLink({
+      status: "paused",
+      habitDefinitionSupport: "unsupported",
+      habitStatus: "unsupported",
+      habitMode: "unsupported",
+      habitCadenceLabel: null,
+      canCount: false,
+    });
+    const currentPlan = buildPlan({
+      habitLink: unsupportedLink,
+      blocks: basePlan.blocks.map((block, index) =>
+        index === 0
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-12T09:00:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    const completedPlan = buildPlan({
+      habitLink: unsupportedLink,
+      status: "completed",
+      blocks: currentPlan.blocks.map((block) => ({
+        ...block,
+        status: "completed",
+        completedAt: block.completedAt ?? "2026-05-12T10:30:00.000Z",
+      })),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 2,
+        skippedBlockCount: 0,
+        remainingBlockCount: 0,
+        progressPercent: 100,
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: completedPlan,
+        habitCredit: {
+          status: "blocked",
+          code: "UNSUPPORTED_HABIT_DEFINITION",
+          message: "Micro Session saved, but the linked Habit needs review and did not count.",
+        },
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={currentPlan}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    const linkStatus = screen.getByTestId("dryland-micro-habit-link-status");
+    expect(linkStatus).toHaveTextContent("Linked Habit needs review");
+    expect(linkStatus).toHaveTextContent("This Micro Session still works");
+    expect(linkStatus).toHaveClass("border-amber-200", "bg-amber-50/70");
+    expect(screen.queryByTestId("dryland-micro-pause-habit-link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-micro-resume-habit-link")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-complete-1"));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(screen.queryByTestId("dryland-micro-paused-final-prompt")).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+      expect.objectContaining<Record<string, unknown>>({
+        method: "PATCH",
+        body: expect.not.stringContaining('"completePausedHabitLink":true'),
+      })
+    );
+    expect(
+      await screen.findByText(
+        "Micro Session saved, but the linked Habit needs review and did not count."
+      )
+    ).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-action-success")).toHaveAttribute("role", "status");
+  });
+
+  it("keeps a paused unsupported Habit read-only in a collapsed past week", () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-06-08T10:00:00.000Z").getTime());
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          habitLink: buildHabitLink({
+            status: "paused",
+            habitDefinitionSupport: "unsupported",
+            habitStatus: "unsupported",
+            habitMode: "unsupported",
+            habitCadenceLabel: null,
+            canCount: false,
+          }),
+        })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.getByTestId("dryland-micro-collapsed-state")).toBeVisible();
+    expect(
+      screen.queryByTestId("dryland-micro-resume-habit-link-collapsed")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Resume counting" })).not.toBeInTheDocument();
   });
 
   it("archives stale manual weeks and offers repeat this week", async () => {

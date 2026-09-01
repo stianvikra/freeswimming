@@ -31,21 +31,27 @@ const secondaryActionClass =
   "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 
 function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
+  const isReview = state.state === "review";
+
   return (
     <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
         <h3 className={cardHeadingClass}>{state.title}</h3>
-        <p className={mutedTextClass}>
-          {state.progressLabel} · {state.progressPercent}%
+        <p className={mutedTextClass} role={isReview ? "status" : undefined}>
+          {state.progressLabel}
+          {state.progressPercent === null ? null : ` · ${state.progressPercent}%`}
         </p>
+        {isReview ? <p className={`mt-1 ${mutedTextClass}`}>{state.detail}</p> : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <Link href={state.href} className={primaryActionClass}>
           {state.actionLabel}
         </Link>
-        <Link href={state.editHref} className={secondaryActionClass}>
-          Edit
-        </Link>
+        {state.editHref ? (
+          <Link href={state.editHref} className={secondaryActionClass}>
+            Edit
+          </Link>
+        ) : null}
       </div>
     </div>
   );

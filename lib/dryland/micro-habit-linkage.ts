@@ -5,7 +5,9 @@ import { HABIT_CHECK_IN_SELECT, HABIT_DEFINITION_SELECT } from "@/lib/habits/ser
 import {
   buildHabitCheckInView,
   buildHabitDefinitionView,
+  classifyHabitDefinition,
   normalizeHabitTimezone,
+  UNSUPPORTED_HABIT_DEFINITION_CODE,
   type HabitCheckInRow,
   type HabitDefinitionRow,
 } from "@/lib/habits/shared";
@@ -39,7 +41,11 @@ export function buildDrylandMicroHabitLinkRecord(
   link: MicroSessionHabitLinkRow,
   habit: HabitDefinitionRow | null
 ): DrylandMicroHabitLinkRecord {
-  const habitView = habit ? buildHabitDefinitionView(habit) : null;
+  const habitClassification = habit ? classifyHabitDefinition(habit) : null;
+  const habitView =
+    habitClassification?.kind === "supported"
+      ? buildHabitDefinitionView(habitClassification.row)
+      : null;
   const startsOn = isLocalDayDateKey(link.starts_on) ? link.starts_on : "";
   const status = startsOn && isMicroHabitLinkStatus(link.status) ? link.status : "unsupported";
   const habitStatus = habitView?.status ?? "unsupported";
@@ -49,15 +55,24 @@ export function buildDrylandMicroHabitLinkRecord(
     id: link.id,
     habitId: link.habit_id,
     status,
+    habitDefinitionSupport: !habitClassification
+      ? "unavailable"
+      : habitClassification.kind === "supported"
+        ? "supported"
+        : "unsupported",
     startsOn,
     pausedAt: link.paused_at,
     resumedAt: link.resumed_at,
     endedAt: link.ended_at,
-    habitTitle: habitView?.title ?? null,
+    habitTitle: habit?.title ?? null,
     habitStatus,
     habitMode,
     habitCadenceLabel: habitView?.cadenceLabel ?? null,
-    canCount: status === "active" && habitStatus === "active" && habitMode === "build",
+    canCount:
+      habitClassification?.kind === "supported" &&
+      status === "active" &&
+      habitStatus === "active" &&
+      habitMode === "build",
   };
 }
 
@@ -203,6 +218,14 @@ export async function recordMicroSessionHabitCredit(
     return {
       status: "not_linked",
       message: "This weekly Micro Session is not linked to a Habit.",
+    };
+  }
+
+  if (input.link.habitDefinitionSupport === "unsupported") {
+    return {
+      status: "blocked",
+      code: UNSUPPORTED_HABIT_DEFINITION_CODE,
+      message: "Micro Session saved, but the linked Habit needs review and did not count.",
     };
   }
 
@@ -383,6 +406,8 @@ export async function removeMicroSessionHabitCredit(
 ): Promise<DrylandMicroHabitCreditResult | undefined> {
   if (!input.link) return undefined;
 
+  const hasUnsupportedDefinition = input.link.habitDefinitionSupport === "unsupported";
+
   if (input.link.status === "unsupported" || !isLocalDayDateKey(input.link.startsOn)) {
     return {
       status: "blocked",
@@ -414,11 +439,13 @@ export async function removeMicroSessionHabitCredit(
     .eq("source_kind", "micro_session")
     .eq("source_dryland_micro_plan_id", input.planId)
     .gte("check_in_date", weekStart)
-    .lte("check_in_date", weekEnd);
+    .lte("check_in_date", weekEnd)
+    .select("id");
 
   if (isHabitsSchemaMissing(deleteResult.error)) {
     return {
       status: "blocked",
+      ...(hasUnsupportedDefinition ? { code: UNSUPPORTED_HABIT_DEFINITION_CODE } : {}),
       message: "Habits are still syncing. Micro Session updated, Habit credit not changed.",
     };
   }
@@ -433,12 +460,24 @@ export async function removeMicroSessionHabitCredit(
     });
     return {
       status: "blocked",
+      ...(hasUnsupportedDefinition ? { code: UNSUPPORTED_HABIT_DEFINITION_CODE } : {}),
       message: "Micro Session updated, but weekly Habit credit could not be removed.",
+    };
+  }
+
+  if ((deleteResult.data ?? []).length === 0) {
+    return {
+      status: "blocked",
+      ...(hasUnsupportedDefinition ? { code: UNSUPPORTED_HABIT_DEFINITION_CODE } : {}),
+      message: "Micro Session updated, but no source-backed Habit credit was found.",
     };
   }
 
   return {
     status: "removed",
-    message: "Habit credit removed for this week.",
+    ...(hasUnsupportedDefinition ? { code: UNSUPPORTED_HABIT_DEFINITION_CODE } : {}),
+    message: hasUnsupportedDefinition
+      ? "Habit credit removed for this week. The linked Habit still needs review."
+      : "Habit credit removed for this week.",
   };
 }

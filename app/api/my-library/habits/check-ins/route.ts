@@ -5,6 +5,8 @@ import { HABIT_CHECK_IN_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
   buildTimedTotalMinutes,
   buildHabitCheckInInsert,
+  classifyHabitDefinition,
+  UNSUPPORTED_HABIT_DEFINITION_CODE,
   type HabitCheckInRequestBody,
 } from "@/lib/habits/shared";
 import {
@@ -155,7 +157,7 @@ export async function POST(request: Request) {
   const actionSource = getHabitMutationActionSource(body.actionSource);
   const habitResult = await supabase
     .from("habit_definitions")
-    .select("id, habit_mode, start_date")
+    .select("id, title, habit_type, habit_mode, status, start_date")
     .eq("user_id", user.id)
     .eq("id", body.habitId)
     .maybeSingle();
@@ -185,12 +187,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const habit = habitResult.data as {
-    id: string;
-    habit_mode?: string | null;
-    start_date?: string | null;
-  };
-  const habitMode = habit.habit_mode ?? "build";
+  const habitDefinition = classifyHabitDefinition(habitResult.data);
+  if (habitDefinition.kind === "unsupported") {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          code: UNSUPPORTED_HABIT_DEFINITION_CODE,
+          error: "This Habit needs review before check-ins can change.",
+        },
+        { status: 409 }
+      )
+    );
+  }
+
+  const habit = habitDefinition.row;
+  const habitMode = habit.habit_mode;
   const isQuitHabit = habitMode === "quit";
   const hasTimedSourceValues = "timerSeconds" in body || "manualMinutes" in body;
   const clearsTimedCompletion = body.clearTimedCompletion === true;

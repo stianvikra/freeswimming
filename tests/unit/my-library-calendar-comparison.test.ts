@@ -8,8 +8,11 @@ import {
 } from "@/lib/my-library/calendar-comparison";
 import { buildMyLibraryCalendarComparisonWindow } from "@/lib/my-library/calendar";
 import type {
+  HabitCheckInRow,
   HabitCheckInView,
+  HabitDefinitionRow,
   HabitDefinitionView,
+  HabitMotivationResetRow,
   HabitMotivationResetView,
 } from "@/lib/habits/shared";
 import type { CompletedActivityEventRow } from "@/lib/my-library/completed-activity-events";
@@ -84,6 +87,75 @@ function buildReset(overrides: Partial<HabitMotivationResetView> = {}): HabitMot
     effectiveDate: "2026-06-04",
     createdAt: "2026-06-04T08:00:00.000Z",
     createdBy: "user-1",
+    ...overrides,
+  };
+}
+
+function buildHabitRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
+  return {
+    id: "11111111-1111-4111-8111-111111111111",
+    user_id: "user-1",
+    title: "Morning mobility",
+    notes: null,
+    habit_mode: "build",
+    habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-05-01",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: true,
+    status: "active",
+    sort_order: 0,
+    created_at: "2026-05-01T00:00:00.000Z",
+    updated_at: "2026-05-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildCheckInRow(overrides: Partial<HabitCheckInRow> = {}): HabitCheckInRow {
+  return {
+    id: "22222222-2222-4222-8222-222222222222",
+    user_id: "user-1",
+    habit_id: "11111111-1111-4111-8111-111111111111",
+    check_in_date: "2026-06-02",
+    timezone: "Europe/Oslo",
+    value_numeric: null,
+    value_boolean: true,
+    value_time: null,
+    timer_seconds: 0,
+    manual_minutes: 0,
+    note: null,
+    source_kind: "manual",
+    source_dryland_micro_plan_id: null,
+    source_micro_block_id: null,
+    source_completed_at: null,
+    status: "logged",
+    completed_at: "2026-06-02T08:00:00.000Z",
+    created_at: "2026-06-02T08:00:00.000Z",
+    updated_at: "2026-06-02T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildResetRow(overrides: Partial<HabitMotivationResetRow> = {}): HabitMotivationResetRow {
+  return {
+    id: "33333333-3333-4333-8333-333333333333",
+    user_id: "user-1",
+    habit_id: "11111111-1111-4111-8111-111111111111",
+    reset_type: "reset_stats",
+    status: "active",
+    effective_date: "2026-06-04",
+    created_by: "user-1",
+    created_at: "2026-06-04T08:00:00.000Z",
     ...overrides,
   };
 }
@@ -329,12 +401,64 @@ describe("my library calendar comparison", () => {
     });
   });
 
-  it("reports Habits reset-stats markers without counting them as completions", () => {
+  it("keeps supported Habit Trends visible but marks mixed definition truth for review", () => {
     const source = buildHabitsCalendarComparisonSource({
       habits: [buildHabit()],
       checkIns: [buildCheckIn({ checkInDate: "2026-06-02" })],
+      unsupportedHabitCount: 1,
+      window,
+    });
+
+    expect(source).toMatchObject({
+      status: "review",
+      summary: expect.stringContaining("1 Habit needs review and is not counted."),
+    });
+    expect(source.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "active_habits", value: "1 habit" }),
+        expect.objectContaining({ id: "habit_review", label: "Needs review", value: "1 habit" }),
+      ])
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toBeDefined();
+  });
+
+  it("uses an explicit review state instead of zero-value Trends for unsupported-only Habits", () => {
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [],
+      checkIns: [],
+      unsupportedHabitCount: 2,
+      window,
+    });
+
+    expect(source).toMatchObject({
+      status: "review",
+      summary: "2 Habits need review and are not counted.",
+      metrics: [],
+    });
+    expect(source.summary).not.toContain("No Habits data");
+  });
+
+  it("reports Habits reset-stats markers without counting them as completions", () => {
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: [
+        buildCheckIn({ checkInDate: "2026-06-02" }),
+        buildCheckIn({
+          id: "unsupported-rest",
+          habitId: "unsupported-habit",
+          checkInDate: "2026-06-03",
+          status: "skipped",
+          valueBoolean: null,
+          completedAt: null,
+        }),
+      ],
       resetEvents: [
         buildReset({ effectiveDate: "2026-06-04" }),
+        buildReset({
+          id: "unsupported-reset",
+          habitId: "unsupported-habit",
+          effectiveDate: "2026-06-04",
+        }),
         buildReset({
           id: "previous-reset",
           effectiveDate: "2026-05-27",
@@ -599,6 +723,69 @@ describe("my library calendar comparison", () => {
     expect(source.details?.find((detail) => detail.id === "excluded_swim_rows")).toMatchObject({
       value: "1 provider/review item + 2 other items",
     });
+  });
+
+  it("filters unsupported Habit child rows before building Trends", async () => {
+    const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
+    const { client } = createComparisonSupabaseClient({
+      habit_definitions: {
+        data: [
+          buildHabitRow(),
+          buildHabitRow({
+            id: unsupportedHabitId,
+            title: "Future Habit",
+            habit_type: "future_type",
+            sort_order: 1,
+          }),
+        ],
+        error: null,
+      },
+      habit_check_ins: {
+        data: [
+          buildCheckInRow(),
+          buildCheckInRow({
+            id: "99999999-9999-4999-8999-999999999998",
+            habit_id: unsupportedHabitId,
+            status: "skipped",
+            value_boolean: null,
+            completed_at: null,
+          }),
+        ],
+        error: null,
+      },
+      habit_motivation_resets: {
+        data: [
+          buildResetRow({
+            habit_id: unsupportedHabitId,
+          }),
+        ],
+        error: null,
+      },
+    });
+
+    const model = await loadMyLibraryCalendarComparison(client as never, "user-1", {
+      selectedDate: "2026-06-05",
+      todayDate: "2026-06-05",
+      selectedSource: "habits",
+      selectedPeriod: "week",
+    });
+    const habits = model.sourceComparisons[0];
+
+    expect(habits).toMatchObject({
+      source: "habits",
+      status: "review",
+    });
+    expect(habits.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "active_habits", value: "1 habit" }),
+        expect.objectContaining({ id: "habit_reset_markers", value: "0 markers" }),
+        expect.objectContaining({ id: "habit_review", value: "1 habit" }),
+      ])
+    );
+    expect(habits.metrics.find((metric) => metric.id === "habit_rest_slips")).toMatchObject({
+      currentLabel: "0 rest / 0 slips",
+    });
+    expect(JSON.stringify(habits)).not.toContain("future_type");
   });
 
   it("loads Swimming through owner-scoped date-window history and avoids compatibility double counting", async () => {

@@ -88,7 +88,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 function buildSnapshot(
-  input: { activeHabitCount?: number; completionPercent?: number } = {}
+  input: {
+    activeHabitCount?: number;
+    completionPercent?: number;
+    unsupportedHabitCount?: number;
+  } = {}
 ): HabitSnapshot {
   return {
     activeHabits: Array.from({ length: input.activeHabitCount ?? 1 }, (_, index) => ({
@@ -97,6 +101,11 @@ function buildSnapshot(
     daySummary: {
       completionPercent: input.completionPercent ?? 50,
     },
+    unsupportedHabits: Array.from({ length: input.unsupportedHabitCount ?? 0 }, (_, index) => ({
+      id: `unsupported-${index + 1}`,
+      title: `Unsupported ${index + 1}`,
+      unsupportedFields: ["unknown_habit_type"],
+    })),
   } as unknown as HabitSnapshot;
 }
 
@@ -176,6 +185,23 @@ describe("MyLibraryHabitsPage", () => {
       "data-mobile-focus",
       "true"
     );
+  });
+
+  it("keeps unsupported definitions out of habits_viewed active counts", async () => {
+    loadHabitSnapshotMock.mockResolvedValue(
+      buildSnapshot({ activeHabitCount: 0, completionPercent: 0, unsupportedHabitCount: 2 })
+    );
+
+    render(await MyLibraryHabitsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "habits_viewed",
+      localDayTimezone: "Europe/Oslo",
+      payload: {
+        activeHabitCount: 0,
+        perfectDayPercent: 0,
+      },
+    });
   });
 
   it("waits for cookie reconciliation and records only the corrected local-day payload", async () => {

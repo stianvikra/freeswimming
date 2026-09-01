@@ -233,6 +233,14 @@ function getHabitLinkStatusCopy(link: DrylandMicroHabitLinkRecord | null) {
   if (!link) return null;
   const title = getHabitLinkTitle(link);
 
+  if (link.habitDefinitionSupport === "unsupported") {
+    return {
+      title: "Linked Habit needs review",
+      body: "This Micro Session still works, but the weekly program cannot count toward this Habit until its setup is supported.",
+      chip: `Needs review: ${title}`,
+    };
+  }
+
   if (link.status === "paused") {
     return {
       title: "Habit counting paused",
@@ -1095,6 +1103,7 @@ export default function DrylandMicroPlanPanel({
     if (
       plan &&
       habitLink?.status === "paused" &&
+      habitLink.habitDefinitionSupport === "supported" &&
       blockStatus === "completed" &&
       !options.skipPausedHabitPrompt &&
       plan.progress.remainingBlockCount > 0 &&
@@ -1592,21 +1601,34 @@ export default function DrylandMicroPlanPanel({
     if (pendingPausedCompletion) return null;
 
     if (habitLinkCopy && habitLink) {
+      const needsHabitReview = habitLink.habitDefinitionSupport === "unsupported";
       return (
         <div
           data-testid="dryland-micro-habit-link-status"
-          className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3 sm:p-4"
+          className={cx(
+            "rounded-2xl border p-3 sm:p-4",
+            needsHabitReview
+              ? "border-amber-200 bg-amber-50/70"
+              : "border-emerald-100 bg-emerald-50/60"
+          )}
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="inline-flex min-h-7 items-center rounded-full border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-800">
+              <span
+                className={cx(
+                  "inline-flex min-h-7 items-center rounded-full border bg-white px-3 text-xs font-semibold",
+                  needsHabitReview
+                    ? "border-amber-300 text-amber-900"
+                    : "border-emerald-200 text-emerald-800"
+                )}
+              >
                 {habitLinkCopy.chip}
               </span>
               <h4 className="mt-2 text-base font-semibold text-slate-950">{habitLinkCopy.title}</h4>
               <p className="mt-1 max-w-[64ch] text-sm text-slate-700">{habitLinkCopy.body}</p>
             </div>
             <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
-              {habitLink.status === "paused" ? (
+              {habitLink.habitDefinitionSupport === "supported" && habitLink.status === "paused" ? (
                 <button
                   type="button"
                   data-testid="dryland-micro-resume-habit-link"
@@ -1617,7 +1639,7 @@ export default function DrylandMicroPlanPanel({
                   <Play className="h-4 w-4" aria-hidden="true" />
                   {isHabitLinkSaving ? "Saving..." : "Resume counting"}
                 </button>
-              ) : habitLink.canCount ? (
+              ) : habitLink.habitDefinitionSupport === "supported" && habitLink.canCount ? (
                 <button
                   type="button"
                   data-testid="dryland-micro-pause-habit-link"
@@ -2207,7 +2229,10 @@ export default function DrylandMicroPlanPanel({
     const copy = getCollapsedPlanCopy();
     const nextUpcomingUnit = upcomingUnits[0] ?? null;
     const repeatPlan = plan ? buildArchivedRepeatPlan(plan) : null;
-    const isPausedLinkedPastWeek = isPastWeek && habitLink?.status === "paused";
+    const isPausedLinkedPastWeek =
+      isPastWeek &&
+      habitLink?.status === "paused" &&
+      habitLink.habitDefinitionSupport === "supported";
     const isManualPastWeek = isPastWeek && !habitLink;
     return (
       <div data-testid="dryland-micro-collapsed-state" className="rounded-2xl bg-slate-50/70 p-4">

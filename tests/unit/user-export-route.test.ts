@@ -57,6 +57,140 @@ describe("/api/user/export route", () => {
     vi.clearAllMocks();
   });
 
+  it("fails closed before export queries when the user is unauthenticated", async () => {
+    const from = vi.fn();
+    createServerSupabaseClientMock.mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      },
+      from,
+    });
+
+    const response = await GET();
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ ok: false, error: "Unauthorized." });
+    expect(from).not.toHaveBeenCalled();
+    expect(loadPublishedCourseModulesCachedMock).not.toHaveBeenCalled();
+  });
+
+  it("returns raw future Habit values only through the authenticated private export", async () => {
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
+    const supabase = buildExportSupabaseClient({
+      profiles: {
+        data: {
+          id: "user-1",
+          email: "swimmer@example.com",
+          created_at: "2026-08-31T08:00:00.000Z",
+          updated_at: "2026-08-31T08:00:00.000Z",
+        },
+        error: null,
+      },
+      athlete_profiles: { data: null, error: null },
+      training_preferences: { data: null, error: null },
+      habit_definitions: {
+        data: [
+          {
+            id: "habit-future",
+            title: "Private future habit",
+            notes: "Private future note",
+            habit_mode: "future_mode",
+            habit_type: "future_type",
+            category: "other",
+            target_operator: "at_least",
+            target_value_numeric: null,
+            target_unit: null,
+            target_time: null,
+            start_date: "2026-08-31",
+            last_lapse_date: null,
+            timer_enabled: false,
+            timer_target_seconds: null,
+            cadence_period: "daily",
+            cadence_target_count: 1,
+            cadence_day_policy: "fixed",
+            schedule_days: ["monday"],
+            is_perfect_day_item: true,
+            status: "future_status",
+            sort_order: 1,
+            created_at: "2026-08-31T08:00:00.000Z",
+            updated_at: "2026-08-31T08:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
+      habit_check_ins: {
+        data: [
+          {
+            id: "check-future",
+            habit_id: "habit-future",
+            check_in_date: "2026-08-31",
+            timezone: "Europe/Oslo",
+            value_numeric: null,
+            value_boolean: true,
+            value_time: null,
+            note: "Private preserved history",
+            status: "logged",
+            source_kind: "micro_session",
+            source_dryland_micro_plan_id: "micro-plan-1",
+            source_micro_block_id: "micro-block-1",
+            source_completed_at: "2026-08-31T09:00:00.000Z",
+            completed_at: "2026-08-31T09:00:00.000Z",
+            created_at: "2026-08-31T09:00:00.000Z",
+            updated_at: "2026-08-31T09:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
+    });
+    createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
+
+    const response = await GET();
+    const payload = (await response.json()) as {
+      ok: boolean;
+      export: {
+        schemaVersion: string;
+        habitDefinitions: Array<{
+          id: string;
+          habitMode: string;
+          habitType: string;
+          status: string;
+        }>;
+        habitCheckIns: Array<{
+          id: string;
+          habitId: string;
+          note: string | null;
+          sourceKind: string;
+        }>;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      export: {
+        schemaVersion: "2026-06-23-training-activity-export",
+        habitDefinitions: [
+          {
+            id: "habit-future",
+            habitMode: "future_mode",
+            habitType: "future_type",
+            status: "future_status",
+          },
+        ],
+        habitCheckIns: [
+          {
+            id: "check-future",
+            habitId: "habit-future",
+            note: "Private preserved history",
+            sourceKind: "micro_session",
+          },
+        ],
+      },
+    });
+    expect(supabase.from).toHaveBeenCalledWith("habit_definitions");
+    expect(supabase.from).toHaveBeenCalledWith("habit_check_ins");
+  });
+
   it("returns an export with empty provider arrays when provider evidence schema is missing", async () => {
     loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
     const missingProviderTable = {

@@ -31,6 +31,7 @@ import {
   type HabitMotivationRangeSummaries,
   type HabitMotivationResetView,
   type HabitSnapshot,
+  type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 
 type HabitPerfectDayHubProps = ComponentProps<typeof HabitPerfectDayHubComponent>;
@@ -42,7 +43,7 @@ function HabitPerfectDayHub({
   return <HabitPerfectDayHubComponent {...props} localDayTimezone={localDayTimezone} />;
 }
 
-function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
+function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): SupportedHabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
     user_id: "user-1",
@@ -69,7 +70,7 @@ function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinition
     created_at: "2026-05-10T08:00:00.000Z",
     updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
-  };
+  } as SupportedHabitDefinitionRow;
 }
 
 function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow {
@@ -141,8 +142,28 @@ function buildSnapshot(options?: {
     selectedDate,
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
+  };
+}
+
+function buildUnsupportedHabitSnapshot(options?: {
+  withSupportedHabit?: boolean;
+  completed?: boolean;
+}): HabitSnapshot {
+  return {
+    ...buildSnapshot({
+      withHabit: options?.withSupportedHabit,
+      completed: options?.completed,
+    }),
+    unsupportedHabits: [
+      {
+        id: "unsupported-habit-1",
+        title: "Future rhythm",
+        unsupportedFields: ["unknown_habit_type", "unknown_definition_status"],
+      },
+    ],
   };
 }
 
@@ -177,6 +198,7 @@ function buildMicroSessionHabitSnapshot(): HabitSnapshot {
     selectedDate,
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
   };
@@ -213,6 +235,7 @@ function buildOpenBuildStreakSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -242,6 +265,7 @@ function buildOpenBuildShortStreakSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -297,6 +321,7 @@ function buildCatchUpRecoverySnapshot(options?: {
     selectedDate,
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
     motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
@@ -383,6 +408,7 @@ function buildTimedSnapshot(options?: {
     selectedDate,
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
   };
@@ -422,6 +448,7 @@ function buildCountSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -448,6 +475,7 @@ function buildOpenCountSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
   };
@@ -472,6 +500,7 @@ function buildNotDueFixedDaySnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
   };
@@ -502,6 +531,7 @@ function buildRestDaySnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -541,6 +571,7 @@ function buildWeeklyDonePeriodSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -609,6 +640,7 @@ function buildPeriodStatusSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -644,6 +676,7 @@ function buildQuitSlipSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
@@ -670,6 +703,7 @@ function buildQuitOpenSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
   };
@@ -730,6 +764,7 @@ function buildMotivationHistorySnapshot(): HabitSnapshot {
     selectedDate: "2026-05-07",
     activeHabits,
     archivedHabits,
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-07"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-07"),
     motivationSummary,
@@ -766,6 +801,7 @@ function buildPastHabitsOverflowSnapshot(): HabitSnapshot {
     selectedDate,
     activeHabits: [],
     archivedHabits,
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary([], checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary([], checkIns, selectedDate),
     motivationSummary: buildHabitMotivationSummary(archivedHabits, checkIns, selectedDate),
@@ -812,6 +848,7 @@ function buildResetStatsMotivationSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
     motivationSummary,
@@ -839,6 +876,7 @@ function buildEarlyMotivationSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
     motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
@@ -871,6 +909,7 @@ function buildArchivedOnlyMotivationSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits: [],
     archivedHabits: [archivedHabit],
+    unsupportedHabits: [],
     daySummary: buildHabitDaySummary([], checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary([], checkIns, "2026-05-10"),
     motivationSummary: buildHabitMotivationSummary([archivedHabit], checkIns, "2026-05-10"),
@@ -1030,6 +1069,45 @@ describe("HabitPerfectDayHub", () => {
     expect(emptyState).toHaveTextContent("No active habits");
     expect(emptyState).toHaveTextContent("Use Add habit to start tracking today.");
     expect(screen.getByRole("button", { name: "Add habit" })).toBeVisible();
+  });
+
+  it("shows unsupported-only Habits as read-only review rows without false empty progress", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildUnsupportedHabitSnapshot()} />);
+
+    expect(screen.getByRole("heading", { level: 2, name: "Needs review" })).toBeVisible();
+    expect(screen.getByRole("status", { name: "Habits need review" })).toBeVisible();
+    expect(screen.queryByRole("progressbar", { name: "My Perfect Day completion" })).toBeNull();
+    expect(screen.queryByTestId("habits-empty-state")).toBeNull();
+    expect(screen.queryByText("No habits yet")).toBeNull();
+    expect(screen.queryByText("Perfect day logged")).toBeNull();
+
+    const reviewCard = screen.getByTestId("habit-needs-review-card-unsupported-habit-1");
+    expect(within(reviewCard).getByRole("heading", { name: "Future rhythm" })).toBeVisible();
+    expect(within(reviewCard).getByText("Needs review")).toBeVisible();
+    expect(reviewCard).toHaveTextContent("Your saved Habit and history are preserved.");
+    expect(reviewCard).toHaveTextContent("Review needed: Habit type, Status");
+    expect(within(reviewCard).queryAllByRole("button")).toHaveLength(0);
+    expect(within(reviewCard).queryAllByRole("link")).toHaveLength(0);
+  });
+
+  it("keeps known Habit rows visible but withholds a complete summary when review is needed", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildUnsupportedHabitSnapshot({
+          withSupportedHabit: true,
+          completed: true,
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111")).toBeVisible();
+    expect(screen.getByTestId("habit-needs-review-card-unsupported-habit-1")).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Needs review" })).toBeVisible();
+    expect(screen.queryByText("Perfect day logged")).toBeNull();
+    expect(screen.queryByRole("progressbar", { name: "My Perfect Day completion" })).toBeNull();
+    expect(screen.getByTestId("habit-perfect-day-summary")).toHaveTextContent(
+      "Today: 1/1 · 1 habit needs review"
+    );
   });
 
   it("uses My Library token actions on the active habit row", () => {
@@ -2939,6 +3017,7 @@ describe("HabitPerfectDayHub", () => {
       selectedDate: "2026-05-10",
       activeHabits,
       archivedHabits: [],
+      unsupportedHabits: [],
       daySummary: buildHabitDaySummary(activeHabits, [checkIn], "2026-05-10"),
       weekSummary: buildHabitWeekSummary(activeHabits, [checkIn], "2026-05-10"),
     };
@@ -3297,6 +3376,7 @@ describe("HabitPerfectDayHub", () => {
       selectedDate: "2026-05-10",
       activeHabits: [habit],
       archivedHabits: [],
+      unsupportedHabits: [],
       daySummary: buildHabitDaySummary([habit], checkIns, "2026-05-10"),
       weekSummary: buildHabitWeekSummary([habit], checkIns, "2026-05-10"),
     };
