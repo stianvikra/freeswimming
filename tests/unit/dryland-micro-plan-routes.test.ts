@@ -267,6 +267,45 @@ function buildPlanWithBlockStatus(
   });
 }
 
+const COMPLETE_BLOCK_PATCH = {
+  blockId: "block-1-exercise-1",
+  blockStatus: "completed",
+  selectedDate: "2026-06-10",
+  timezone: "UTC",
+} as const;
+
+function mockSavedCompletionTables(
+  linkTable: Record<string, unknown>,
+  habitTable: Record<string, unknown> = {}
+) {
+  const plans = buildTableFixture(
+    [buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {})],
+    undefined,
+    buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {})
+  );
+  const from = vi.fn((table: string) => {
+    if (table === "dryland_micro_plans") return plans.table;
+    if (table === "micro_session_habit_links") return linkTable;
+    if (table === "habit_definitions") return habitTable;
+    return {};
+  });
+  mockAuthenticatedClient(from);
+  return plans;
+}
+
+async function expectBlockedCompletion(body: Record<string, unknown> = {}) {
+  const response = await patchMicroPlan({ ...COMPLETE_BLOCK_PATCH, ...body });
+  const payload = await response.json();
+  expect(response.status).toBe(200);
+  expect(payload).toMatchObject({
+    ok: true,
+    plan: { status: "completed" },
+    habitCredit: { status: "blocked" },
+  });
+  expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  return payload;
+}
+
 async function expectLinkedCurrentActionPatch(
   credit: "record" | "remove",
   selectedDate: string,
@@ -630,27 +669,9 @@ describe("dryland micro plan routes", () => {
       unsupportedHabit
     );
 
-    const response = await patchMicroPlan({
-      blockId: "block-1-exercise-1",
-      blockStatus: "completed",
-      selectedDate: "2026-06-10",
-      timezone: "UTC",
-    });
-    const payload = (await response.json()) as {
-      ok: boolean;
-      plan: { status: string };
-      habitCredit: { status: string; code?: string };
-    };
+    const payload = await expectBlockedCompletion();
 
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
-      ok: true,
-      plan: { status: "completed" },
-      habitCredit: {
-        status: "blocked",
-        code: "UNSUPPORTED_HABIT_DEFINITION",
-      },
-    });
+    expect(payload.habitCredit).toMatchObject({ code: "UNSUPPORTED_HABIT_DEFINITION" });
     expect(recordMicroSessionHabitCreditMock).toHaveBeenCalledOnce();
     expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
     expect(JSON.stringify(payload)).not.toContain("future_type");
@@ -661,40 +682,14 @@ describe("dryland micro plan routes", () => {
     { name: "required paused-link load", completePausedHabitLink: true },
   ])("keeps the saved Micro completion successful when $name fails", async (testCase) => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const plans = buildTableFixture(
-      [buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {})],
-      undefined,
-      buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {})
-    );
     const linkSelect = vi.fn(() =>
       buildQueryResult({ data: null, error: { message: "link load failed" } })
     );
-    const from = vi.fn((table: string) => {
-      if (table === "dryland_micro_plans") return plans.table;
-      if (table === "micro_session_habit_links") return { select: linkSelect };
-      return {};
-    });
-    mockAuthenticatedClient(from);
+    const plans = mockSavedCompletionTables({ select: linkSelect });
 
-    const response = await patchMicroPlan({
-      blockId: "block-1-exercise-1",
-      blockStatus: "completed",
-      selectedDate: "2026-06-10",
-      timezone: "UTC",
-      ...(testCase.completePausedHabitLink ? { completePausedHabitLink: true } : {}),
-    });
-    const payload = (await response.json()) as {
-      ok: boolean;
-      plan: { status: string };
-      habitCredit: { status: string };
-    };
-
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
-      ok: true,
-      plan: { status: "completed" },
-      habitCredit: { status: "blocked" },
-    });
+    await expectBlockedCompletion(
+      testCase.completePausedHabitLink ? { completePausedHabitLink: true } : {}
+    );
     expect(plans.update).toHaveBeenCalledOnce();
     expect(recordMicroSessionHabitCreditMock).not.toHaveBeenCalled();
     expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
@@ -703,11 +698,6 @@ describe("dryland micro plan routes", () => {
 
   it("keeps the saved Micro completion successful when paused-link resume fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const plans = buildTableFixture(
-      [buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {})],
-      undefined,
-      buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {})
-    );
     const pausedLink = buildHabitLinkRow({
       status: "paused",
       paused_at: "2026-06-10T08:00:00.000Z",
@@ -717,34 +707,13 @@ describe("dryland micro plan routes", () => {
       buildQueryResult({ data: null, error: { message: "resume failed" } })
     );
     const habitSelect = vi.fn(() => buildQuery(buildHabitRow()));
-    const from = vi.fn((table: string) => {
-      if (table === "dryland_micro_plans") return plans.table;
-      if (table === "micro_session_habit_links") {
-        return { select: linkSelect, update: linkUpdate };
-      }
-      if (table === "habit_definitions") return { select: habitSelect };
-      return {};
-    });
-    mockAuthenticatedClient(from);
+    const plans = mockSavedCompletionTables(
+      { select: linkSelect, update: linkUpdate },
+      { select: habitSelect }
+    );
 
-    const response = await patchMicroPlan({
-      blockId: "block-1-exercise-1",
-      blockStatus: "completed",
-      selectedDate: "2026-06-10",
-      timezone: "UTC",
+    await expectBlockedCompletion({
       completePausedHabitLink: true,
-    });
-    const payload = (await response.json()) as {
-      ok: boolean;
-      plan: { status: string };
-      habitCredit: { status: string };
-    };
-
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
-      ok: true,
-      plan: { status: "completed" },
-      habitCredit: { status: "blocked" },
     });
     expect(plans.update).toHaveBeenCalledOnce();
     expect(linkUpdate).toHaveBeenCalledOnce();
@@ -754,11 +723,6 @@ describe("dryland micro plan routes", () => {
   });
 
   it("keeps a successfully resumed link active when its post-save refresh fails", async () => {
-    const plans = buildTableFixture(
-      [buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {})],
-      undefined,
-      buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {})
-    );
     const pausedLink = buildHabitLinkRow({
       status: "paused",
       paused_at: "2026-06-10T08:00:00.000Z",
@@ -774,50 +738,17 @@ describe("dryland micro plan routes", () => {
       );
     const linkUpdate = vi.fn(() => buildQuery(null));
     const habitSelect = vi.fn(() => buildQuery(buildHabitRow()));
-    const from = vi.fn((table: string) => {
-      if (table === "dryland_micro_plans") return plans.table;
-      if (table === "micro_session_habit_links") {
-        return { select: linkSelect, update: linkUpdate };
-      }
-      if (table === "habit_definitions") return { select: habitSelect };
-      return {};
-    });
-    mockAuthenticatedClient(from);
+    mockSavedCompletionTables({ select: linkSelect, update: linkUpdate }, { select: habitSelect });
 
-    const response = await patchMicroPlan({
-      blockId: "block-1-exercise-1",
-      blockStatus: "completed",
-      selectedDate: "2026-06-10",
-      timezone: "UTC",
+    const payload = await expectBlockedCompletion({
       completePausedHabitLink: true,
     });
-    const payload = (await response.json()) as {
-      ok: boolean;
-      plan: {
-        status: string;
-        habitLink: {
-          status: string;
-          resumedAt: string | null;
-          endedAt: string | null;
-          canCount: boolean;
-        } | null;
-      };
-      habitCredit: { status: string };
-    };
 
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
-      ok: true,
-      plan: {
-        status: "completed",
-        habitLink: {
-          status: "active",
-          resumedAt: "2026-06-10T09:00:00.000Z",
-          endedAt: null,
-          canCount: true,
-        },
-      },
-      habitCredit: { status: "blocked" },
+    expect(payload.plan.habitLink).toMatchObject({
+      status: "active",
+      resumedAt: "2026-06-10T09:00:00.000Z",
+      endedAt: null,
+      canCount: true,
     });
     expect(linkUpdate).toHaveBeenCalledWith({
       status: "active",

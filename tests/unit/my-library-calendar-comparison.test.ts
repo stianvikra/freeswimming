@@ -94,20 +94,10 @@ function buildReset(overrides: Partial<HabitMotivationResetView> = {}): HabitMot
 function buildHabitRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
-    user_id: "user-1",
     title: "Morning mobility",
-    notes: null,
     habit_mode: "build",
     habit_type: "binary",
-    category: "movement",
-    target_operator: "at_least",
-    target_value_numeric: null,
-    target_unit: null,
-    target_time: null,
     start_date: "2026-05-01",
-    last_lapse_date: null,
-    timer_enabled: false,
-    timer_target_seconds: null,
     cadence_period: "daily",
     cadence_target_count: 1,
     cadence_day_policy: "fixed",
@@ -118,38 +108,26 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefini
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     ...overrides,
-  };
+  } as HabitDefinitionRow;
 }
 
 function buildCheckInRow(overrides: Partial<HabitCheckInRow> = {}): HabitCheckInRow {
   return {
     id: "22222222-2222-4222-8222-222222222222",
-    user_id: "user-1",
     habit_id: "11111111-1111-4111-8111-111111111111",
     check_in_date: "2026-06-02",
     timezone: "Europe/Oslo",
-    value_numeric: null,
     value_boolean: true,
-    value_time: null,
-    timer_seconds: 0,
-    manual_minutes: 0,
-    note: null,
     source_kind: "manual",
-    source_dryland_micro_plan_id: null,
-    source_micro_block_id: null,
-    source_completed_at: null,
     status: "logged",
     completed_at: "2026-06-02T08:00:00.000Z",
-    created_at: "2026-06-02T08:00:00.000Z",
-    updated_at: "2026-06-02T08:00:00.000Z",
     ...overrides,
-  };
+  } as HabitCheckInRow;
 }
 
 function buildResetRow(overrides: Partial<HabitMotivationResetRow> = {}): HabitMotivationResetRow {
   return {
     id: "33333333-3333-4333-8333-333333333333",
-    user_id: "user-1",
     habit_id: "11111111-1111-4111-8111-111111111111",
     reset_type: "reset_stats",
     status: "active",
@@ -157,7 +135,7 @@ function buildResetRow(overrides: Partial<HabitMotivationResetRow> = {}): HabitM
     created_by: "user-1",
     created_at: "2026-06-04T08:00:00.000Z",
     ...overrides,
-  };
+  } as HabitMotivationResetRow;
 }
 
 function buildTrainingActivity(

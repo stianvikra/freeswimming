@@ -765,72 +765,34 @@ describe("buildUserExportPayload", () => {
     type ExportHabitDefinition = ExportInput["habitDefinitions"][number];
     type ExportHabitCheckIn = ExportInput["habitCheckIns"][number];
 
-    const buildDefinition = (
-      id: string,
-      overrides: Partial<ExportHabitDefinition>
-    ): ExportHabitDefinition => ({
-      id,
-      title: `Private habit ${id}`,
-      notes: `Private note ${id}`,
-      habit_mode: "build",
-      habit_type: "binary",
-      category: "other",
-      target_operator: "at_least",
-      target_value_numeric: null,
-      target_unit: null,
-      target_time: null,
-      start_date: "2026-08-31",
-      last_lapse_date: null,
-      timer_enabled: false,
-      timer_target_seconds: null,
-      cadence_period: "daily",
-      cadence_target_count: 1,
-      cadence_day_policy: "fixed",
-      schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-      is_perfect_day_item: true,
-      status: "active",
-      sort_order: 1,
-      created_at: "2026-08-31T08:00:00.000Z",
-      updated_at: "2026-08-31T08:00:00.000Z",
-      ...overrides,
-    });
-    const definitions = [
-      buildDefinition("habit-future-type", {
-        habit_type: "future_type" as ExportHabitDefinition["habit_type"],
-      }),
-      buildDefinition("habit-future-mode", {
-        habit_mode: "future_mode" as ExportHabitDefinition["habit_mode"],
-        sort_order: 2,
-      }),
-      buildDefinition("habit-future-status", {
-        status: "future_status" as ExportHabitDefinition["status"],
-        sort_order: 3,
-      }),
-      buildDefinition("habit-future-mixed", {
-        habit_type: "future_type_mixed" as ExportHabitDefinition["habit_type"],
-        habit_mode: "future_mode_mixed" as ExportHabitDefinition["habit_mode"],
-        status: "future_status_mixed" as ExportHabitDefinition["status"],
-        sort_order: 4,
-      }),
-    ];
-    const checkIns: ExportHabitCheckIn[] = definitions.map((definition, index) => ({
-      id: `check-${index + 1}`,
-      habit_id: definition.id,
-      check_in_date: "2026-08-31",
-      timezone: "Europe/Oslo",
-      value_numeric: null,
-      value_boolean: true,
-      value_time: null,
-      note: `Private history ${index + 1}`,
-      status: "logged",
-      source_kind: index === 3 ? "micro_session" : "manual",
-      source_dryland_micro_plan_id: index === 3 ? "micro-plan-1" : null,
-      source_micro_block_id: index === 3 ? "micro-block-1" : null,
-      source_completed_at: index === 3 ? "2026-08-31T09:00:00.000Z" : null,
-      completed_at: "2026-08-31T09:00:00.000Z",
-      created_at: "2026-08-31T09:00:00.000Z",
-      updated_at: "2026-08-31T09:00:00.000Z",
-    }));
+    const futureDefinitions = [
+      ["habit-future-type", "future_type", "build", "active"],
+      ["habit-future-mode", "binary", "future_mode", "active"],
+      ["habit-future-status", "binary", "build", "future_status"],
+      ["habit-future-mixed", "future_type_mixed", "future_mode_mixed", "future_status_mixed"],
+    ] as const;
+    const definitions = futureDefinitions.map(
+      ([id, habit_type, habit_mode, status], index) =>
+        ({
+          id,
+          title: `Private habit ${id}`,
+          notes: `Private note ${id}`,
+          habit_type,
+          habit_mode,
+          status,
+          sort_order: index + 1,
+        }) as unknown as ExportHabitDefinition
+    );
+    const checkIns = definitions.map(
+      (definition, index) =>
+        ({
+          id: `check-${index + 1}`,
+          habit_id: definition.id,
+          note: `Private history ${index + 1}`,
+          source_kind: index === 3 ? "micro_session" : "manual",
+          source_dryland_micro_plan_id: index === 3 ? "micro-plan-1" : null,
+        }) as unknown as ExportHabitCheckIn
+    );
 
     const payload = buildUserExportPayload({
       userId: "user-private-export",
@@ -867,32 +829,14 @@ describe("buildUserExportPayload", () => {
         habitMode,
         status,
       }))
-    ).toEqual([
-      {
-        id: "habit-future-type",
-        habitType: "future_type",
-        habitMode: "build",
-        status: "active",
-      },
-      {
-        id: "habit-future-mode",
-        habitType: "binary",
-        habitMode: "future_mode",
-        status: "active",
-      },
-      {
-        id: "habit-future-status",
-        habitType: "binary",
-        habitMode: "build",
-        status: "future_status",
-      },
-      {
-        id: "habit-future-mixed",
-        habitType: "future_type_mixed",
-        habitMode: "future_mode_mixed",
-        status: "future_status_mixed",
-      },
-    ]);
+    ).toEqual(
+      futureDefinitions.map(([id, habitType, habitMode, status]) => ({
+        id,
+        habitType,
+        habitMode,
+        status,
+      }))
+    );
     expect(payload.habitCheckIns).toEqual(
       checkIns.map((row) =>
         expect.objectContaining({

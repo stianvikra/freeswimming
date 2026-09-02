@@ -50,31 +50,12 @@ function buildHabitLink(
 function buildHabitDefinitionRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
-    user_id: "user-1",
     title: "Mobility habit",
-    notes: null,
     habit_mode: "build",
     habit_type: "binary",
-    category: "movement",
-    target_operator: "at_least",
-    target_value_numeric: null,
-    target_unit: null,
-    target_time: null,
-    start_date: "2026-05-10",
-    last_lapse_date: null,
-    timer_enabled: false,
-    timer_target_seconds: null,
-    cadence_period: "weekly",
-    cadence_target_count: 1,
-    cadence_day_policy: "any",
-    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-    is_perfect_day_item: false,
     status: "active",
-    sort_order: 1,
-    created_at: "2026-05-10T08:00:00.000Z",
-    updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
-  };
+  } as HabitDefinitionRow;
 }
 
 function buildMicroHabitLinkRow(
@@ -82,18 +63,14 @@ function buildMicroHabitLinkRow(
 ): MicroSessionHabitLinkRow {
   return {
     id: "link-1",
-    user_id: "user-1",
-    dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
     habit_id: "11111111-1111-4111-8111-111111111111",
     status: "active",
     starts_on: "2026-05-10",
     paused_at: null,
     resumed_at: "2026-05-10T08:00:00.000Z",
     ended_at: null,
-    created_at: "2026-05-10T08:00:00.000Z",
-    updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
-  };
+  } as MicroSessionHabitLinkRow;
 }
 
 function buildDraft(): DrylandSessionDraft {
@@ -861,24 +838,47 @@ describe("dryland micro plans", () => {
 
   it.each([
     {
+      name: "removes supported credit",
       habitDefinitionSupport: "supported" as const,
+      rows: [{ id: "credit-1" }],
       expected: {
         status: "removed",
         message: "Habit credit removed for this week.",
       },
     },
     {
+      name: "removes unsupported credit",
       habitDefinitionSupport: "unsupported" as const,
+      rows: [{ id: "credit-1" }],
       expected: {
         status: "removed",
         code: "UNSUPPORTED_HABIT_DEFINITION",
         message: "Habit credit removed for this week. The linked Habit still needs review.",
       },
     },
+    {
+      name: "reports missing supported credit",
+      habitDefinitionSupport: "supported" as const,
+      rows: [],
+      expected: {
+        status: "blocked",
+        message: "Micro Session updated, but no source-backed Habit credit was found.",
+      },
+    },
+    {
+      name: "reports missing unsupported credit",
+      habitDefinitionSupport: "unsupported" as const,
+      rows: [],
+      expected: {
+        status: "blocked",
+        code: "UNSUPPORTED_HABIT_DEFINITION",
+        message: "Micro Session updated, but no source-backed Habit credit was found.",
+      },
+    },
   ])(
-    "removes only the provenance-scoped weekly credit for a $habitDefinitionSupport definition",
-    async ({ habitDefinitionSupport, expected }) => {
-      const deleteSelect = vi.fn().mockResolvedValue({ data: [{ id: "credit-1" }], error: null });
+    "$name with provenance-scoped deletion",
+    async ({ habitDefinitionSupport, rows, expected }) => {
+      const deleteSelect = vi.fn().mockResolvedValue({ data: rows, error: null });
       const deleteLte = vi.fn(() => ({ select: deleteSelect }));
       const deleteGte = vi.fn(() => ({ lte: deleteLte }));
       const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
@@ -918,57 +918,6 @@ describe("dryland micro plans", () => {
       );
       expect(deleteGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
       expect(deleteLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
-      expect(deleteSelect).toHaveBeenCalledWith("id");
-    }
-  );
-
-  it.each([
-    {
-      habitDefinitionSupport: "supported" as const,
-      expected: {
-        status: "blocked",
-        message: "Micro Session updated, but no source-backed Habit credit was found.",
-      },
-    },
-    {
-      habitDefinitionSupport: "unsupported" as const,
-      expected: {
-        status: "blocked",
-        code: "UNSUPPORTED_HABIT_DEFINITION",
-        message: "Micro Session updated, but no source-backed Habit credit was found.",
-      },
-    },
-  ])(
-    "reports no matching provenance credit truthfully for a $habitDefinitionSupport definition",
-    async ({ habitDefinitionSupport, expected }) => {
-      const deleteSelect = vi.fn().mockResolvedValue({ data: [], error: null });
-      const deleteLte = vi.fn(() => ({ select: deleteSelect }));
-      const deleteGte = vi.fn(() => ({ lte: deleteLte }));
-      const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
-      const deleteEqSource = vi.fn(() => ({ eq: deleteEqPlan }));
-      const deleteEqHabit = vi.fn(() => ({ eq: deleteEqSource }));
-      const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
-      const deleteMock = vi.fn(() => ({ eq: deleteEqUser }));
-      const from = vi.fn(() => ({ delete: deleteMock }));
-
-      const result = await removeMicroSessionHabitCredit({ from } as never, {
-        userId: "user-1",
-        planId: "22222222-2222-4222-8222-222222222222",
-        link: buildHabitLink({
-          habitDefinitionSupport,
-          ...(habitDefinitionSupport === "unsupported"
-            ? {
-                habitStatus: "unsupported" as const,
-                habitMode: "unsupported" as const,
-                canCount: false,
-              }
-            : {}),
-        }),
-        selectedDate: "2026-05-10",
-        todayDate: "2026-05-10",
-      });
-
-      expect(result).toEqual(expected);
       expect(deleteSelect).toHaveBeenCalledWith("id");
     }
   );
