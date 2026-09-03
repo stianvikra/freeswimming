@@ -27,6 +27,7 @@ import {
   getHabitMotivationRangeStartDate,
   HABIT_MOTIVATION_RANGE_VALUES,
   type HabitCheckInRow,
+  type HabitDayStatusView,
   type HabitDefinitionRow,
   type HabitMotivationRangeSummaries,
   type HabitMotivationResetView,
@@ -102,12 +103,14 @@ function buildMotivationRangeSummaries(
   habits: ReturnType<typeof buildHabitDefinitionView>[],
   checkIns: ReturnType<typeof buildHabitCheckInView>[],
   selectedDate: string,
-  resetEvents: HabitMotivationResetView[] = []
+  resetEvents: HabitMotivationResetView[] = [],
+  dayStatuses: HabitDayStatusView[] = []
 ): HabitMotivationRangeSummaries {
   return HABIT_MOTIVATION_RANGE_VALUES.reduce<HabitMotivationRangeSummaries>((summaries, range) => {
     summaries[range] = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
       historyStartDate: getHabitMotivationRangeStartDate(range, selectedDate),
       resetEvents,
+      dayStatuses,
     });
     return summaries;
   }, {});
@@ -275,6 +278,9 @@ function buildCatchUpRecoverySnapshot(options?: {
   secondHabit?: boolean;
   partialUseDate?: string;
   selectedDate?: string;
+  dayStatuses?: HabitDayStatusView[];
+  dayStatusesReady?: boolean;
+  acknowledgedDates?: string[];
 }): HabitSnapshot {
   const selectedDate = options?.selectedDate ?? "2026-05-10";
   const primaryHabit = buildHabitDefinitionView(
@@ -313,6 +319,8 @@ function buildCatchUpRecoverySnapshot(options?: {
       )
     );
   }
+  const dayStatuses = options?.dayStatuses ?? [];
+  const metricOptions = { dayStatuses };
 
   return {
     schemaReady: true,
@@ -322,10 +330,117 @@ function buildCatchUpRecoverySnapshot(options?: {
     activeHabits,
     archivedHabits: [],
     unsupportedHabits: [],
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
-    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
-    motivationSummaries: buildMotivationRangeSummaries(activeHabits, checkIns, "2026-05-10"),
+    absenceReviewAcknowledgedDates: options?.acknowledgedDates,
+    dayStatusesReady: options?.dayStatusesReady ?? true,
+    dayStatuses,
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, metricOptions),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, metricOptions),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10", {
+      dayStatuses,
+    }),
+    motivationSummaries: buildMotivationRangeSummaries(
+      activeHabits,
+      checkIns,
+      "2026-05-10",
+      [],
+      dayStatuses
+    ),
+  };
+}
+
+function buildArchivedNotTrackedRecoverySnapshot(options?: {
+  selectedDate?: string;
+  includeDayStatus?: boolean;
+}): HabitSnapshot {
+  const selectedDate = options?.selectedDate ?? "2026-05-05";
+  const archivedHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Archived reading habit",
+      start_date: "2026-05-04",
+      status: "archived",
+    })
+  );
+  const dayStatuses: HabitDayStatusView[] =
+    options?.includeDayStatus === false
+      ? []
+      : [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }];
+  const metricOptions = { dayStatuses };
+
+  return {
+    schemaReady: true,
+    resetEventsReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits: [],
+    archivedHabits: [archivedHabit],
+    unsupportedHabits: [],
+    absenceReviewRecordedCheckInDates: [],
+    absenceReviewAcknowledgedDates: ["2026-05-05"],
+    dayStatusesReady: true,
+    dayStatuses,
+    daySummary: buildHabitDaySummary([], [], selectedDate, metricOptions),
+    weekSummary: buildHabitWeekSummary([], [], selectedDate, metricOptions),
+    motivationSummary: buildHabitMotivationSummary([archivedHabit], [], "2026-05-10", {
+      dayStatuses,
+    }),
+    motivationSummaries: buildMotivationRangeSummaries(
+      [archivedHabit],
+      [],
+      "2026-05-10",
+      [],
+      dayStatuses
+    ),
+  };
+}
+
+function buildSingletonAbsenceReviewSnapshot(options?: {
+  dayStatus?: "not_tracked";
+  acknowledged?: boolean;
+}): HabitSnapshot {
+  const selectedDate = "2026-05-09";
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Read 10 pages",
+      start_date: "2026-05-08",
+    })
+  );
+  const activeHabits = [habit];
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        check_in_date: "2026-05-08",
+      })
+    ),
+  ];
+  const dayStatuses: HabitDayStatusView[] = options?.dayStatus
+    ? [{ reviewDate: selectedDate, dayStatus: options.dayStatus }]
+    : [];
+  const metricOptions = { dayStatuses };
+
+  return {
+    schemaReady: true,
+    resetEventsReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits,
+    archivedHabits: [],
+    unsupportedHabits: [],
+    absenceReviewAcknowledgedDates: options?.acknowledged ? [selectedDate] : [],
+    dayStatusesReady: true,
+    dayStatuses,
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, metricOptions),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, metricOptions),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10", {
+      dayStatuses,
+    }),
+    motivationSummaries: buildMotivationRangeSummaries(
+      activeHabits,
+      checkIns,
+      "2026-05-10",
+      [],
+      dayStatuses
+    ),
   };
 }
 
@@ -772,6 +887,108 @@ function buildMotivationHistorySnapshot(): HabitSnapshot {
   };
 }
 
+function buildAnyCadenceMotivationSnapshot(cadencePeriod: "weekly" | "monthly"): HabitSnapshot {
+  const isWeekly = cadencePeriod === "weekly";
+  const selectedDate = isWeekly ? "2026-05-10" : "2026-05-31";
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: isWeekly ? "Weekly planning" : "Monthly review",
+      start_date: isWeekly ? "2026-04-27" : "2026-04-01",
+      cadence_period: cadencePeriod,
+      cadence_day_policy: "any",
+      cadence_target_count: 1,
+    })
+  );
+  const checkInDates = isWeekly ? ["2026-04-28", "2026-05-05"] : ["2026-04-05", "2026-05-05"];
+  const checkIns = checkInDates.map((date, index) =>
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: `${cadencePeriod}-motivation-${index}`,
+        habit_id: habit.id,
+        check_in_date: date,
+      })
+    )
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits,
+    archivedHabits: [],
+    unsupportedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, selectedDate),
+    motivationSummaries: buildMotivationRangeSummaries(activeHabits, checkIns, selectedDate),
+  };
+}
+
+function buildPartialDayCoverageSnapshot(): HabitSnapshot {
+  const selectedDate = "2026-05-10";
+  const dailyHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Daily reading",
+      start_date: "2026-05-04",
+    })
+  );
+  const weeklyHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Twice-weekly planning",
+      start_date: "2026-05-04",
+      cadence_period: "weekly",
+      cadence_day_policy: "any",
+      cadence_target_count: 2,
+      sort_order: 2,
+    })
+  );
+  const activeHabits = [dailyHabit, weeklyHabit];
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: dailyHabit.id,
+        check_in_date: selectedDate,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: "77777777-7777-4777-8777-777777777778",
+        habit_id: weeklyHabit.id,
+        check_in_date: "2026-05-05",
+      })
+    ),
+  ];
+  const dayStatuses: HabitDayStatusView[] = [
+    { reviewDate: "2026-05-09", dayStatus: "not_tracked" },
+  ];
+  const metricOptions = { dayStatuses };
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits,
+    archivedHabits: [],
+    unsupportedHabits: [],
+    dayStatusesReady: true,
+    dayStatuses,
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, metricOptions),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, metricOptions),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, selectedDate, {
+      dayStatuses,
+    }),
+    motivationSummaries: buildMotivationRangeSummaries(
+      activeHabits,
+      checkIns,
+      selectedDate,
+      [],
+      dayStatuses
+    ),
+  };
+}
+
 function buildPastHabitsOverflowSnapshot(): HabitSnapshot {
   const archivedHabits = [
     ["aaaaaaaa-1111-4111-8111-111111111111", "Newest archived", "2026-05-12T08:00:00.000Z"],
@@ -1108,6 +1325,26 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveTextContent(
       "Today: 1/1 · 1 habit needs review"
     );
+  });
+
+  it("shows partial day coverage as tracking incomplete without false Perfect Day progress", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildPartialDayCoverageSnapshot()} />);
+
+    const summary = screen.getByTestId("habit-perfect-day-summary");
+    expect(within(summary).getByRole("heading", { name: "Tracking incomplete" })).toBeVisible();
+    expect(
+      within(summary).getByRole("status", { name: "Habit tracking incomplete" })
+    ).toHaveTextContent("Tracking incomplete");
+    expect(within(summary).queryByText("Perfect day logged")).toBeNull();
+    expect(
+      within(summary).queryByRole("progressbar", { name: "My Perfect Day completion" })
+    ).toBeNull();
+
+    const weekOverview = within(summary).getByTestId("habits-week-overview-summary");
+    const sunday = within(weekOverview).getByRole("link", { name: /Sun May 10/ });
+    expect(within(sunday).getByText("Tracking incomplete")).toBeVisible();
+    expect(within(sunday).getByText("1/2 known")).toBeVisible();
+    expect(within(sunday).queryByText("1/1")).toBeNull();
   });
 
   it("uses My Library token actions on the active habit row", () => {
@@ -1859,6 +2096,471 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
+  });
+
+  it("marks exactly the visible review days not tracked without creating check-ins", async () => {
+    const visibleDates = ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"];
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        affectedDates: visibleDates,
+        affectedCount: visibleDates.length,
+        snapshot: buildCatchUpRecoverySnapshot({
+          acknowledgedDates: visibleDates,
+          dayStatuses: visibleDates.map((reviewDate) => ({
+            reviewDate,
+            dayStatus: "not_tracked" as const,
+          })),
+        }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    expect(
+      screen.getByText(
+        "Applies only to the visible days in this selected week. Other weeks stay unchanged."
+      )
+    ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark all 5 visible review days not tracked in this selected week",
+      })
+    );
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/habits/absence-review",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: visibleDates,
+      selectedDate: "2026-05-10",
+      action: "not_tracked_visible_batch",
+      dayStatus: "not_tracked",
+    });
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/check-ins"))).toBe(
+      false
+    );
+    const feedback = await screen.findByTestId("habits-day-status-notice");
+    expect(feedback).toHaveTextContent(
+      "5 visible review days were marked not tracked. Other weeks were not changed."
+    );
+    expect(feedback).not.toHaveClass("border-emerald-200");
+    expect(screen.queryByTestId("habits-action-success")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(feedback.parentElement));
+  });
+
+  it("keeps an already not-tracked date out of the visible batch request", async () => {
+    const visibleDates = ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"];
+    const candidateDates = visibleDates.slice(1);
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        affectedDates: candidateDates,
+        affectedCount: candidateDates.length,
+        snapshot: buildCatchUpRecoverySnapshot({
+          acknowledgedDates: visibleDates,
+          dayStatuses: visibleDates.map((reviewDate) => ({
+            reviewDate,
+            dayStatus: "not_tracked" as const,
+          })),
+        }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({
+          acknowledgedDates: [visibleDates[0]!],
+          dayStatuses: [{ reviewDate: visibleDates[0]!, dayStatus: "not_tracked" }],
+        })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark all 4 visible review days not tracked in this selected week",
+      })
+    );
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: candidateDates,
+      action: "not_tracked_visible_batch",
+    });
+    expect(await screen.findByTestId("habits-day-status-notice")).toHaveTextContent(
+      "4 visible review days were marked not tracked. Other weeks were not changed."
+    );
+  });
+
+  it("announces review saves outside busy content and preserves retry focus after failure", async () => {
+    let rejectResponse: ((reason?: unknown) => void) | undefined;
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise<Response>((_resolve, reject) => {
+          rejectResponse = reject;
+        })
+    );
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    const actions = screen.getByTestId("habits-absence-review-actions");
+    const trigger = within(actions).getByRole("button", {
+      name: "Mark all 5 visible review days not tracked in this selected week",
+    });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    await waitFor(() => expect(actions).toHaveAttribute("aria-busy", "true"));
+    const pendingStatus = screen.getByTestId("habits-absence-review-pending-status");
+    expect(pendingStatus).toHaveTextContent("Saving review changes");
+    expect(pendingStatus.closest('[aria-busy="true"]')).toBeNull();
+    expect(trigger).toHaveAttribute("aria-disabled", "true");
+    expect(trigger).not.toBeDisabled();
+    expect(trigger).toHaveFocus();
+
+    const startReviewLink = within(actions).getByRole("link", { name: "Start review" });
+    expect(startReviewLink).toHaveAttribute("aria-disabled", "true");
+    expect(startReviewLink).toHaveAttribute("tabindex", "-1");
+    expect(startReviewLink).toHaveClass("pointer-events-none");
+    fireEvent.click(startReviewLink);
+    expect(navigationState.push).not.toHaveBeenCalled();
+
+    await act(async () => {
+      rejectResponse?.(new Error("Review request failed."));
+    });
+
+    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
+      "Review request failed."
+    );
+    expect(actions).not.toHaveAttribute("aria-busy", "true");
+    expect(pendingStatus).toBeEmptyDOMElement();
+    expect(trigger).not.toHaveAttribute("aria-disabled");
+    expect(trigger).toHaveFocus();
+  });
+
+  it("rejects a deferred review snapshot after the selected date changes", async () => {
+    const visibleDates = ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"];
+    let resolveResponse: ((response: Response) => void) | undefined;
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        })
+    );
+
+    const { rerender } = render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark all 5 visible review days not tracked in this selected week",
+      })
+    );
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    const blockedDateLink = screen.getByRole("link", { name: "Start review" });
+    fireEvent.click(blockedDateLink);
+    expect(navigationState.push).not.toHaveBeenCalled();
+
+    rerender(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-06" })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Wed · May 6")
+    );
+
+    await act(async () => {
+      resolveResponse?.({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          affectedDates: visibleDates,
+          affectedCount: visibleDates.length,
+          snapshot: buildCatchUpRecoverySnapshot({
+            acknowledgedDates: visibleDates,
+            dayStatuses: visibleDates.map((reviewDate) => ({
+              reviewDate,
+              dayStatus: "not_tracked" as const,
+            })),
+          }),
+        }),
+      } as Response);
+    });
+
+    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
+      "The selected date changed while the review was saving. Refresh to load the latest review."
+    );
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Wed · May 6");
+    expect(screen.queryByTestId("habits-day-status-notice")).toBeNull();
+  });
+
+  it("marks one review day not tracked and allows Undo without reopening its review", async () => {
+    const notTrackedSnapshot = buildCatchUpRecoverySnapshot({
+      selectedDate: "2026-05-05",
+      acknowledgedDates: ["2026-05-05"],
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }],
+    });
+    const undoneSnapshot = buildCatchUpRecoverySnapshot({
+      selectedDate: "2026-05-05",
+      acknowledgedDates: ["2026-05-05"],
+    });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          affectedDates: ["2026-05-05"],
+          affectedCount: 1,
+          snapshot: notTrackedSnapshot,
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          affectedDates: ["2026-05-05"],
+          affectedCount: 1,
+          snapshot: undoneSnapshot,
+        }),
+      } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    fireEvent.click(within(panel).getByRole("button", { name: "Mark this day not tracked" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05"],
+      action: "not_tracked_single",
+      dayStatus: "not_tracked",
+    });
+    expect(await within(panel).findByRole("button", { name: "Undo not tracked" })).toBeVisible();
+    expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
+      "Not tracked"
+    );
+    expect(screen.getByRole("status", { name: "Habit day not tracked" })).toBeVisible();
+    expect(screen.queryByRole("progressbar", { name: "My Perfect Day completion" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Undo not tracked" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[1]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05"],
+      action: "not_tracked_undo",
+      dayStatus: null,
+    });
+    await waitFor(() => {
+      expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
+        "Checked"
+      );
+    });
+    expect(within(panel).getByText("Day checked")).toBeVisible();
+    expect(screen.getByTestId("habits-day-status-notice")).toHaveTextContent(
+      "The review remains checked."
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByTestId("habits-day-status-notice").parentElement
+      )
+    );
+  });
+
+  it("keeps Undo visible for the selected saved status after its Habit is archived", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        affectedDates: ["2026-05-05"],
+        affectedCount: 1,
+        snapshot: buildArchivedNotTrackedRecoverySnapshot({ includeDayStatus: false }),
+      }),
+    } as Response);
+
+    const { rerender } = render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildArchivedNotTrackedRecoverySnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    expect(screen.queryByTestId("habits-catch-up-assistant")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Mark all .* visible review days not tracked/ })
+    ).toBeNull();
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    const recoveryRow = within(panel).getByTestId("habits-absence-review-date-2026-05-05");
+    expect(recoveryRow).toHaveTextContent("No current habits");
+    expect(recoveryRow).toHaveTextContent("Not tracked");
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Undo not tracked" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05"],
+      action: "not_tracked_undo",
+      dayStatus: null,
+    });
+    await waitFor(() => expect(screen.queryByTestId("habits-selected-absence-review")).toBeNull());
+    expect(screen.getByTestId("habits-day-status-notice")).toHaveTextContent(
+      "The review remains checked."
+    );
+
+    rerender(
+      <HabitPerfectDayHub
+        initialSnapshot={buildArchivedNotTrackedRecoverySnapshot({ selectedDate: "2026-05-10" })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+    expect(screen.queryByTestId("habits-catch-up-assistant")).toBeNull();
+    expect(screen.queryByTestId("habits-selected-absence-review")).toBeNull();
+  });
+
+  it("shows one eligible historical review date and supports mark then Undo", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          affectedDates: ["2026-05-09"],
+          affectedCount: 1,
+          snapshot: buildSingletonAbsenceReviewSnapshot({
+            dayStatus: "not_tracked",
+            acknowledged: true,
+          }),
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          affectedDates: ["2026-05-09"],
+          affectedCount: 1,
+          snapshot: buildSingletonAbsenceReviewSnapshot({ acknowledged: true }),
+        }),
+      } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSingletonAbsenceReviewSnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    expect(screen.queryByTestId("habits-catch-up-assistant")).toBeNull();
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    expect(within(panel).getByText("0 of 1 checked")).toBeVisible();
+    fireEvent.click(within(panel).getByRole("button", { name: "Mark this day not tracked" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-09"],
+      action: "not_tracked_single",
+      dayStatus: "not_tracked",
+    });
+    expect(await within(panel).findByRole("button", { name: "Undo not tracked" })).toBeVisible();
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Undo not tracked" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[1]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-09"],
+      action: "not_tracked_undo",
+      dayStatus: null,
+    });
+    await waitFor(() => {
+      expect(within(panel).getByTestId("habits-absence-review-date-2026-05-09")).toHaveTextContent(
+        "Checked"
+      );
+    });
+  });
+
+  it("fails closed on unknown or unavailable review-day statuses", () => {
+    const { rerender } = render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({
+          selectedDate: "2026-05-05",
+          dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "unsupported" }],
+        })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    expect(within(panel).getByText("Day status needs review")).toBeVisible();
+    expect(within(panel).queryByRole("button", { name: "Mark this day not tracked" })).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Undo not tracked" })).toBeNull();
+    expect(screen.getAllByText("Needs review").length).toBeGreaterThan(0);
+    expect(document.body).not.toHaveTextContent("unsupported");
+    const summary = screen.getByTestId("habit-perfect-day-summary");
+    expect(within(summary).getByText("Daily habits").parentElement).toHaveTextContent(
+      "Needs review"
+    );
+    expect(within(summary).getByText("Weekly habits").parentElement).toHaveTextContent(
+      "Needs review"
+    );
+    const motivation = screen.getByTestId("habits-motivation-history");
+    expect(
+      within(motivation).getByText("Current perfect-day streak").parentElement
+    ).toHaveTextContent("Needs review");
+    expect(within(motivation).getByText("Consistency").parentElement).toHaveTextContent(
+      "Needs review"
+    );
+
+    rerender(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ dayStatusesReady: false })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    expect(screen.getByTestId("habits-review-day-status-unavailable")).toHaveTextContent(
+      "Review-day statuses are still syncing"
+    );
+    expect(screen.queryByTestId("habits-catch-up-assistant")).toBeNull();
+    expect(screen.queryByRole("progressbar", { name: "My Perfect Day completion" })).toBeNull();
+    expect(screen.getByTestId("habit-perfect-day-summary")).toHaveTextContent(
+      "Day status unavailable"
+    );
   });
 
   it("does not show partial-use days in the prominent absence review list", () => {
@@ -3488,8 +4190,15 @@ describe("HabitPerfectDayHub", () => {
     expect(
       within(history).getByText("Slips", { selector: "strong" }).closest("p")
     ).toHaveTextContent("Slips are logged misses for Quit habits.");
-    expect(within(history).getByText("0/0").closest("p")).toHaveTextContent(
-      "0/0 means there were no scheduled Perfect Day-counting habits in the selected period."
+    expect(
+      within(history).getByText("Coverage", { selector: "strong" }).closest("p")
+    ).toHaveTextContent(
+      "Coverage is included days divided by all potential days in the selected period."
+    );
+    expect(
+      within(history).getByText("Not tracked", { selector: "strong" }).closest("p")
+    ).toHaveTextContent(
+      "Not tracked means the day has no trustworthy observation. It is not Done, Missed, Rest day, Slip, Perfect Day, or streak protection."
     );
     expect(within(history).queryByText("Early data")).toBeNull();
     expect(within(history).queryByText("Micro Sessions")).toBeNull();
@@ -3702,7 +4411,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("Habit stats reset. Earlier check-ins stayed saved.")).toBeVisible();
   });
 
-  it("keeps Motivation metrics numeric while explaining empty data", () => {
+  it("separates Motivation performance from coverage and empty data", () => {
     const { rerender } = render(
       <HabitPerfectDayHub initialSnapshot={buildEarlyMotivationSnapshot()} />
     );
@@ -3718,7 +4427,9 @@ describe("HabitPerfectDayHub", () => {
 
     const emptyHistory = screen.getByTestId("habits-motivation-history");
     expect(within(emptyHistory).getByText("0/0")).toBeVisible();
-    expect(within(emptyHistory).getByText("0%")).toBeVisible();
+    expect(within(emptyHistory).getByText("No tracked data")).toBeVisible();
+    expect(within(emptyHistory).getByText("No opportunities")).toBeVisible();
+    expect(within(emptyHistory).queryByText("0%")).toBeNull();
     expect(within(emptyHistory).getByTestId("habits-motivation-data-quality")).toHaveTextContent(
       "No scheduled Perfect Day days in this period."
     );
@@ -3761,6 +4472,52 @@ describe("HabitPerfectDayHub", () => {
     expect(within(progress).getByText("Days completed")).toBeVisible();
     expect(within(progress).getByText("5/6")).toBeVisible();
     expect(within(progress).queryByText("5/6 days hit")).toBeNull();
+  });
+
+  it("uses weeks for weekly any-day per-habit Motivation units", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildAnyCadenceMotivationSnapshot("weekly")} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+
+    const progress = within(card).getByTestId(
+      "habit-progress-details-11111111-1111-4111-8111-111111111111"
+    );
+    expect(within(progress).getByText("Current streak").parentElement).toHaveTextContent("2 weeks");
+    expect(within(progress).getByText("Best streak").parentElement).toHaveTextContent("2 weeks");
+    expect(within(progress).getByText("Weeks completed").parentElement).toHaveTextContent(
+      "2/2 weeks"
+    );
+    expect(within(progress).getByText("Coverage").parentElement).toHaveTextContent(
+      "2/2 weeks · 100%"
+    );
+    expect(within(progress).getByText("Not tracked").parentElement).toHaveTextContent("0 days");
+    expect(within(progress).queryByText("Days completed")).toBeNull();
+  });
+
+  it("uses months for monthly any-day per-habit Motivation units", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildAnyCadenceMotivationSnapshot("monthly")} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+
+    const progress = within(card).getByTestId(
+      "habit-progress-details-11111111-1111-4111-8111-111111111111"
+    );
+    expect(within(progress).getByText("Current streak").parentElement).toHaveTextContent(
+      "2 months"
+    );
+    expect(within(progress).getByText("Best streak").parentElement).toHaveTextContent("2 months");
+    expect(within(progress).getByText("Months completed").parentElement).toHaveTextContent(
+      "2/2 months"
+    );
+    expect(within(progress).getByText("Coverage").parentElement).toHaveTextContent(
+      "2/2 months · 100%"
+    );
+    expect(within(progress).getByText("Not tracked").parentElement).toHaveTextContent("0 days");
+    expect(within(progress).queryByText("Days completed")).toBeNull();
   });
 
   it("keeps collapsed mobile chips focused on cadence and meaningful day state", () => {

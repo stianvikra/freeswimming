@@ -44,12 +44,17 @@ import {
   HABIT_MANUAL_TIME_MAX_MINUTES,
   HABIT_MODE_VALUES,
   HABIT_MOTIVATION_RANGE_VALUES,
+  getHabitAbsenceReviewCandidateDates,
+  getHabitDayStatusLabel,
+  getHabitItemTrackingStateLabel,
   type HabitDefinitionView,
   type HabitCadenceDayPolicy,
   type HabitCadencePeriod,
   type HabitDayItem,
   type HabitDaySummary,
+  type HabitDayStatusState,
   type HabitMode,
+  type HabitMetricCoverage,
   type HabitMotivationItem,
   type HabitMotivationRange,
   type HabitMotivationSummary,
@@ -88,7 +93,26 @@ type ApiResponse = {
   error?: string;
   snapshot?: HabitSnapshot;
   reviewedDates?: string[];
+  affectedDates?: string[];
+  affectedCount?: number;
 };
+
+function getConfirmedAffectedReviewDates(payload: ApiResponse, requestedDates: string[]) {
+  const affectedDates = payload.affectedDates;
+  const affectedCount = payload.affectedCount;
+  const requestedDateSet = new Set(requestedDates);
+  if (
+    !Array.isArray(affectedDates) ||
+    affectedDates.some((date) => typeof date !== "string" || !requestedDateSet.has(date)) ||
+    new Set(affectedDates).size !== affectedDates.length ||
+    typeof affectedCount !== "number" ||
+    !Number.isInteger(affectedCount) ||
+    affectedCount !== affectedDates.length
+  ) {
+    return null;
+  }
+  return { affectedDates, affectedCount };
+}
 
 type HabitDraft = {
   title: string;
@@ -128,6 +152,7 @@ type AbsenceReviewDate = {
   date: string;
   entries: CatchUpEntry[];
   reviewed: boolean;
+  dayStatus: HabitDayStatusState | null;
 };
 
 type HabitTrackingModeView = {
@@ -216,6 +241,11 @@ const HABIT_MOTIVATION_RANGE_CONTEXT: Record<HabitMotivationRange, string> = {
   year: "This year",
   all: "All time",
 };
+const HABIT_NOT_TRACKED_LABEL = getHabitDayStatusLabel("not_tracked");
+const HABIT_NEEDS_REVIEW_LABEL = getHabitDayStatusLabel("unsupported");
+const HABIT_TRACKING_INCOMPLETE_LABEL = getHabitItemTrackingStateLabel("incomplete");
+
+type HabitMotivationCadenceUnit = "day" | "week" | "month";
 
 function buildDefaultDraft(selectedDate: string): HabitDraft {
   return {
@@ -594,19 +624,88 @@ function formatMetricDays(value: number) {
   return `${value} ${value === 1 ? "day" : "days"}`;
 }
 
+function getHabitMotivationCadenceUnit(
+  habit: HabitDefinitionView | undefined
+): HabitMotivationCadenceUnit {
+  if (habit?.cadenceDayPolicy !== "any") return "day";
+  if (habit.cadencePeriod === "weekly") return "week";
+  if (habit.cadencePeriod === "monthly") return "month";
+  return "day";
+}
+
+function formatHabitMotivationUnitCount(value: number, unit: HabitMotivationCadenceUnit) {
+  return `${value} ${value === 1 ? unit : `${unit}s`}`;
+}
+
+function getHabitCompletedMetricLabel(unit: HabitMotivationCadenceUnit) {
+  const pluralUnit: Record<HabitMotivationCadenceUnit, string> = {
+    day: "Days",
+    week: "Weeks",
+    month: "Months",
+  };
+  return `${pluralUnit[unit]} completed`;
+}
+
 function formatMetricPercent(value: number | null) {
-  return `${value ?? 0}%`;
+  return value === null ? "No tracked data" : `${value}%`;
 }
 
 function formatPerfectDayCount(summary: HabitMotivationSummary) {
+  if (summary.metricCoverage.state === "needs_review") return HABIT_NEEDS_REVIEW_LABEL;
+  if (
+    summary.metricCoverage.state === "no_tracked_data" &&
+    summary.metricCoverage.potentialUnitCount > 0
+  ) {
+    return "No tracked data";
+  }
   return `${summary.onTrackDayCount}/${summary.eligibleDayCount}`;
+}
+
+function formatMetricCoverage(coverage: HabitMetricCoverage, unit?: HabitMotivationCadenceUnit) {
+  if (coverage.state === "needs_review") return HABIT_NEEDS_REVIEW_LABEL;
+  if (coverage.potentialUnitCount <= 0) return "No opportunities";
+  const coverageRatio = `${coverage.knownUnitCount}/${coverage.potentialUnitCount}`;
+  const unitLabel = unit ? ` ${coverage.potentialUnitCount === 1 ? unit : `${unit}s`}` : "";
+  return `${coverageRatio}${unitLabel} · ${coverage.coveragePercent ?? 0}%`;
+}
+
+function formatHabitCoverage(summary: HabitMotivationSummary) {
+  return formatMetricCoverage(summary.metricCoverage);
+}
+
+function formatHabitCompleted(item: HabitMotivationItem, unit?: HabitMotivationCadenceUnit) {
+  if (item.metricCoverage.state === "needs_review") return HABIT_NEEDS_REVIEW_LABEL;
+  if (
+    item.metricCoverage.state === "no_tracked_data" &&
+    item.metricCoverage.potentialUnitCount > 0
+  ) {
+    return "No tracked data";
+  }
+  const completedRatio = `${item.onTrackDayCount}/${item.eligibleDayCount}`;
+  if (!unit || unit === "day") return completedRatio;
+  return `${completedRatio} ${item.eligibleDayCount === 1 ? unit : `${unit}s`}`;
 }
 
 function getMotivationDataQuality(summary: HabitMotivationSummary): {
   label: string;
   tone: "muted" | "warning";
 } | null {
-  if (summary.eligibleDayCount <= 0) {
+  if (summary.metricCoverage.state === "needs_review") {
+    return {
+      label: "Day-status history needs review before performance can be calculated.",
+      tone: "warning",
+    };
+  }
+  if (
+    summary.metricCoverage.state === "no_tracked_data" &&
+    summary.metricCoverage.potentialUnitCount > 0
+  ) {
+    return {
+      label: "No tracked data in this period. Coverage remains visible below.",
+      tone: "muted",
+    };
+  }
+  if (summary.metricCoverage.potentialUnitCount <= 0) {
     return {
       label: "No scheduled Perfect Day days in this period.",
       tone: "muted",
@@ -664,6 +763,18 @@ function getHabitPeriodStatusFragment(
 }
 
 function getHabitsStatusLabel(snapshot: HabitSnapshot, dayLabel = "Today") {
+  if (snapshot.daySummary.trackingState === "not_tracked") {
+    return `${dayLabel}: ${HABIT_NOT_TRACKED_LABEL}`;
+  }
+  if (snapshot.daySummary.trackingState === "needs_review") {
+    return `${dayLabel}: ${HABIT_NEEDS_REVIEW_LABEL}`;
+  }
+  if (
+    snapshot.daySummary.metricCoverage.knownUnitCount <
+    snapshot.daySummary.metricCoverage.potentialUnitCount
+  ) {
+    return `${dayLabel}: ${HABIT_TRACKING_INCOMPLETE_LABEL}`;
+  }
   const dailyCounts = getHabitDayDailyCounts(snapshot.daySummary);
   const fragments = [
     `${dayLabel}: ${dailyCounts.completed}/${dailyCounts.total}`,
@@ -940,29 +1051,12 @@ function getCatchUpCandidateItems(day: HabitDaySummary) {
   return day.items.filter(isCatchUpCandidateItem);
 }
 
-function hasRecordedHabitAction(day: HabitDaySummary) {
-  return day.items.some((item) => item.checkIn !== null);
-}
-
-function hasCatchUpRecoveryHistory(snapshot: HabitSnapshot, todayDate: string) {
-  const lastTrackedDate =
-    snapshot.motivationSummaries?.all?.lastTrackedDate ??
-    snapshot.motivationSummary?.lastTrackedDate ??
-    null;
-  if (lastTrackedDate && lastTrackedDate < todayDate) return true;
-
-  return snapshot.weekSummary.days.some(
-    (day) => day.date < todayDate && day.items.some((item) => item.checkIn !== null)
-  );
-}
-
 function getCatchUpEntries(snapshot: HabitSnapshot, todayDate: string): CatchUpEntry[] {
-  if (!hasCatchUpRecoveryHistory(snapshot, todayDate)) return [];
+  const candidateDates = new Set(getHabitAbsenceReviewCandidateDates(snapshot, todayDate));
+  if (candidateDates.size === 0) return [];
 
   return snapshot.weekSummary.days
-    .filter(
-      (day) => day.date < todayDate && day.perfectDayItemCount > 0 && !hasRecordedHabitAction(day)
-    )
+    .filter((day) => candidateDates.has(day.date))
     .flatMap((day) =>
       getCatchUpCandidateItems(day).map((item) => ({
         date: day.date,
@@ -979,7 +1073,13 @@ function getSortedCatchUpDates(entries: CatchUpEntry[]) {
 
 function getAbsenceReviewDates(
   entries: CatchUpEntry[],
-  reviewedDates: Set<string>
+  reviewedDates: Set<string>,
+  dayStatuses: HabitSnapshot["dayStatuses"] = [],
+  selectedDateContext?: {
+    selectedDate: string;
+    todayDate: string;
+    visibleWeekDates: readonly string[];
+  }
 ): AbsenceReviewDate[] {
   const entriesByDate = new Map<string, CatchUpEntry[]>();
   for (const entry of entries) {
@@ -988,13 +1088,37 @@ function getAbsenceReviewDates(
     entriesByDate.set(entry.date, current);
   }
 
+  const dayStatusByDate = new Map(
+    (dayStatuses ?? []).map((status) => [status.reviewDate, status.dayStatus])
+  );
+
+  // A saved status can outlive the Habit definition that originally made the
+  // day a review candidate. Recover only the selected historical day so Undo
+  // remains reachable without widening the Today queue or selected-week batch.
+  if (selectedDateContext) {
+    const { selectedDate, todayDate, visibleWeekDates } = selectedDateContext;
+    const selectedDayStatus = dayStatusByDate.get(selectedDate) ?? null;
+    if (
+      selectedDate < todayDate &&
+      visibleWeekDates.includes(selectedDate) &&
+      (selectedDayStatus === "not_tracked" || selectedDayStatus === "unsupported") &&
+      !entriesByDate.has(selectedDate)
+    ) {
+      entriesByDate.set(selectedDate, []);
+    }
+  }
+
   return [...entriesByDate.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([date, dateEntries]) => ({
-      date,
-      entries: dateEntries,
-      reviewed: reviewedDates.has(date),
-    }));
+    .map(([date, dateEntries]) => {
+      const dayStatus = dayStatusByDate.get(date) ?? null;
+      return {
+        date,
+        entries: dateEntries,
+        reviewed: dayStatus === "unsupported" ? false : reviewedDates.has(date),
+        dayStatus,
+      };
+    });
 }
 
 function getAbsenceReviewTitle(dateCount: number) {
@@ -1002,6 +1126,7 @@ function getAbsenceReviewTitle(dateCount: number) {
 }
 
 function getAbsenceReviewHabitCountLabel(entryCount: number) {
+  if (entryCount === 0) return "No current habits";
   return `${entryCount} ${entryCount === 1 ? "habit" : "habits"}`;
 }
 
@@ -1017,6 +1142,11 @@ function getAbsenceReviewRemainingLabel(rows: AbsenceReviewDate[]) {
 }
 
 function getHabitDayTargetCountLabel(day: HabitDaySummary) {
+  if (day.trackingState === "not_tracked") return getHabitDayStatusLabel("not_tracked");
+  if (day.trackingState === "needs_review") return getHabitDayStatusLabel("unsupported");
+  if (day.metricCoverage.knownUnitCount < day.metricCoverage.potentialUnitCount) {
+    return getHabitItemTrackingStateLabel("incomplete");
+  }
   const counts = getHabitDayDailyCounts(day);
   if (counts.total === 0) return "No habits";
   return `${counts.completed}/${counts.total} habits`;
@@ -1028,6 +1158,7 @@ function getHabitDayDailyCounts(day: HabitDaySummary) {
       item.habit.cadencePeriod === "daily" &&
       item.habit.isPerfectDayItem &&
       item.isScheduledForDate &&
+      item.trackingState === "known" &&
       item.checkIn?.status !== "skipped"
   );
   return {
@@ -1120,6 +1251,10 @@ function getPriorityGroupLabel(item: HabitDayItem) {
       return "This month";
     case "quit_status":
       return "Quit status";
+    case "not_tracked":
+      return getHabitItemTrackingStateLabel("not_tracked");
+    case "tracking_incomplete":
+      return getHabitItemTrackingStateLabel("incomplete");
     case "rest_day":
       return "Rest day";
     case "done_today":
@@ -1658,6 +1793,7 @@ export default function HabitPerfectDayHub({
   const [failedRequestedDate, setFailedRequestedDate] = useState<string | null>(null);
   const [habitNotices, setHabitNotices] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [neutralNotice, setNeutralNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialSnapshot.loadError);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundNotice, setSoundNotice] = useState<string | null>(null);
@@ -1672,6 +1808,8 @@ export default function HabitPerfectDayHub({
   const preserveCheckInInputsForSnapshotRef = useRef<HabitSnapshot | null>(null);
   const requestedLocalDayRefreshKeyRef = useRef<string | null>(null);
   const pendingServerLocalDayReconciliationRef = useRef(false);
+  const calendarNavigationEpochRef = useRef(0);
+  const appliedInitialSnapshotDateRef = useRef(initialSnapshot.selectedDate);
   const saveTimedSourcesRef = useRef<
     ((item: HabitDayItem, input: SaveTimedSourcesInput) => Promise<void>) | null
   >(null);
@@ -1682,6 +1820,7 @@ export default function HabitPerfectDayHub({
   const habitsSectionRef = useRef<HTMLElement | null>(null);
   const motivationSectionRef = useRef<HTMLElement | null>(null);
   const selectedAbsenceReviewSectionRef = useRef<HTMLElement | null>(null);
+  const neutralNoticeRef = useRef<HTMLDivElement | null>(null);
   const addHabitSectionRef = useRef<HTMLElement | null>(null);
   const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
   const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -1735,6 +1874,15 @@ export default function HabitPerfectDayHub({
   }, []);
 
   useEffect(() => {
+    if (notice || error) setNeutralNotice(null);
+  }, [error, notice]);
+
+  useEffect(() => {
+    if (appliedInitialSnapshotDateRef.current !== initialSnapshot.selectedDate) {
+      calendarNavigationEpochRef.current += 1;
+      appliedInitialSnapshotDateRef.current = initialSnapshot.selectedDate;
+    }
+
     if (
       initialSnapshot.loadError &&
       confirmedSelectedDateRef.current &&
@@ -1987,6 +2135,23 @@ export default function HabitPerfectDayHub({
   const unsupportedHabits = snapshot.unsupportedHabits ?? [];
   const unsupportedCount = unsupportedHabits.length;
   const hasUnsupportedHabits = unsupportedCount > 0;
+  const areDayStatusesReady = snapshot.dayStatusesReady !== false;
+  const weekMetricsNeedReview =
+    !areDayStatusesReady || snapshot.weekSummary.metricCoverage.state === "needs_review";
+  const selectedDayHasSupportedCheckIn = snapshot.daySummary.items.some(
+    (item) => item.checkIn?.status === "logged" || item.checkIn?.status === "skipped"
+  );
+  const isSelectedDayNotTracked =
+    areDayStatusesReady && snapshot.daySummary.trackingState === "not_tracked";
+  const doesSelectedDayStatusNeedReview =
+    (!areDayStatusesReady && !selectedDayHasSupportedCheckIn) ||
+    snapshot.daySummary.trackingState === "needs_review";
+  const isSelectedDayTrackingIncomplete =
+    areDayStatusesReady &&
+    snapshot.daySummary.trackingState === "known" &&
+    snapshot.daySummary.metricCoverage.state !== "needs_review" &&
+    snapshot.daySummary.metricCoverage.knownUnitCount <
+      snapshot.daySummary.metricCoverage.potentialUnitCount;
   const habitReviewCountLabel = pluralizeHabitReviewCount(unsupportedCount);
   const preferredCountLabel =
     activeCount === 0
@@ -1996,14 +2161,15 @@ export default function HabitPerfectDayHub({
       : activeCount < 3
         ? `${activeCount} active · add a few more when ready`
         : `${activeCount} active`;
-  const supportedHabitsStatusLabel = getHabitsStatusLabel(
-    snapshot,
-    isSelectedToday ? "Today" : "This day"
-  );
+  const supportedHabitsStatusLabel = !areDayStatusesReady
+    ? "Day status unavailable"
+    : doesSelectedDayStatusNeedReview
+      ? `${isSelectedToday ? "Today" : "This day"}: ${HABIT_NEEDS_REVIEW_LABEL}`
+      : getHabitsStatusLabel(snapshot, isSelectedToday ? "Today" : "This day");
   const habitsStatusLabel = hasUnsupportedHabits
     ? snapshot.daySummary.items.length > 0
       ? `${supportedHabitsStatusLabel} · ${habitReviewCountLabel}`
-      : `Needs review · ${habitReviewCountLabel}`
+      : `${HABIT_NEEDS_REVIEW_LABEL} · ${habitReviewCountLabel}`
     : supportedHabitsStatusLabel;
 
   const draftHabitType = getResolvedDraftHabitType(draft);
@@ -2017,6 +2183,13 @@ export default function HabitPerfectDayHub({
     const items = selectedMotivationSummary?.items ?? [];
     return new Map(items.map((item) => [item.habitId, item]));
   }, [selectedMotivationSummary]);
+  const habitDefinitionsById = useMemo(
+    () =>
+      new Map(
+        [...snapshot.activeHabits, ...snapshot.archivedHabits].map((habit) => [habit.id, habit])
+      ),
+    [snapshot.activeHabits, snapshot.archivedHabits]
+  );
   const reviewedAbsenceDateSet = useMemo(
     () => new Set(reviewedAbsenceDates),
     [reviewedAbsenceDates]
@@ -2027,13 +2200,26 @@ export default function HabitPerfectDayHub({
   );
   const catchUpDates = useMemo(() => getSortedCatchUpDates(catchUpEntries), [catchUpEntries]);
   const absenceReviewRows = useMemo(
-    () => getAbsenceReviewDates(catchUpEntries, reviewedAbsenceDateSet),
-    [catchUpEntries, reviewedAbsenceDateSet]
+    () =>
+      getAbsenceReviewDates(catchUpEntries, reviewedAbsenceDateSet, snapshot.dayStatuses, {
+        selectedDate: snapshot.selectedDate,
+        todayDate: safeTodayDate,
+        visibleWeekDates: snapshot.weekSummary.days.map((day) => day.date),
+      }),
+    [
+      catchUpEntries,
+      reviewedAbsenceDateSet,
+      safeTodayDate,
+      snapshot.dayStatuses,
+      snapshot.selectedDate,
+      snapshot.weekSummary.days,
+    ]
   );
   const unreviewedAbsenceRows = useMemo(
     () => absenceReviewRows.filter((row) => !row.reviewed),
     [absenceReviewRows]
   );
+  const markableVisibleAbsenceDates = catchUpDates;
   const selectedAbsenceReviewRow =
     absenceReviewRows.find((row) => row.date === snapshot.selectedDate) ?? null;
   const nextAbsenceReviewDate = getNextUnreviewedAbsenceDate(
@@ -2042,13 +2228,25 @@ export default function HabitPerfectDayHub({
   );
   const hasAbsenceReviewWindow = absenceReviewRows.length >= 2;
   const shouldShowCatchUpAssistant =
-    isSelectedToday && hasAbsenceReviewWindow && unreviewedAbsenceRows.length > 0;
+    areDayStatusesReady &&
+    isSelectedToday &&
+    hasAbsenceReviewWindow &&
+    unreviewedAbsenceRows.length > 0;
   const shouldShowSelectedAbsenceReview =
-    isHistoricalDate && hasAbsenceReviewWindow && selectedAbsenceReviewRow !== null;
+    areDayStatusesReady && isHistoricalDate && selectedAbsenceReviewRow !== null;
   const catchUpDateCount = unreviewedAbsenceRows.length;
+  const hasUnsupportedAbsenceReviewStatus = absenceReviewRows.some(
+    (row) => row.dayStatus === "unsupported"
+  );
+  const isAbsenceReviewMutationPending = pendingKey?.startsWith("absence-review-") ?? false;
   const catchUpEntryKey = catchUpEntries
     .map((entry) => `${entry.date}:${entry.item.habit.id}`)
     .join(",");
+
+  useEffect(() => {
+    if (!neutralNotice) return;
+    neutralNoticeRef.current?.focus();
+  }, [neutralNotice]);
 
   useEffect(() => {
     if (appliedInitialSnapshot !== initialSnapshot) return;
@@ -2244,7 +2442,11 @@ export default function HabitPerfectDayHub({
     setConfirmEndHabitId((current) => (current === habitId ? null : current));
   }
 
-  async function applyResponse(response: Response, fallback: string) {
+  async function applyResponsePayload(
+    response: Response,
+    fallback: string,
+    validatePayload?: (payload: ApiResponse) => void
+  ) {
     let payload: ApiResponse;
     try {
       payload = (await response.json()) as ApiResponse;
@@ -2255,10 +2457,16 @@ export default function HabitPerfectDayHub({
     if (!response.ok || payload.ok === false || !payload.snapshot) {
       throw new Error(payload.error ?? fallback);
     }
+    validatePayload?.(payload);
 
     setSnapshot(payload.snapshot);
     setError(null);
-    return payload.snapshot;
+    return payload;
+  }
+
+  async function applyResponse(response: Response, fallback: string) {
+    const payload = await applyResponsePayload(response, fallback);
+    return payload.snapshot!;
   }
 
   function isHabitMutationReady() {
@@ -2303,6 +2511,7 @@ export default function HabitPerfectDayHub({
         "Your local day is updating. Habits will be ready to save again in a moment."
       );
     }
+    setNeutralNotice(null);
     const response = await fetch(input, init);
     if (response.status === 409) {
       try {
@@ -2848,7 +3057,16 @@ export default function HabitPerfectDayHub({
     );
   }
 
+  function assertCurrentReviewNavigationEpoch(expectedEpoch: number) {
+    if (calendarNavigationEpochRef.current !== expectedEpoch) {
+      throw new Error(
+        "The selected date changed while the review was saving. Refresh to load the latest review."
+      );
+    }
+  }
+
   async function saveReviewedAbsenceDates(nextDates: string[], action: "mark" | "finish") {
+    const navigationEpoch = calendarNavigationEpochRef.current;
     const response = await fetchHabitMutation("/api/my-library/habits/absence-review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2860,11 +3078,115 @@ export default function HabitPerfectDayHub({
         action,
       }),
     });
-    const nextSnapshot = await applyResponse(response, "Could not save that review right now.");
+    const payload = await applyResponsePayload(
+      response,
+      "Could not save that review right now.",
+      () => assertCurrentReviewNavigationEpoch(navigationEpoch)
+    );
+    const nextSnapshot = payload.snapshot!;
     const savedDates = getReviewedAbsenceDatesForSnapshot(nextSnapshot, userId, safeTodayDate);
     setReviewedAbsenceDates(savedDates);
     writeAbsenceReviewDates(userId, savedDates);
     return nextSnapshot;
+  }
+
+  async function saveAbsenceReviewDayStatus(
+    dates: string[],
+    action: "not_tracked_single" | "not_tracked_visible_batch" | "not_tracked_undo",
+    dayStatus: "not_tracked" | null
+  ) {
+    const navigationEpoch = calendarNavigationEpochRef.current;
+    const response = await fetchHabitMutation("/api/my-library/habits/absence-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dates,
+        selectedDate: snapshot.selectedDate,
+        renderedTodayDate: appliedTodayDate,
+        timezone: getBrowserLocalDayTimezone(),
+        action,
+        dayStatus,
+      }),
+    });
+    const payload = await applyResponsePayload(
+      response,
+      "Could not save that day status right now.",
+      (candidatePayload) => {
+        assertCurrentReviewNavigationEpoch(navigationEpoch);
+        if (!getConfirmedAffectedReviewDates(candidatePayload, dates)) {
+          throw new Error("Could not confirm which review days changed. Refresh and try again.");
+        }
+      }
+    );
+    const nextSnapshot = payload.snapshot!;
+    const confirmedAffectedDates = getConfirmedAffectedReviewDates(payload, dates);
+    if (!confirmedAffectedDates) {
+      throw new Error("Could not confirm which review days changed. Refresh and try again.");
+    }
+    const savedDates = getReviewedAbsenceDatesForSnapshot(nextSnapshot, userId, safeTodayDate);
+    setReviewedAbsenceDates(savedDates);
+    writeAbsenceReviewDates(userId, savedDates);
+    return { nextSnapshot, ...confirmedAffectedDates };
+  }
+
+  async function markAbsenceReviewDateNotTracked(date: string) {
+    if (pendingKey !== null) return;
+
+    setPendingKey(`absence-review-not-tracked-${date}`);
+    setNotice(null);
+    setError(null);
+    try {
+      await saveAbsenceReviewDayStatus([date], "not_tracked_single", "not_tracked");
+      setNeutralNotice(
+        `${getLongDateLabel(date)} is not tracked. No Habit check-in or result was created.`
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save that day status.");
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function markVisibleAbsenceReviewDatesNotTracked() {
+    if (pendingKey !== null || markableVisibleAbsenceDates.length === 0) return;
+
+    setPendingKey("absence-review-not-tracked-visible");
+    setNotice(null);
+    setError(null);
+    try {
+      const result = await saveAbsenceReviewDayStatus(
+        catchUpDates,
+        "not_tracked_visible_batch",
+        "not_tracked"
+      );
+      setNeutralNotice(
+        result.affectedCount > 0
+          ? `${result.affectedCount} visible review ${result.affectedCount === 1 ? "day was" : "days were"} marked not tracked. Other weeks were not changed.`
+          : "The visible review days were already marked not tracked. Other weeks were not changed."
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save those day statuses.");
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function undoAbsenceReviewDateNotTracked(date: string) {
+    if (pendingKey !== null) return;
+
+    setPendingKey(`absence-review-not-tracked-undo-${date}`);
+    setNotice(null);
+    setError(null);
+    try {
+      await saveAbsenceReviewDayStatus([date], "not_tracked_undo", null);
+      setNeutralNotice(
+        `${getLongDateLabel(date)} is tracked normally again. The review remains checked.`
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not undo that day status.");
+    } finally {
+      setPendingKey(null);
+    }
   }
 
   async function markAbsenceReviewDate(date: string, nextDate: string | null = null) {
@@ -2933,7 +3255,7 @@ export default function HabitPerfectDayHub({
           view: calendarViewParam,
         })
       : null;
-    const isReviewPending = pendingKey?.startsWith("absence-review-") ?? false;
+    const isReviewPending = isAbsenceReviewMutationPending;
 
     return (
       <section
@@ -2960,26 +3282,73 @@ export default function HabitPerfectDayHub({
         <div className="mt-4">{renderAbsenceReviewDateList(absenceReviewRows)}</div>
 
         {firstUnreviewedRow && firstUnreviewedHref ? (
-          <div className="mt-4 grid gap-2" data-testid="habits-absence-review-actions">
+          <div
+            className="mt-4 grid gap-2"
+            data-testid="habits-absence-review-actions"
+            aria-busy={isReviewPending}
+          >
             <Link
               href={firstUnreviewedHref}
               onClick={(event) =>
                 handleCalendarLinkClick(event, firstUnreviewedHref, firstUnreviewedRow.date)
               }
-              className={cx(habitMobilePrimaryActionClass, "w-full")}
+              aria-disabled={isReviewPending ? "true" : undefined}
+              tabIndex={isReviewPending ? -1 : undefined}
+              className={cx(
+                habitMobilePrimaryActionClass,
+                "w-full",
+                isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+              )}
             >
               <CalendarDays className="h-4 w-4" aria-hidden="true" />
               Start review
             </Link>
-            <button
-              type="button"
-              onClick={finishAbsenceReview}
-              disabled={isReviewPending}
-              className={cx(habitMobileSecondaryActionClass, "w-full")}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-              {isReviewPending ? "Saving..." : "Dismiss"}
-            </button>
+            {!hasUnsupportedAbsenceReviewStatus && markableVisibleAbsenceDates.length > 0 ? (
+              <p className="text-sm leading-5 text-amber-900">
+                Applies only to the visible days in this selected week. Other weeks stay unchanged.
+              </p>
+            ) : null}
+            {!hasUnsupportedAbsenceReviewStatus && markableVisibleAbsenceDates.length > 0 ? (
+              <button
+                type="button"
+                onClick={markVisibleAbsenceReviewDatesNotTracked}
+                aria-disabled={isReviewPending ? "true" : undefined}
+                aria-label={
+                  isReviewPending
+                    ? "Saving visible review days"
+                    : `Mark all ${markableVisibleAbsenceDates.length} visible review days not tracked in this selected week`
+                }
+                className={cx(
+                  habitMobileSecondaryActionClass,
+                  "w-full",
+                  isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+                )}
+              >
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                {isReviewPending
+                  ? "Saving..."
+                  : `Mark visible days not tracked · ${markableVisibleAbsenceDates.length}`}
+              </button>
+            ) : hasUnsupportedAbsenceReviewStatus ? (
+              <p className="text-sm font-semibold text-amber-800" role="status">
+                A day status needs review before the visible days can be changed together.
+              </p>
+            ) : null}
+            {!hasUnsupportedAbsenceReviewStatus ? (
+              <button
+                type="button"
+                onClick={finishAbsenceReview}
+                aria-disabled={isReviewPending ? "true" : undefined}
+                className={cx(
+                  habitMobileSecondaryActionClass,
+                  "w-full",
+                  isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+                )}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+                {isReviewPending ? "Saving..." : "Dismiss"}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -3017,19 +3386,34 @@ export default function HabitPerfectDayHub({
                 <span
                   className={cx(
                     "inline-flex rounded-[var(--fs-radius-control)] border px-2 py-0.5 text-xs font-semibold",
-                    row.reviewed
-                      ? "border-emerald-200 bg-white/90 text-emerald-700"
-                      : "border-amber-200 bg-amber-50/90 text-amber-700"
+                    row.dayStatus === "unsupported"
+                      ? "border-amber-200 bg-amber-50/90 text-amber-700"
+                      : row.dayStatus === "not_tracked"
+                        ? "border-slate-300 bg-slate-50 text-slate-700"
+                        : row.reviewed
+                          ? "border-emerald-200 bg-white/90 text-emerald-700"
+                          : "border-amber-200 bg-amber-50/90 text-amber-700"
                   )}
                 >
-                  {row.reviewed ? "Checked" : "Check"}
+                  {row.dayStatus
+                    ? getHabitDayStatusLabel(row.dayStatus)
+                    : row.reviewed
+                      ? "Checked"
+                      : "Check"}
                 </span>
                 {isCurrent ? null : (
                   <Link
                     href={href}
                     aria-label={`Edit ${getWeekdayLabel(row.date)} ${getLongDateLabel(row.date)}`}
                     onClick={(event) => handleCalendarLinkClick(event, href, row.date)}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm font-semibold whitespace-nowrap text-slate-900 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+                    aria-disabled={isAbsenceReviewMutationPending ? "true" : undefined}
+                    tabIndex={isAbsenceReviewMutationPending ? -1 : undefined}
+                    className={cx(
+                      "inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm font-semibold whitespace-nowrap text-slate-900 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
+                      isAbsenceReviewMutationPending
+                        ? "pointer-events-none cursor-not-allowed opacity-60"
+                        : ""
+                    )}
                   >
                     <Pencil className="h-4 w-4" aria-hidden="true" />
                     Edit
@@ -3063,7 +3447,7 @@ export default function HabitPerfectDayHub({
     const allReviewed = absenceReviewRows.every((row) => row.reviewed);
     const isLastUncheckedDate =
       !selectedAbsenceReviewRow.reviewed && nextDateAfterChecking === null;
-    const isReviewPending = pendingKey?.startsWith("absence-review-") ?? false;
+    const isReviewPending = isAbsenceReviewMutationPending;
 
     return (
       <section
@@ -3088,8 +3472,11 @@ export default function HabitPerfectDayHub({
               <button
                 type="button"
                 onClick={finishAbsenceReview}
-                disabled={isReviewPending}
-                className={habitMobilePrimaryActionClass}
+                aria-disabled={isReviewPending ? "true" : undefined}
+                className={cx(
+                  habitMobilePrimaryActionClass,
+                  isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+                )}
               >
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
                 {isReviewPending ? "Saving..." : "Back to Today"}
@@ -3099,7 +3486,12 @@ export default function HabitPerfectDayHub({
                 href={todayWindowHref}
                 onClick={(event) => handleCalendarLinkClick(event, todayWindowHref, safeTodayDate)}
                 aria-busy={pendingSelectedDate === safeTodayDate ? "true" : undefined}
-                className={habitMobilePrimaryActionClass}
+                aria-disabled={isReviewPending ? "true" : undefined}
+                tabIndex={isReviewPending ? -1 : undefined}
+                className={cx(
+                  habitMobilePrimaryActionClass,
+                  isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+                )}
               >
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
                 Today
@@ -3110,8 +3502,30 @@ export default function HabitPerfectDayHub({
 
         {renderAbsenceReviewDateList(absenceReviewRows)}
 
-        <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
-          {selectedAbsenceReviewRow.reviewed ? (
+        <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap" aria-busy={isReviewPending}>
+          {selectedAbsenceReviewRow.dayStatus === "unsupported" ? (
+            <span role="status" className={cx(habitWarningChipClass, "min-h-11 px-4")}>
+              Day status needs review
+            </span>
+          ) : selectedAbsenceReviewRow.dayStatus === "not_tracked" ? (
+            <>
+              <span role="status" className={cx(habitChipClass, "min-h-11 px-4")}>
+                {getHabitDayStatusLabel("not_tracked")}
+              </span>
+              <button
+                type="button"
+                onClick={() => undoAbsenceReviewDateNotTracked(selectedAbsenceReviewRow.date)}
+                aria-disabled={isReviewPending ? "true" : undefined}
+                className={cx(
+                  habitMobileSecondaryActionClass,
+                  isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+                )}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                {isReviewPending ? "Saving..." : "Undo not tracked"}
+              </button>
+            </>
+          ) : selectedAbsenceReviewRow.reviewed ? (
             <span role="status" className={cx(habitSuccessChipClass, "min-h-11 px-4")}>
               Day checked
             </span>
@@ -3119,8 +3533,11 @@ export default function HabitPerfectDayHub({
             <button
               type="button"
               onClick={finishAbsenceReview}
-              disabled={isReviewPending}
-              className={habitMobilePrimaryActionClass}
+              aria-disabled={isReviewPending ? "true" : undefined}
+              className={cx(
+                habitMobilePrimaryActionClass,
+                isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+              )}
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               {isReviewPending ? "Saving..." : "Close review"}
@@ -3131,18 +3548,40 @@ export default function HabitPerfectDayHub({
               onClick={() =>
                 markAbsenceReviewDate(selectedAbsenceReviewRow.date, nextDateAfterChecking)
               }
-              disabled={isReviewPending}
-              className={habitMobilePrimaryActionClass}
+              aria-disabled={isReviewPending ? "true" : undefined}
+              className={cx(
+                habitMobilePrimaryActionClass,
+                isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+              )}
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               {isReviewPending ? "Saving..." : "Done with this day"}
             </button>
           )}
+          {selectedAbsenceReviewRow.dayStatus === null ? (
+            <button
+              type="button"
+              onClick={() => markAbsenceReviewDateNotTracked(selectedAbsenceReviewRow.date)}
+              aria-disabled={isReviewPending ? "true" : undefined}
+              className={cx(
+                habitMobileSecondaryActionClass,
+                isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+              )}
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              {isReviewPending ? "Saving..." : "Mark this day not tracked"}
+            </button>
+          ) : null}
           {selectedAbsenceReviewRow.reviewed && nextHref && nextAbsenceReviewDate ? (
             <Link
               href={nextHref}
               onClick={(event) => handleCalendarLinkClick(event, nextHref, nextAbsenceReviewDate)}
-              className={habitMobileSecondaryActionClass}
+              aria-disabled={isReviewPending ? "true" : undefined}
+              tabIndex={isReviewPending ? -1 : undefined}
+              className={cx(
+                habitMobileSecondaryActionClass,
+                isReviewPending ? "pointer-events-none cursor-not-allowed opacity-60" : ""
+              )}
             >
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
               Next date
@@ -3398,9 +3837,11 @@ export default function HabitPerfectDayHub({
   }
 
   function navigateToCalendarHref(href: string, requestedSelectedDate: string) {
+    calendarNavigationEpochRef.current += 1;
     setRequestedDate(requestedSelectedDate);
     setFailedRequestedDate(null);
     setNotice(null);
+    setNeutralNotice(null);
     setError(null);
     router.push(href);
   }
@@ -3410,6 +3851,11 @@ export default function HabitPerfectDayHub({
     href: string,
     requestedSelectedDate: string
   ) {
+    if (isAbsenceReviewMutationPending) {
+      event.preventDefault();
+      return;
+    }
+
     if (
       event.defaultPrevented ||
       event.button !== 0 ||
@@ -3426,6 +3872,11 @@ export default function HabitPerfectDayHub({
   }
 
   function handleWeekOverviewTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
+    if (isAbsenceReviewMutationPending) {
+      weekSwipeStartRef.current = null;
+      return;
+    }
+
     const touch = event.touches[0];
     if (!touch) {
       weekSwipeStartRef.current = null;
@@ -3436,6 +3887,11 @@ export default function HabitPerfectDayHub({
   }
 
   function handleWeekOverviewTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
+    if (isAbsenceReviewMutationPending) {
+      weekSwipeStartRef.current = null;
+      return;
+    }
+
     const start = weekSwipeStartRef.current;
     weekSwipeStartRef.current = null;
     const touch = event.changedTouches[0];
@@ -3479,6 +3935,18 @@ export default function HabitPerfectDayHub({
             view: calendarViewParam,
           });
           const dailyCounts = getHabitDayDailyCounts(day);
+          const dayHasSupportedCheckIn = day.items.some(
+            (item) => item.checkIn?.status === "logged" || item.checkIn?.status === "skipped"
+          );
+          const isDayNotTracked = areDayStatusesReady && day.trackingState === "not_tracked";
+          const doesDayStatusNeedReview =
+            (!areDayStatusesReady && !dayHasSupportedCheckIn) ||
+            day.trackingState === "needs_review";
+          const isDayTrackingIncomplete =
+            areDayStatusesReady &&
+            day.trackingState === "known" &&
+            day.metricCoverage.state !== "needs_review" &&
+            day.metricCoverage.knownUnitCount < day.metricCoverage.potentialUnitCount;
           const dailyCompletionPercent =
             dailyCounts.total > 0
               ? Math.round((dailyCounts.completed / dailyCounts.total) * 100)
@@ -3517,14 +3985,35 @@ export default function HabitPerfectDayHub({
                 {getMonthDayLabel(day.date)}
               </p>
               <div className="mt-1 flex h-14 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1 sm:h-20">
-                <div
-                  className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
-                  style={{ height: `${Math.max(6, dailyCompletionPercent)}%` }}
-                  aria-label={`${getWeekdayLabel(day.date)} ${dayCountLabel}`}
-                />
+                {isDayNotTracked || doesDayStatusNeedReview || isDayTrackingIncomplete ? (
+                  <span
+                    className="flex h-full w-full items-center justify-center rounded-[var(--fs-radius-control)] bg-slate-100 px-0.5 text-center text-[8px] leading-tight font-semibold text-slate-600 sm:text-[10px]"
+                    aria-label={`${getWeekdayLabel(day.date)} ${dayCountLabel}`}
+                  >
+                    {isDayNotTracked
+                      ? HABIT_NOT_TRACKED_LABEL
+                      : doesDayStatusNeedReview
+                        ? HABIT_NEEDS_REVIEW_LABEL
+                        : HABIT_TRACKING_INCOMPLETE_LABEL}
+                  </span>
+                ) : (
+                  <div
+                    className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
+                    style={{ height: `${Math.max(6, dailyCompletionPercent)}%` }}
+                    aria-label={`${getWeekdayLabel(day.date)} ${dayCountLabel}`}
+                  />
+                )}
               </div>
               <p className="mt-1 text-center text-[10px] text-slate-500 sm:text-[11px]">
-                {dailyCounts.total > 0 ? `${dailyCounts.completed}/${dailyCounts.total}` : "0/0"}
+                {isDayNotTracked
+                  ? "Unknown"
+                  : doesDayStatusNeedReview
+                    ? "Review"
+                    : isDayTrackingIncomplete
+                      ? `${day.metricCoverage.knownUnitCount}/${day.metricCoverage.potentialUnitCount} known`
+                      : dailyCounts.total > 0
+                        ? `${dailyCounts.completed}/${dailyCounts.total}`
+                        : "0/0"}
               </p>
               <p className="min-h-3 text-center text-[9px] font-semibold text-emerald-700 sm:text-[10px]">
                 {weeklyCompletedOnDateCount > 0 ? `${weeklyCompletedOnDateCount} weekly` : null}
@@ -3552,8 +4041,15 @@ export default function HabitPerfectDayHub({
               onClick={(event) => handleCalendarLinkClick(event, dayHref, day.date)}
               aria-current={isSelected ? "date" : undefined}
               aria-busy={isPending ? "true" : undefined}
+              aria-disabled={isAbsenceReviewMutationPending ? "true" : undefined}
+              tabIndex={isAbsenceReviewMutationPending ? -1 : undefined}
               aria-label={dayLabel}
-              className={dayClassName}
+              className={cx(
+                dayClassName,
+                isAbsenceReviewMutationPending
+                  ? "pointer-events-none cursor-not-allowed opacity-60"
+                  : ""
+              )}
             >
               {dayContent}
             </Link>
@@ -3584,7 +4080,14 @@ export default function HabitPerfectDayHub({
             handleCalendarLinkClick(event, previousWindowHref, calendarWindow.previousWindowDate)
           }
           aria-busy={pendingSelectedDate === calendarWindow.previousWindowDate ? "true" : undefined}
-          className={getCalendarControlClass(calendarWindow.previousWindowDate)}
+          aria-disabled={isAbsenceReviewMutationPending ? "true" : undefined}
+          tabIndex={isAbsenceReviewMutationPending ? -1 : undefined}
+          className={cx(
+            getCalendarControlClass(calendarWindow.previousWindowDate),
+            isAbsenceReviewMutationPending
+              ? "pointer-events-none cursor-not-allowed opacity-60"
+              : ""
+          )}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           <span className="max-sm:sr-only">Previous week</span>
@@ -3593,7 +4096,14 @@ export default function HabitPerfectDayHub({
           href={todayWindowHref}
           onClick={(event) => handleCalendarLinkClick(event, todayWindowHref, safeTodayDate)}
           aria-busy={pendingSelectedDate === safeTodayDate ? "true" : undefined}
-          className={getCalendarControlClass(safeTodayDate)}
+          aria-disabled={isAbsenceReviewMutationPending ? "true" : undefined}
+          tabIndex={isAbsenceReviewMutationPending ? -1 : undefined}
+          className={cx(
+            getCalendarControlClass(safeTodayDate),
+            isAbsenceReviewMutationPending
+              ? "pointer-events-none cursor-not-allowed opacity-60"
+              : ""
+          )}
         >
           Today
         </Link>
@@ -3602,7 +4112,14 @@ export default function HabitPerfectDayHub({
             href={nextWindowHref}
             onClick={(event) => handleCalendarLinkClick(event, nextWindowHref, nextWindowDate)}
             aria-busy={pendingSelectedDate === nextWindowDate ? "true" : undefined}
-            className={getCalendarControlClass(nextWindowDate)}
+            aria-disabled={isAbsenceReviewMutationPending ? "true" : undefined}
+            tabIndex={isAbsenceReviewMutationPending ? -1 : undefined}
+            className={cx(
+              getCalendarControlClass(nextWindowDate),
+              isAbsenceReviewMutationPending
+                ? "pointer-events-none cursor-not-allowed opacity-60"
+                : ""
+            )}
           >
             <span className="max-sm:sr-only">Next week</span>
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -3663,6 +4180,7 @@ export default function HabitPerfectDayHub({
   }
 
   function renderWeeklyOverviewCard(testId: string, controlsTestId: string) {
+    const coverage = snapshot.weekSummary.metricCoverage;
     return (
       <div className={cx("mt-5", habitNestedMutedCardClass)}>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -3670,12 +4188,19 @@ export default function HabitPerfectDayHub({
             <p className={habitLabelClass}>Weekly Overview</p>
             <p className="mt-1 text-sm text-slate-600">
               {weekLabel}
-              {habitWeekCountSummary.daily.total > 0
+              {!weekMetricsNeedReview && habitWeekCountSummary.daily.total > 0
                 ? ` · Daily habits ${habitWeekCountSummary.daily.completed}/${habitWeekCountSummary.daily.total}`
                 : ""}
-              {habitWeekCountSummary.weekly.total > 0
+              {!weekMetricsNeedReview && habitWeekCountSummary.weekly.total > 0
                 ? ` · Weekly habits ${habitWeekCountSummary.weekly.completed}/${habitWeekCountSummary.weekly.total}`
                 : ""}
+            </p>
+            <p data-testid={`${testId}-coverage`} className="mt-1 text-xs text-slate-500">
+              {coverage.state === "needs_review" || !areDayStatusesReady
+                ? "Coverage needs review"
+                : coverage.potentialUnitCount > 0
+                  ? `Included days ${coverage.knownUnitCount}/${coverage.potentialUnitCount} · Coverage ${coverage.coveragePercent ?? 0}% · ${coverage.notTrackedDayCount} not tracked`
+                  : "No scheduled Perfect Day days"}
             </p>
           </div>
           {isHistoricalDate ? <span className={habitWarningChipClass}>Viewing</span> : null}
@@ -3744,6 +4269,8 @@ export default function HabitPerfectDayHub({
 
   function renderHabitMotivationDetails(item: HabitMotivationItem | undefined) {
     if (!item) return null;
+    const metricsNeedReview = !areDayStatusesReady || item.metricCoverage.state === "needs_review";
+    const cadenceUnit = getHabitMotivationCadenceUnit(habitDefinitionsById.get(item.habitId));
 
     return (
       <div
@@ -3762,19 +4289,38 @@ export default function HabitPerfectDayHub({
             ) : null}
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {renderCompactMotivationMetric(
             "Current streak",
-            formatMetricDays(item.currentStreakDays)
+            metricsNeedReview
+              ? HABIT_NEEDS_REVIEW_LABEL
+              : formatHabitMotivationUnitCount(item.currentStreakDays, cadenceUnit)
           )}
-          {renderCompactMotivationMetric("Best streak", formatMetricDays(item.bestStreakDays))}
+          {renderCompactMotivationMetric(
+            "Best streak",
+            metricsNeedReview
+              ? HABIT_NEEDS_REVIEW_LABEL
+              : formatHabitMotivationUnitCount(item.bestStreakDays, cadenceUnit)
+          )}
           {renderCompactMotivationMetric(
             "Consistency",
-            formatMetricPercent(item.consistencyPercent)
+            metricsNeedReview
+              ? HABIT_NEEDS_REVIEW_LABEL
+              : formatMetricPercent(item.consistencyPercent)
           )}
           {renderCompactMotivationMetric(
-            "Days completed",
-            `${item.onTrackDayCount}/${item.eligibleDayCount}`
+            getHabitCompletedMetricLabel(cadenceUnit),
+            metricsNeedReview ? HABIT_NEEDS_REVIEW_LABEL : formatHabitCompleted(item, cadenceUnit)
+          )}
+          {renderCompactMotivationMetric(
+            "Coverage",
+            metricsNeedReview
+              ? HABIT_NEEDS_REVIEW_LABEL
+              : formatMetricCoverage(item.metricCoverage, cadenceUnit)
+          )}
+          {renderCompactMotivationMetric(
+            HABIT_NOT_TRACKED_LABEL,
+            metricsNeedReview ? HABIT_NEEDS_REVIEW_LABEL : formatMetricDays(item.notTrackedDayCount)
           )}
         </div>
         {item.resetBoundary ? (
@@ -3795,8 +4341,17 @@ export default function HabitPerfectDayHub({
   }
 
   function renderMotivationItem(item: HabitMotivationItem) {
-    const consistencyLabel = formatMetricPercent(item.consistencyPercent);
-    const completedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} completed`;
+    const metricsNeedReview = !areDayStatusesReady || item.metricCoverage.state === "needs_review";
+    const cadenceUnit = getHabitMotivationCadenceUnit(habitDefinitionsById.get(item.habitId));
+    const consistencyLabel = metricsNeedReview
+      ? HABIT_NEEDS_REVIEW_LABEL
+      : formatMetricPercent(item.consistencyPercent);
+    const completedMetric = formatHabitCompleted(item, cadenceUnit);
+    const completedLabel = metricsNeedReview
+      ? "Completion needs review"
+      : completedMetric === "No tracked data"
+        ? completedMetric
+        : `${completedMetric} completed`;
     const isArchived = item.status === "archived";
     const restoreDialogTitleId = `habit-restore-title-${item.habitId}`;
 
@@ -3811,10 +4366,25 @@ export default function HabitPerfectDayHub({
           </span>
         </div>
         <p className="mt-1 text-sm text-slate-600">
-          {completedLabel} · Best streak: {formatMetricDays(item.bestStreakDays)} ·{" "}
-          {isArchived ? "Final" : "Current"} streak: {formatMetricDays(item.currentStreakDays)}
+          {completedLabel} · Best streak:{" "}
+          {metricsNeedReview
+            ? HABIT_NEEDS_REVIEW_LABEL
+            : formatHabitMotivationUnitCount(item.bestStreakDays, cadenceUnit)}{" "}
+          · {isArchived ? "Final" : "Current"} streak:{" "}
+          {metricsNeedReview
+            ? HABIT_NEEDS_REVIEW_LABEL
+            : formatHabitMotivationUnitCount(item.currentStreakDays, cadenceUnit)}
         </p>
         <p className="mt-1 text-sm text-slate-500">Consistency: {consistencyLabel}</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Coverage:{" "}
+          {metricsNeedReview
+            ? HABIT_NEEDS_REVIEW_LABEL
+            : formatMetricCoverage(item.metricCoverage, cadenceUnit)}
+          {metricsNeedReview
+            ? ""
+            : ` · ${HABIT_NOT_TRACKED_LABEL}: ${formatMetricDays(item.notTrackedDayCount)}`}
+        </p>
         {isArchived && canManageHabitSetup ? (
           confirmRestoreHabitId === item.habitId ? (
             <div
@@ -3959,6 +4529,8 @@ export default function HabitPerfectDayHub({
         ? archivedItems
         : archivedItems.slice(0, PAST_HABIT_PREVIEW_COUNT);
     const motivationDataQuality = getMotivationDataQuality(summary);
+    const motivationMetricsNeedReview =
+      !areDayStatusesReady || summary.metricCoverage.state === "needs_review";
     const isDefinitionsPanelOpen = openMotivationPanel === "definitions";
 
     return (
@@ -4013,18 +4585,48 @@ export default function HabitPerfectDayHub({
         </div>
 
         <div id="habits-motivation-details">
-          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
             {renderMotivationMetric(
               "Current perfect-day streak",
-              formatMetricDays(summary.currentStreakDays)
+              motivationMetricsNeedReview
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : formatMetricDays(summary.currentStreakDays)
             )}
             {renderMotivationMetric(
               "Best perfect-day streak",
-              formatMetricDays(summary.bestStreakDays)
+              motivationMetricsNeedReview
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : formatMetricDays(summary.bestStreakDays)
             )}
-            {renderMotivationMetric("Perfect days", formatPerfectDayCount(summary))}
-            {renderMotivationMetric("Consistency", formatMetricPercent(summary.consistencyPercent))}
+            {renderMotivationMetric(
+              "Perfect days",
+              motivationMetricsNeedReview
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : formatPerfectDayCount(summary)
+            )}
+            {renderMotivationMetric(
+              "Consistency",
+              motivationMetricsNeedReview
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : formatMetricPercent(summary.consistencyPercent)
+            )}
+            {renderMotivationMetric(
+              "Coverage",
+              motivationMetricsNeedReview ? HABIT_NEEDS_REVIEW_LABEL : formatHabitCoverage(summary)
+            )}
+            {renderMotivationMetric(
+              HABIT_NOT_TRACKED_LABEL,
+              motivationMetricsNeedReview
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : String(summary.notTrackedDayCount)
+            )}
           </div>
+          {!areDayStatusesReady ? (
+            <HabitFeedback tone="warning" className="mt-4" testId="habits-day-status-unavailable">
+              Day-status history is still syncing. Performance, coverage, and streaks are
+              unavailable until it can be loaded safely.
+            </HabitFeedback>
+          ) : null}
           {motivationDataQuality ? (
             <p
               data-testid="habits-motivation-data-quality"
@@ -4095,11 +4697,20 @@ export default function HabitPerfectDayHub({
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Consistency</strong> is the
-                  percent of days in this range that were perfect days.
+                  percent of included days in this range that were perfect days.
                 </p>
                 <p>
-                  <strong className="font-semibold text-slate-800">0/0</strong> means there were no
-                  scheduled Perfect Day-counting habits in the selected period.
+                  <strong className="font-semibold text-slate-800">Coverage</strong> is included
+                  days divided by all potential days in the selected period.
+                </p>
+                <p>
+                  <strong className="font-semibold text-slate-800">Not tracked</strong> means the
+                  day has no trustworthy observation. It is not Done, Missed, Rest day, Slip,
+                  Perfect Day, or streak protection.
+                </p>
+                <p>
+                  <strong className="font-semibold text-slate-800">No tracked data</strong> means no
+                  potential day in the range has a known result. Coverage still shows the gap.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Rest days</strong> are
@@ -4174,6 +4785,14 @@ export default function HabitPerfectDayHub({
 
   return (
     <div className="flex flex-col gap-5">
+      <span
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="habits-absence-review-pending-status"
+      >
+        {isAbsenceReviewMutationPending ? "Saving review changes" : ""}
+      </span>
       <section
         data-testid="habit-perfect-day-summary"
         ref={summarySectionRef}
@@ -4190,22 +4809,44 @@ export default function HabitPerfectDayHub({
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-900">
               {hasUnsupportedHabits
-                ? "Needs review"
-                : snapshot.daySummary.isPerfectDay
-                  ? "Perfect day logged"
-                  : selectedDateLabel}
+                ? HABIT_NEEDS_REVIEW_LABEL
+                : doesSelectedDayStatusNeedReview
+                  ? HABIT_NEEDS_REVIEW_LABEL
+                  : isSelectedDayNotTracked
+                    ? HABIT_NOT_TRACKED_LABEL
+                    : isSelectedDayTrackingIncomplete
+                      ? HABIT_TRACKING_INCOMPLETE_LABEL
+                      : snapshot.daySummary.isPerfectDay
+                        ? "Perfect day logged"
+                        : selectedDateLabel}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               {habitsStatusLabel} · {preferredCountLabel}
             </p>
           </div>
-          {hasUnsupportedHabits ? (
+          {hasUnsupportedHabits || doesSelectedDayStatusNeedReview ? (
             <div
               role="status"
               aria-label="Habits need review"
               className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-2 text-center text-sm font-bold text-amber-800"
             >
-              Needs review
+              {HABIT_NEEDS_REVIEW_LABEL}
+            </div>
+          ) : isSelectedDayNotTracked ? (
+            <div
+              role="status"
+              aria-label="Habit day not tracked"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 px-2 text-center text-sm font-bold text-slate-700"
+            >
+              {HABIT_NOT_TRACKED_LABEL}
+            </div>
+          ) : isSelectedDayTrackingIncomplete ? (
+            <div
+              role="status"
+              aria-label="Habit tracking incomplete"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 px-2 text-center text-sm font-bold text-slate-700"
+            >
+              {HABIT_TRACKING_INCOMPLETE_LABEL}
             </div>
           ) : snapshot.daySummary.completionPercent === null ? (
             <div
@@ -4236,13 +4877,17 @@ export default function HabitPerfectDayHub({
             <div className={habitNestedMutedCardClass}>
               <p className={habitLabelClass}>Daily habits</p>
               <p className="mt-1 text-xl font-bold text-slate-900">
-                {habitWeekCountSummary.daily.completed}/{habitWeekCountSummary.daily.total}
+                {!weekMetricsNeedReview
+                  ? `${habitWeekCountSummary.daily.completed}/${habitWeekCountSummary.daily.total}`
+                  : HABIT_NEEDS_REVIEW_LABEL}
               </p>
             </div>
             <div className={habitNestedMutedCardClass}>
               <p className={habitLabelClass}>Weekly habits</p>
               <p className="mt-1 text-xl font-bold text-slate-900">
-                {habitWeekCountSummary.weekly.completed}/{habitWeekCountSummary.weekly.total}
+                {!weekMetricsNeedReview
+                  ? `${habitWeekCountSummary.weekly.completed}/${habitWeekCountSummary.weekly.total}`
+                  : HABIT_NEEDS_REVIEW_LABEL}
               </p>
             </div>
             <div className={habitNestedMutedCardClass}>
@@ -4331,6 +4976,17 @@ export default function HabitPerfectDayHub({
               "habits-calendar-controls-mobile"
             )}
           </div>
+        ) : null}
+
+        {!areDayStatusesReady ? (
+          <HabitFeedback
+            tone="warning"
+            className="mt-4"
+            testId="habits-review-day-status-unavailable"
+          >
+            Review-day statuses are still syncing. Review actions and performance percentages are
+            unavailable until they can be loaded safely.
+          </HabitFeedback>
         ) : null}
 
         {renderCatchUpAssistant()}
@@ -4530,11 +5186,18 @@ export default function HabitPerfectDayHub({
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const isRestDay = item.checkIn?.status === "skipped";
               const isMicroSessionBacked = isMicroSessionBackedHabit(item);
+              const itemTrackingState = doesSelectedDayStatusNeedReview
+                ? "needs_review"
+                : item.trackingState;
+              const itemTrackingLabel = getHabitItemTrackingStateLabel(itemTrackingState);
               const trackingModeView = getHabitTrackingModeView(item);
               const microSessionProgress = getMicroSessionProgress(item);
-              const closedCardMotivationLabel = isMicroSessionBacked
-                ? getMicroSessionHabitCardLabel(item)
-                : getClosedCardMotivationLabel(item, motivationItem);
+              const closedCardMotivationLabel =
+                itemTrackingState !== "known"
+                  ? itemTrackingLabel
+                  : isMicroSessionBacked
+                    ? getMicroSessionHabitCardLabel(item)
+                    : getClosedCardMotivationLabel(item, motivationItem);
               const timerSeconds = getTimerSeconds(habit.id);
               const timedProgressSeconds = getTimedProgressSeconds(item, timerSeconds);
               const timedProgressLabel = formatTimer(timedProgressSeconds);
@@ -4571,13 +5234,16 @@ export default function HabitPerfectDayHub({
                 !isRestDay &&
                 isTimed &&
                 timerSeconds > 0;
-              const statusLabel = isRestDay
-                ? "Rest day"
-                : isCompletionGroup
-                  ? getCompletionStatusLabel(item)
-                  : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
-                    ? "Later"
-                    : item.evaluation.stateLabel;
+              const statusLabel =
+                itemTrackingState !== "known"
+                  ? itemTrackingLabel
+                  : isRestDay
+                    ? "Rest day"
+                    : isCompletionGroup
+                      ? getCompletionStatusLabel(item)
+                      : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
+                        ? "Later"
+                        : item.evaluation.stateLabel;
               const showGroupHeading =
                 index === 0 ||
                 getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
@@ -4598,29 +5264,37 @@ export default function HabitPerfectDayHub({
                 habit.habitType !== "binary" &&
                 !showQuickCheckInEditor;
               const timedProgressContextLabel = timedTargetContextLabel;
-              const quickStatusLabel = isRestDay
-                ? "Rest day today"
-                : isCompletionGroup
-                  ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
-                    ? getCountHabitStatus(item)
-                    : isTimed
-                      ? getTimedStatusLabel(item, timerSeconds)
-                      : getBuildCompletionMotivationLabel(item)
-                  : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
-                    ? "Not due today"
-                    : isQuit
-                      ? null
-                      : isTimed
-                        ? getTimedStatusLabel(item, timerSeconds)
-                        : habit.habitType === "count"
-                          ? getCountHabitStatus(item)
-                          : getBuildOpenStatusLabel(item);
+              const quickStatusLabel =
+                itemTrackingState !== "known"
+                  ? itemTrackingLabel
+                  : isRestDay
+                    ? "Rest day today"
+                    : isCompletionGroup
+                      ? habit.habitType === "count" &&
+                        typeof item.checkIn?.valueNumeric === "number"
+                        ? getCountHabitStatus(item)
+                        : isTimed
+                          ? getTimedStatusLabel(item, timerSeconds)
+                          : getBuildCompletionMotivationLabel(item)
+                      : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
+                        ? "Not due today"
+                        : isQuit
+                          ? null
+                          : isTimed
+                            ? getTimedStatusLabel(item, timerSeconds)
+                            : habit.habitType === "count"
+                              ? getCountHabitStatus(item)
+                              : getBuildOpenStatusLabel(item);
               const normalizedQuickStatusLabel =
                 quickStatusLabel === "No check-in" ? null : quickStatusLabel;
               return (
                 <div key={habit.id} className="space-y-2">
                   {showGroupHeading ? (
-                    <p className={habitLabelClass}>{getPriorityGroupLabel(item)}</p>
+                    <p className={habitLabelClass}>
+                      {itemTrackingState === "known"
+                        ? getPriorityGroupLabel(item)
+                        : itemTrackingLabel}
+                    </p>
                   ) : null}
                   <article
                     ref={(element) => {
@@ -4666,11 +5340,15 @@ export default function HabitPerfectDayHub({
                             ) : showTimedProgressModule ? null : (
                               <span
                                 className={cx(
-                                  isRestDay || statusLabel === "Slip logged today"
+                                  itemTrackingState === "needs_review"
                                     ? habitWarningChipClass
-                                    : isSatisfied || isCompletionGroup
-                                      ? habitSuccessChipClass
-                                      : habitChipClass,
+                                    : itemTrackingState !== "known"
+                                      ? habitChipClass
+                                      : isRestDay || statusLabel === "Slip logged today"
+                                        ? habitWarningChipClass
+                                        : isSatisfied || isCompletionGroup
+                                          ? habitSuccessChipClass
+                                          : habitChipClass,
                                   "shrink-0",
                                   shouldShowStatusChipOnMobile(statusLabel) ? "" : "max-sm:hidden"
                                 )}
@@ -5496,7 +6174,7 @@ export default function HabitPerfectDayHub({
           >
             <HabitFeedback
               tone="warning"
-              title="Needs review"
+              title={HABIT_NEEDS_REVIEW_LABEL}
               announcement="polite"
               testId="habits-needs-review-summary"
             >
@@ -5524,7 +6202,7 @@ export default function HabitPerfectDayHub({
                       <h4 className="min-w-0 text-[17px] leading-6 font-semibold break-words text-slate-900">
                         {habit.title}
                       </h4>
-                      <span className={habitWarningChipClass}>Needs review</span>
+                      <span className={habitWarningChipClass}>{HABIT_NEEDS_REVIEW_LABEL}</span>
                     </div>
                     <p id={descriptionId} className="mt-2 text-sm leading-6 text-slate-600">
                       This Habit uses setup details this version cannot safely count. Your saved
@@ -5545,6 +6223,18 @@ export default function HabitPerfectDayHub({
       </section>
 
       <div className="order-4 min-h-6 space-y-2">
+        {neutralNotice ? (
+          <div ref={neutralNoticeRef} tabIndex={-1}>
+            <HabitFeedback
+              tone="empty"
+              announcement="polite"
+              className="py-2"
+              testId="habits-day-status-notice"
+            >
+              {neutralNotice}
+            </HabitFeedback>
+          </div>
+        ) : null}
         {notice ? (
           <HabitFeedback tone="success" className="py-2" testId="habits-action-success">
             {notice}
