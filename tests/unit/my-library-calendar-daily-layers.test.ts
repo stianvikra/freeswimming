@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildCalendarHabitDayStatusState,
   buildMyLibraryCalendarDailyLayers,
   partitionCalendarHabitRows,
 } from "@/lib/my-library/calendar-daily-layers";
@@ -207,6 +208,329 @@ describe("my library calendar daily layers", () => {
       weeklyHabitTotalCount: 3,
     });
     expect(sources).toEqual(["habits", "micro_sessions"]);
+  });
+
+  it("renders a neutral not-tracked day without Habit outcome metrics", () => {
+    const layers = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: buildCalendarHabitDayStatusState([
+          { review_date: "2026-06-10", day_status: "not_tracked", status: "reviewed" },
+        ]),
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+    const habitLayer = layers["2026-06-10"]?.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({
+      status: "mapped",
+      tone: "muted",
+      compactLabel: "Not tracked",
+      metrics: [{ id: "habit_not_tracked", label: "Status", value: "Not tracked" }],
+      stats: {
+        habitPotentialDayCount: 1,
+        habitIncludedDayCount: 0,
+        habitNotTrackedDayCount: 1,
+      },
+    });
+    expect(habitLayer?.metrics.map((metric) => metric.id)).not.toEqual(
+      expect.arrayContaining(["habit_daily", "habit_due", "habit_rest", "habit_slips"])
+    );
+  });
+
+  it.each([
+    { cadencePeriod: "weekly" as const, todayDate: "2026-06-14" },
+    { cadencePeriod: "monthly" as const, todayDate: "2026-06-30" },
+  ])(
+    "keeps a mid-period $cadencePeriod-any not-tracked day in raw Calendar coverage",
+    ({ cadencePeriod, todayDate }) => {
+      const anyCadenceHabit = buildHabit({
+        id: `${cadencePeriod}-any-mid-period-gap`,
+        title: `${cadencePeriod} twice`,
+        cadencePeriod,
+        cadenceDayPolicy: "any",
+        cadenceTargetCount: 2,
+        cadenceLabel: `2x/${cadencePeriod === "weekly" ? "week" : "month"} - any days`,
+      });
+      const layers = buildMyLibraryCalendarDailyLayers({
+        dateKeys: ["2026-06-10"],
+        todayDate,
+        habits: {
+          status: "ready",
+          habits: [anyCadenceHabit],
+          checkIns: [buildCheckIn({ habitId: anyCadenceHabit.id, checkInDate: "2026-06-08" })],
+          resetEvents: [],
+          unsupported: { count: 0, labels: [] },
+          dayStatuses: {
+            status: "ready",
+            entries: [{ reviewDate: "2026-06-10", dayStatus: "not_tracked" }],
+          },
+        },
+        microSessions: { status: "ready", plans: [] },
+      });
+
+      const habitLayer = layers["2026-06-10"]?.find((layer) => layer.source === "habits");
+
+      expect(habitLayer).toMatchObject({
+        compactLabel: "Not tracked",
+        stats: {
+          habitPotentialDayCount: 0,
+          habitIncludedDayCount: 0,
+          habitNotTrackedDayCount: 1,
+        },
+      });
+      expect(habitLayer?.metrics).toEqual([
+        expect.objectContaining({ id: "habit_not_tracked", value: "Not tracked" }),
+      ]);
+    }
+  );
+
+  it("keeps an uncertain any-day period end outside Calendar performance", () => {
+    const weeklyAny = buildHabit({
+      id: "weekly-any-gap",
+      title: "Weekly twice",
+      cadencePeriod: "weekly",
+      cadenceDayPolicy: "any",
+      cadenceTargetCount: 2,
+      cadenceLabel: "2x/week - any days",
+    });
+    const layers = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-14"],
+      todayDate: "2026-06-14",
+      habits: {
+        status: "ready",
+        habits: [weeklyAny],
+        checkIns: [buildCheckIn({ habitId: weeklyAny.id, checkInDate: "2026-06-08" })],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: {
+          status: "ready",
+          entries: [{ reviewDate: "2026-06-10", dayStatus: "not_tracked" }],
+        },
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+
+    const layer = layers["2026-06-14"]?.find((candidate) => candidate.source === "habits");
+    expect(layer).toMatchObject({
+      status: "mapped",
+      tone: "muted",
+      compactLabel: "Tracking incomplete",
+      stats: {
+        habitPotentialDayCount: 1,
+        habitIncludedDayCount: 0,
+        habitNotTrackedDayCount: 0,
+        weeklyHabitCompletedCount: 0,
+        weeklyHabitTotalCount: 0,
+      },
+    });
+    expect(layer?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "habit_tracking_incomplete",
+          value: "Tracking incomplete",
+        }),
+      ])
+    );
+    expect(layer?.metrics.find((metric) => metric.id === "habit_weekly_total")).toBeUndefined();
+  });
+
+  it("ignores any-day status evidence from before the Habit started", () => {
+    const weeklyAny = buildHabit({
+      id: "weekly-starts-friday",
+      title: "Weekly twice from Friday",
+      startDate: "2026-06-12",
+      cadencePeriod: "weekly",
+      cadenceDayPolicy: "any",
+      cadenceTargetCount: 2,
+      cadenceLabel: "2x/week - any days",
+    });
+    const layers = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-14"],
+      todayDate: "2026-06-14",
+      habits: {
+        status: "ready",
+        habits: [weeklyAny],
+        checkIns: [buildCheckIn({ habitId: weeklyAny.id, checkInDate: "2026-06-12" })],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: {
+          status: "ready",
+          entries: [{ reviewDate: "2026-06-09", dayStatus: "not_tracked" }],
+        },
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+
+    const layer = layers["2026-06-14"]?.find((candidate) => candidate.source === "habits");
+
+    expect(layer?.stats).toMatchObject({
+      habitPotentialDayCount: 1,
+      habitIncludedDayCount: 1,
+      weeklyHabitCompletedCount: 1,
+      weeklyHabitTotalCount: 2,
+    });
+    expect(layer?.metrics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "habit_weekly_total", value: "1/2" })])
+    );
+    expect(
+      layer?.metrics.find((metric) => metric.id === "habit_tracking_incomplete")
+    ).toBeUndefined();
+    expect(JSON.stringify(layer)).not.toContain("Tracking incomplete");
+  });
+
+  it("prefers a supported check-in and fails closed for unavailable or unknown day status", () => {
+    const overridden = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [buildCheckIn()],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: buildCalendarHabitDayStatusState([
+          { review_date: "2026-06-10", day_status: "not_tracked", status: "reviewed" },
+        ]),
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+    expect(overridden["2026-06-10"]?.find((layer) => layer.source === "habits")).toMatchObject({
+      compactLabel: "1/1 habits",
+    });
+
+    const unavailable = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: { status: "error" },
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+    expect(unavailable["2026-06-10"]?.find((layer) => layer.source === "habits")).toMatchObject({
+      status: "error",
+      metrics: [],
+    });
+
+    const unknown = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: buildCalendarHabitDayStatusState([
+          { review_date: "2026-06-10", day_status: "future_status", status: "reviewed" },
+        ]),
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+    const unknownLayer = unknown["2026-06-10"]?.find((layer) => layer.source === "habits");
+    expect(unknownLayer).toMatchObject({ status: "review", metrics: [expect.any(Object)] });
+    expect(JSON.stringify(unknownLayer)).not.toContain("future_status");
+
+    const unknownWorkflow = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: buildCalendarHabitDayStatusState([
+          {
+            review_date: "2026-06-10",
+            day_status: "not_tracked",
+            status: "future_workflow_status",
+          },
+        ]),
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+    const unknownWorkflowLayer = unknownWorkflow["2026-06-10"]?.find(
+      (layer) => layer.source === "habits"
+    );
+    expect(unknownWorkflowLayer).toMatchObject({
+      status: "review",
+      metrics: [expect.objectContaining({ value: "Needs review" })],
+    });
+    expect(JSON.stringify(unknownWorkflowLayer)).not.toContain("future_workflow_status");
+  });
+
+  it.each([
+    { readerStatus: "error" as const, checkInStatus: "logged" as const },
+    { readerStatus: "schema_missing" as const, checkInStatus: "skipped" as const },
+  ])(
+    "fails closed for a supported $checkInStatus check-in when the day-status reader is $readerStatus",
+    ({ readerStatus, checkInStatus }) => {
+      const layers = buildMyLibraryCalendarDailyLayers({
+        dateKeys: ["2026-06-10"],
+        todayDate: "2026-06-10",
+        habits: {
+          status: "ready",
+          habits: [buildHabit()],
+          checkIns: [
+            buildCheckIn({
+              status: checkInStatus,
+              valueBoolean: checkInStatus === "logged" ? true : null,
+              completedAt: checkInStatus === "logged" ? "2026-06-10T08:00:00.000Z" : null,
+            }),
+          ],
+          resetEvents: [],
+          unsupported: { count: 0, labels: [] },
+          dayStatuses: { status: readerStatus },
+        },
+        microSessions: { status: "ready", plans: [] },
+      });
+
+      const habitLayer = layers["2026-06-10"]?.find((layer) => layer.source === "habits");
+
+      expect(habitLayer).toMatchObject({ status: readerStatus, metrics: [] });
+    }
+  );
+
+  it("does not let an unrelated same-day check-in mask missing any-day period evidence", () => {
+    const layers = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-14"],
+      todayDate: "2026-06-14",
+      habits: {
+        status: "ready",
+        habits: [
+          buildHabit({ id: "daily" }),
+          buildHabit({
+            id: "weekly-any",
+            cadencePeriod: "weekly",
+            cadenceTargetCount: 2,
+            cadenceDayPolicy: "any",
+            cadenceLabel: "2 times per week",
+          }),
+        ],
+        checkIns: [buildCheckIn({ habitId: "daily", checkInDate: "2026-06-14" })],
+        resetEvents: [],
+        unsupported: { count: 0, labels: [] },
+        dayStatuses: { status: "error" },
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+
+    expect(layers["2026-06-14"]?.find((layer) => layer.source === "habits")).toMatchObject({
+      status: "error",
+      metrics: [],
+    });
   });
 
   it("does not count future Habits or unknown Habit cadence values", () => {

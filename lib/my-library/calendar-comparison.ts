@@ -24,25 +24,35 @@ import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionView,
+  buildHabitMetricCoverage,
   buildHabitMotivationResetView,
   classifyHabitDefinition,
+  getHabitDayStatusRangeEvidence,
+  getHabitDayStatusLabel,
   type HabitCheckInRow,
   type HabitCheckInView,
   type HabitDefinitionRow,
   type HabitDefinitionView,
   type HabitMotivationResetRow,
   type HabitMotivationResetView,
+  type HabitMetricCoverage,
   type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
   buildMyLibraryCalendarComparisonWindow,
   getCalendarSourceFilterLabel,
+  getMyLibraryCalendarPeriodStartDate,
   type MyLibraryCalendarComparisonWindow,
   type MyLibraryCalendarPeriodRange,
   type MyLibraryCalendarPeriodSelection,
   type MyLibraryCalendarSourceFilter,
   type MyLibraryCalendarSourceSelection,
 } from "@/lib/my-library/calendar";
+import {
+  buildCalendarHabitDayStatusState,
+  type CalendarHabitDayStatusEntry,
+  type CalendarHabitDayStatusRow,
+} from "@/lib/my-library/calendar-daily-layers";
 import type { Database, Json } from "@/types/database";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -317,7 +327,10 @@ function buildProblemModel(input: {
 
 type HabitRangeStats = {
   dayCount: number;
-  daysWithHabits: number;
+  potentialDays: number;
+  includedDays: number;
+  notTrackedDays: number;
+  metricCoverage: HabitMetricCoverage;
   scheduledHabitSlots: number;
   satisfiedHabitSlots: number;
   perfectDays: number;
@@ -334,23 +347,80 @@ function buildHabitRangeStats(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
   resetEvents: HabitMotivationResetView[],
-  range: MyLibraryCalendarPeriodRange
+  range: MyLibraryCalendarPeriodRange,
+  dayStatusEntries: CalendarHabitDayStatusEntry[]
 ): HabitRangeStats {
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const supportedHabitIds = new Set(habits.map((habit) => habit.id));
   const habitById = new Map(activeHabits.map((habit) => [habit.id, habit]));
   const dateKeys = listDateKeys(range);
-  const daySummaries = dateKeys.map((dateKey) =>
-    buildHabitDaySummary(
-      activeHabits,
-      checkIns.filter((checkIn) => checkIn.checkInDate <= dateKey),
-      dateKey
-    )
-  );
-  const daysWithHabits = daySummaries.filter((day) => day.perfectDayItemCount > 0);
   const rangeCheckIns = checkIns.filter(
     (checkIn) => supportedHabitIds.has(checkIn.habitId) && isDateInRange(checkIn.checkInDate, range)
   );
+  const daySummaries = dateKeys.map((dateKey) => ({
+    dateKey,
+    summary: buildHabitDaySummary(
+      activeHabits,
+      checkIns.filter((checkIn) => checkIn.checkInDate <= dateKey),
+      dateKey,
+      { dayStatuses: dayStatusEntries }
+    ),
+  }));
+  const potentialDaySummaries = daySummaries.filter(
+    (day) => day.summary.potentialPerfectDayItemCount > 0
+  );
+  const performanceDaySummaries = potentialDaySummaries.filter(
+    (day) =>
+      day.summary.trackingState === "known" &&
+      day.summary.metricCoverage.state !== "needs_review" &&
+      day.summary.metricCoverage.knownUnitCount > 0
+  );
+  const fullyKnownDaySummaries = performanceDaySummaries.filter(
+    (day) =>
+      day.summary.metricCoverage.knownUnitCount === day.summary.metricCoverage.potentialUnitCount
+  );
+  const metricDaySummaries = daySummaries.filter(
+    (day) =>
+      day.summary.trackingState === "known" && day.summary.metricCoverage.state !== "needs_review"
+  );
+  const potentialUnits = potentialDaySummaries.reduce(
+    (total, day) => total + day.summary.metricCoverage.potentialUnitCount,
+    0
+  );
+  const knownUnits = performanceDaySummaries.reduce(
+    (total, day) => total + day.summary.metricCoverage.knownUnitCount,
+    0
+  );
+  const successfulUnits = performanceDaySummaries.reduce(
+    (total, day) => total + day.summary.metricCoverage.successfulUnitCount,
+    0
+  );
+  const relevantDayStatuses = dayStatusEntries.filter(
+    (status) =>
+      isDateInRange(status.reviewDate, range) &&
+      activeHabits.some((habit) => habit.isPerfectDayItem && habit.startDate <= status.reviewDate)
+  );
+  const rangeStatusEvidence = getHabitDayStatusRangeEvidence({
+    periodStart: range.startDate,
+    periodEnd: range.endDate,
+    throughDate: range.endDate,
+    dayStatuses: relevantDayStatuses,
+    precedenceCheckIns: checkIns,
+  });
+  const hasUnsupportedDayStatus =
+    rangeStatusEvidence.hasUnsupportedDayStatus ||
+    potentialDaySummaries.some(
+      (day) =>
+        day.summary.trackingState === "needs_review" ||
+        day.summary.metricCoverage.state === "needs_review"
+    );
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialUnits,
+    knownUnitCount: knownUnits,
+    successfulUnitCount: successfulUnits,
+    notTrackedDayCount: rangeStatusEvidence.notTrackedDayCount,
+    hasUnsupportedDayStatus,
+  });
   const resetMarkers = resetEvents.filter(
     (reset) =>
       supportedHabitIds.has(reset.habitId) &&
@@ -365,22 +435,22 @@ function buildHabitRangeStats(
 
   return {
     dayCount: dateKeys.length,
-    daysWithHabits: daysWithHabits.length,
-    scheduledHabitSlots: daySummaries.reduce((total, day) => total + day.perfectDayItemCount, 0),
-    satisfiedHabitSlots: daySummaries.reduce(
-      (total, day) => total + day.satisfiedPerfectDayItemCount,
+    potentialDays: potentialDaySummaries.length,
+    includedDays: performanceDaySummaries.length,
+    notTrackedDays: rangeStatusEvidence.notTrackedDayCount,
+    metricCoverage,
+    scheduledHabitSlots: metricCoverage.knownUnitCount,
+    satisfiedHabitSlots: metricCoverage.successfulUnitCount,
+    perfectDays: fullyKnownDaySummaries.filter((day) => day.summary.isPerfectDay).length,
+    averageCompletionPercent: metricCoverage.performancePercent ?? 0,
+    timedMinutes: metricDaySummaries.reduce(
+      (total, day) => total + day.summary.completedDurationMinutes,
       0
     ),
-    perfectDays: daySummaries.filter((day) => day.isPerfectDay).length,
-    averageCompletionPercent:
-      daysWithHabits.length > 0
-        ? Math.round(
-            daysWithHabits.reduce((total, day) => total + (day.completionPercent ?? 0), 0) /
-              daysWithHabits.length
-          )
-        : 0,
-    timedMinutes: daySummaries.reduce((total, day) => total + day.completedDurationMinutes, 0),
-    countTotal: daySummaries.reduce((total, day) => total + day.completedCountTotal, 0),
+    countTotal: metricDaySummaries.reduce(
+      (total, day) => total + day.summary.completedCountTotal,
+      0
+    ),
     restDays: rangeCheckIns.filter((checkIn) => checkIn.status === "skipped").length,
     slips,
     resetMarkers,
@@ -392,69 +462,168 @@ export function buildHabitsCalendarComparisonSource({
   habits,
   checkIns,
   resetEvents = [],
+  dayStatusEntries = [],
   unsupportedHabitCount = 0,
   window,
 }: {
   habits: HabitDefinitionView[];
   checkIns: HabitCheckInView[];
   resetEvents?: HabitMotivationResetView[];
+  dayStatusEntries?: CalendarHabitDayStatusEntry[];
   unsupportedHabitCount?: number;
   window: MyLibraryCalendarComparisonWindow;
 }): MyLibraryCalendarSourceComparison {
-  const current = buildHabitRangeStats(habits, checkIns, resetEvents, window.current);
-  const comparison = buildHabitRangeStats(habits, checkIns, resetEvents, window.comparison);
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const includedHabits = activeHabits.filter((habit) => habit.isPerfectDayItem);
+  const current = buildHabitRangeStats(
+    habits,
+    checkIns,
+    resetEvents,
+    window.current,
+    dayStatusEntries
+  );
+  const comparison = buildHabitRangeStats(
+    habits,
+    checkIns,
+    resetEvents,
+    window.comparison,
+    dayStatusEntries
+  );
+  const unsupportedDayStatusCount =
+    Number(current.metricCoverage.state === "needs_review") +
+    Number(comparison.metricCoverage.state === "needs_review");
+
+  if (unsupportedDayStatusCount > 0) {
+    return {
+      source: "habits",
+      label: "Habits",
+      status: "review",
+      summary: "Habit day status needs review before these ranges can be compared.",
+      supportLabel:
+        "An unknown day status was excluded without treating it as tracked, missed, or successful.",
+      details: [
+        {
+          id: "active_habits",
+          label: "Active habits",
+          value: pluralize(activeHabits.length, "habit"),
+        },
+        {
+          id: "habit_day_status_review",
+          label: getHabitDayStatusLabel("unsupported"),
+          value: pluralize(unsupportedDayStatusCount, "range"),
+        },
+      ],
+      metrics: [],
+    };
+  }
   const hasData =
-    current.scheduledHabitSlots +
-      comparison.scheduledHabitSlots +
+    current.metricCoverage.potentialUnitCount +
+      comparison.metricCoverage.potentialUnitCount +
       current.checkInCount +
       comparison.checkInCount +
       current.resetMarkers +
-      comparison.resetMarkers >
+      comparison.resetMarkers +
+      current.notTrackedDays +
+      comparison.notTrackedDays >
     0;
   const hasReview = unsupportedHabitCount > 0;
-  const completionDelta = formatPercentDelta(
-    current.averageCompletionPercent,
-    comparison.averageCompletionPercent
-  );
+  const currentCoveragePercent = current.metricCoverage.coveragePercent;
+  const comparisonCoveragePercent = comparison.metricCoverage.coveragePercent;
+  const coverageDiffers = currentCoveragePercent !== comparisonCoveragePercent;
+  const completionDelta =
+    current.metricCoverage.knownUnitCount === 0 || comparison.metricCoverage.knownUnitCount === 0
+      ? { label: "Coverage only", tone: "neutral" as const }
+      : coverageDiffers
+        ? { label: "Coverage differs", tone: "neutral" as const }
+        : formatPercentDelta(current.averageCompletionPercent, comparison.averageCompletionPercent);
+  const formatCoverage = (stats: HabitRangeStats, percent: number | null) =>
+    percent === null
+      ? "No eligible days"
+      : `${stats.metricCoverage.knownUnitCount}/${stats.metricCoverage.potentialUnitCount} · ${percent}%`;
+  const formatPerformancePercent = (stats: HabitRangeStats) =>
+    stats.metricCoverage.knownUnitCount > 0
+      ? `${stats.averageCompletionPercent}%`
+      : "No tracked data";
+  const formatOnTarget = (stats: HabitRangeStats) =>
+    stats.metricCoverage.knownUnitCount > 0
+      ? `${stats.satisfiedHabitSlots}/${stats.scheduledHabitSlots}`
+      : "No tracked data";
+  const buildCoverageSensitiveMetric = (input: {
+    id: string;
+    label: string;
+    current: number;
+    comparison: number;
+    unit: string;
+  }) => {
+    const metric = buildNumericMetric(input);
+    return coverageDiffers
+      ? { ...metric, deltaLabel: "Coverage differs", tone: "neutral" as const }
+      : metric;
+  };
 
   const metrics: MyLibraryCalendarComparisonMetric[] = [
     {
       id: "habit_completion_average",
       label: "Targets hit",
-      currentLabel: `${current.averageCompletionPercent}%`,
-      comparisonLabel: `${comparison.averageCompletionPercent}%`,
+      currentLabel: formatPerformancePercent(current),
+      comparisonLabel: formatPerformancePercent(comparison),
       deltaLabel: completionDelta.label,
       tone: completionDelta.tone,
     },
     {
       id: "habit_on_target_slots",
       label: "Habits on track",
-      currentLabel: `${current.satisfiedHabitSlots}/${current.scheduledHabitSlots}`,
-      comparisonLabel: `${comparison.satisfiedHabitSlots}/${comparison.scheduledHabitSlots}`,
-      deltaLabel: formatSignedDelta(
-        current.satisfiedHabitSlots,
-        comparison.satisfiedHabitSlots,
-        "habit"
-      ).label,
-      tone: formatSignedDelta(current.satisfiedHabitSlots, comparison.satisfiedHabitSlots, "habit")
-        .tone,
+      currentLabel: formatOnTarget(current),
+      comparisonLabel: formatOnTarget(comparison),
+      deltaLabel:
+        current.metricCoverage.knownUnitCount === 0 ||
+        comparison.metricCoverage.knownUnitCount === 0
+          ? "Coverage only"
+          : coverageDiffers
+            ? "Coverage differs"
+            : formatSignedDelta(
+                current.satisfiedHabitSlots,
+                comparison.satisfiedHabitSlots,
+                "habit"
+              ).label,
+      tone:
+        current.metricCoverage.knownUnitCount === 0 ||
+        comparison.metricCoverage.knownUnitCount === 0 ||
+        coverageDiffers
+          ? "neutral"
+          : formatSignedDelta(current.satisfiedHabitSlots, comparison.satisfiedHabitSlots, "habit")
+              .tone,
     },
-    buildNumericMetric({
+    buildCoverageSensitiveMetric({
       id: "habit_perfect_days",
       label: "Perfect days",
       current: current.perfectDays,
       comparison: comparison.perfectDays,
       unit: "day",
     }),
-    buildNumericMetric({
+    buildCoverageSensitiveMetric({
       id: "habit_timed_minutes",
       label: "Timed minutes",
       current: current.timedMinutes,
       comparison: comparison.timedMinutes,
       unit: "minute",
     }),
+    {
+      id: "habit_coverage",
+      label: "Coverage",
+      currentLabel: formatCoverage(current, currentCoveragePercent),
+      comparisonLabel: formatCoverage(comparison, comparisonCoveragePercent),
+      deltaLabel: coverageDiffers ? "Coverage differs" : "No change",
+      tone: "neutral",
+    },
+    {
+      id: "habit_not_tracked",
+      label: getHabitDayStatusLabel("not_tracked"),
+      currentLabel: pluralize(current.notTrackedDays, "day"),
+      comparisonLabel: pluralize(comparison.notTrackedDays, "day"),
+      deltaLabel: "Coverage only",
+      tone: "neutral",
+    },
     {
       id: "habit_rest_slips",
       label: "Rest and slips",
@@ -485,10 +654,18 @@ export function buildHabitsCalendarComparisonSource({
     label: "Habits",
     status: hasReview ? "review" : hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `Habits were on target ${current.averageCompletionPercent}% across ${pluralize(
-          current.daysWithHabits,
-          "tracked day"
-        )}.${hasReview ? ` ${reviewSummary}` : ""}`
+      ? current.metricCoverage.knownUnitCount > 0
+        ? `Habits were on target ${current.averageCompletionPercent}% across ${pluralize(
+            current.includedDays,
+            "included day"
+          )}. Coverage was ${formatCoverage(current, currentCoveragePercent)} with ${pluralize(
+            current.notTrackedDays,
+            "day"
+          )} not tracked.${coverageDiffers ? " Coverage differs between the compared ranges, so percentage changes need context." : ""}${hasReview ? ` ${reviewSummary}` : ""}`
+        : `No tracked Habit data in the selected range. Coverage was ${formatCoverage(
+            current,
+            currentCoveragePercent
+          )} with ${pluralize(current.notTrackedDays, "day")} not tracked.${hasReview ? ` ${reviewSummary}` : ""}`
       : hasReview
         ? reviewSummary
         : "No Habits data in either compared range.",
@@ -508,9 +685,20 @@ export function buildHabitsCalendarComparisonSource({
         supportLabel: "Only active perfect-day habits are included in on-target comparison.",
       },
       {
-        id: "tracked_days",
-        label: "Tracked days",
-        value: pluralize(current.daysWithHabits, "day"),
+        id: "included_days",
+        label: "Included days",
+        value: `${current.includedDays}/${current.potentialDays} days`,
+        supportLabel: "Not-tracked dates stay in potential coverage but not performance.",
+      },
+      {
+        id: "habit_coverage",
+        label: "Coverage",
+        value: formatCoverage(current, currentCoveragePercent),
+      },
+      {
+        id: "habit_not_tracked",
+        label: getHabitDayStatusLabel("not_tracked"),
+        value: pluralize(current.notTrackedDays, "day"),
       },
       {
         id: "habit_reset_markers",
@@ -523,7 +711,7 @@ export function buildHabitsCalendarComparisonSource({
         ? [
             {
               id: "habit_review",
-              label: "Needs review",
+              label: getHabitDayStatusLabel("unsupported"),
               value: pluralize(unsupportedHabitCount, "habit"),
               supportLabel: "These definitions and their saved child history are not counted.",
             },
@@ -931,6 +1119,12 @@ export async function loadMyLibraryCalendarComparison(
     window.current.endDate > window.comparison.endDate
       ? window.current.endDate
       : window.comparison.endDate;
+  const habitMonthEvidenceStart = getMyLibraryCalendarPeriodStartDate(rangeStart, "month");
+  const habitWeekEvidenceStart = getMyLibraryCalendarPeriodStartDate(rangeStart, "week");
+  const habitEvidenceStart =
+    habitMonthEvidenceStart < habitWeekEvidenceStart
+      ? habitMonthEvidenceStart
+      : habitWeekEvidenceStart;
 
   const loadHabits = shouldLoadSource(options.selectedSource, "habits");
   const loadDryland = shouldLoadSource(options.selectedSource, "dryland");
@@ -941,6 +1135,7 @@ export async function loadMyLibraryCalendarComparison(
     habitResult,
     checkInResult,
     resetResult,
+    habitDayStatusResult,
     drylandResult,
     microPlanResult,
     trainingActivityResult,
@@ -959,7 +1154,7 @@ export async function loadMyLibraryCalendarComparison(
           .from("habit_check_ins")
           .select(HABIT_CHECK_IN_SELECT)
           .eq("user_id", userId)
-          .gte("check_in_date", rangeStart)
+          .gte("check_in_date", habitEvidenceStart)
           .lte("check_in_date", rangeEnd)
       : Promise.resolve({ data: null, error: null }),
     loadHabits
@@ -969,6 +1164,15 @@ export async function loadMyLibraryCalendarComparison(
           .eq("user_id", userId)
           .gte("effective_date", rangeStart)
           .lte("effective_date", rangeEnd)
+      : Promise.resolve({ data: null, error: null }),
+    loadHabits
+      ? supabase
+          .from("habit_absence_review_acknowledgements")
+          .select("review_date, day_status, status")
+          .eq("user_id", userId)
+          .eq("review_scope", "weekly_absence_review")
+          .gte("review_date", habitEvidenceStart)
+          .lte("review_date", rangeEnd)
       : Promise.resolve({ data: null, error: null }),
     loadDryland
       ? supabase
@@ -1006,7 +1210,11 @@ export async function loadMyLibraryCalendarComparison(
 
   let habits: MyLibraryCalendarSourceComparison | null = null;
   if (loadHabits) {
-    if (isHabitsSchemaMissing(habitResult.error) || isHabitsSchemaMissing(checkInResult.error)) {
+    if (
+      isHabitsSchemaMissing(habitResult.error) ||
+      isHabitsSchemaMissing(checkInResult.error) ||
+      isHabitsSchemaMissing(habitDayStatusResult.error)
+    ) {
       habits = {
         source: "habits",
         label: "Habits",
@@ -1015,10 +1223,11 @@ export async function loadMyLibraryCalendarComparison(
         supportLabel: "No Habits rows were counted because the schema is not ready.",
         metrics: [],
       };
-    } else if (habitResult.error || checkInResult.error) {
+    } else if (habitResult.error || checkInResult.error || habitDayStatusResult.error) {
       console.error("[MyLibraryCalendar] Could not load Habits comparison", {
         habitError: habitResult.error,
         checkInError: checkInResult.error,
+        dayStatusError: habitDayStatusResult.error,
       });
       habits = {
         source: "habits",
@@ -1046,21 +1255,35 @@ export async function loadMyLibraryCalendarComparison(
         }
       }
       const supportedHabitIds = new Set(supportedHabitRows.map((row) => row.id));
+      const dayStatuses = buildCalendarHabitDayStatusState(
+        (habitDayStatusResult.data ?? []) as unknown as CalendarHabitDayStatusRow[]
+      );
 
-      habits = buildHabitsCalendarComparisonSource({
-        habits: supportedHabitRows.map(buildHabitDefinitionView),
-        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
-          .filter((row) => supportedHabitIds.has(row.habit_id))
-          .map(buildHabitCheckInView),
-        resetEvents:
-          resetEventsReady && !resetResult.error
-            ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
+      habits =
+        dayStatuses.status === "ready"
+          ? buildHabitsCalendarComparisonSource({
+              habits: supportedHabitRows.map(buildHabitDefinitionView),
+              checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
                 .filter((row) => supportedHabitIds.has(row.habit_id))
-                .map(buildHabitMotivationResetView)
-            : [],
-        unsupportedHabitCount,
-        window,
-      });
+                .map(buildHabitCheckInView),
+              resetEvents:
+                resetEventsReady && !resetResult.error
+                  ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
+                      .filter((row) => supportedHabitIds.has(row.habit_id))
+                      .map(buildHabitMotivationResetView)
+                  : [],
+              unsupportedHabitCount,
+              dayStatusEntries: dayStatuses.entries,
+              window,
+            })
+          : {
+              source: "habits",
+              label: "Habits",
+              status: "review",
+              summary: "Habit day status needs review before these ranges can be compared.",
+              supportLabel: "No Habit results were counted from an invalid day-status row.",
+              metrics: [],
+            };
     }
   }
 

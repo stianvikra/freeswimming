@@ -286,6 +286,25 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): PrimaryIn
   }
 
   if (lead.source.source === "habits" && lead.metric.id === "habit_completion_average") {
+    if (
+      lead.metric.deltaLabel === "Coverage differs" ||
+      lead.metric.deltaLabel === "Coverage only"
+    ) {
+      const coverageMetric = lead.source.metrics.find((metric) => metric.id === "habit_coverage");
+      const coverageContext = coverageMetric
+        ? ` Coverage was ${coverageMetric.currentLabel} versus ${coverageMetric.comparisonLabel}.`
+        : "";
+      return {
+        tone: "neutral",
+        value: lead.metric.deltaLabel,
+        title:
+          lead.metric.deltaLabel === "Coverage differs"
+            ? "Habit coverage differs"
+            : "Habit trend needs more coverage",
+        body: `Habit targets were ${lead.metric.currentLabel} in the selected range and ${lead.metric.comparisonLabel} in the comparison range.${coverageContext} No improvement or decline is inferred.`,
+      };
+    }
+
     if (lead.metric.tone === "positive") {
       return {
         tone: "positive",

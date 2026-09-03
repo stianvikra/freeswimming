@@ -22,7 +22,10 @@ import {
 } from "@/lib/my-library/calendar";
 import {
   buildMyLibraryCalendarDailyLayers,
+  buildCalendarHabitDayStatusState,
   partitionCalendarHabitRows,
+  type CalendarHabitDayStatusRow,
+  type CalendarHabitDayStatusState,
   type MyLibraryCalendarDailyLayer,
   type MyLibraryCalendarDailyLayersByDate,
 } from "@/lib/my-library/calendar-daily-layers";
@@ -262,7 +265,7 @@ async function loadCalendarDailyLayers(
   const habitHistoryEnd =
     input.month.gridEndDate < input.todayDate ? input.month.gridEndDate : input.todayDate;
 
-  const [habitResult, microPlanResult] = await Promise.all([
+  const [habitResult, microPlanResult, habitDayStatusResult] = await Promise.all([
     supabase
       .from("habit_definitions")
       .select(HABIT_DEFINITION_SELECT)
@@ -275,7 +278,31 @@ async function loadCalendarDailyLayers(
       .eq("user_id", userId)
       .lte("week_starts_at", dateToIsoEnd(input.month.gridEndDate))
       .gte("week_ends_at", `${input.month.gridStartDate}T00:00:00.000Z`),
+    habitHistoryEnd >= habitHistoryStart
+      ? supabase
+          .from("habit_absence_review_acknowledgements")
+          .select("review_date, day_status, status")
+          .eq("user_id", userId)
+          .eq("review_scope", "weekly_absence_review")
+          .gte("review_date", habitHistoryStart)
+          .lte("review_date", habitHistoryEnd)
+      : Promise.resolve({ data: [], error: null }),
   ]);
+
+  let habitDayStatuses: CalendarHabitDayStatusState;
+  if (isHabitsSchemaMissing(habitDayStatusResult.error)) {
+    habitDayStatuses = { status: "schema_missing" };
+  } else if (habitDayStatusResult.error) {
+    console.error(
+      "[CalendarPlan] Could not load daily Habit day statuses",
+      habitDayStatusResult.error
+    );
+    habitDayStatuses = { status: "error" };
+  } else {
+    habitDayStatuses = buildCalendarHabitDayStatusState(
+      (habitDayStatusResult.data ?? []) as unknown as CalendarHabitDayStatusRow[]
+    );
+  }
 
   let habitLayerState: Parameters<typeof buildMyLibraryCalendarDailyLayers>[0]["habits"];
   if (isHabitsSchemaMissing(habitResult.error)) {
@@ -333,6 +360,7 @@ async function loadCalendarDailyLayers(
                 .filter((row) => supportedHabitIds.has(row.habit_id))
                 .map(buildHabitMotivationResetView),
         unsupported,
+        dayStatuses: habitDayStatuses,
       };
     }
   }

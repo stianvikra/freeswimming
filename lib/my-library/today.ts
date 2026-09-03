@@ -4,7 +4,12 @@ import {
   type DrylandMicroPlanRecord,
 } from "@/lib/dryland/micro-plans";
 import type { DrylandLibrarySnapshot } from "@/lib/dryland/shared";
-import type { HabitSnapshot } from "@/lib/habits/shared";
+import {
+  getHabitDayStatusLabel,
+  getHabitItemTrackingStateLabel,
+  isHabitMetricCoverageIncomplete,
+  type HabitSnapshot,
+} from "@/lib/habits/shared";
 
 export const TODAY_SURFACE_TABS = [
   { id: "micro-sessions", label: "Micro Sessions" },
@@ -14,7 +19,16 @@ export const TODAY_SURFACE_TABS = [
 export type TodaySurfaceTabId = (typeof TODAY_SURFACE_TABS)[number]["id"];
 
 export type TodaySurfaceState = {
-  state: "ready" | "complete" | "setup" | "paused" | "syncing" | "error" | "review";
+  state:
+    | "ready"
+    | "complete"
+    | "setup"
+    | "paused"
+    | "syncing"
+    | "error"
+    | "review"
+    | "not_tracked"
+    | "tracking_incomplete";
   title: string;
   detail: string;
   progressLabel: string;
@@ -197,6 +211,35 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
     };
   }
 
+  if (habitSnapshot.dayStatusesReady === false) {
+    return {
+      state: "review",
+      title: "Habits",
+      detail: "Habit progress is hidden until saved day statuses can be loaded safely.",
+      progressLabel: "Day status unavailable",
+      progressPercent: null,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: null,
+    };
+  }
+
+  if (
+    habitSnapshot.daySummary.trackingState === "needs_review" ||
+    habitSnapshot.daySummary.metricCoverage?.state === "needs_review"
+  ) {
+    return {
+      state: "review",
+      title: "Habits",
+      detail: "Habit progress is hidden because this day uses a status that needs review.",
+      progressLabel: getHabitDayStatusLabel("unsupported"),
+      progressPercent: null,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: null,
+    };
+  }
+
   const perfectDayTotal = habitSnapshot.daySummary.perfectDayItemCount;
   const satisfiedCount = habitSnapshot.daySummary.satisfiedPerfectDayItemCount;
   const activeCount = habitSnapshot.activeHabits.length;
@@ -227,6 +270,33 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
       actionLabel: "Open",
       href: "/my-library/habits",
       editHref: null,
+    };
+  }
+
+  if (habitSnapshot.daySummary.trackingState === "not_tracked") {
+    return {
+      state: "not_tracked",
+      title: "Habits",
+      detail: "This day is excluded from Habit performance, totals, and streaks.",
+      progressLabel: getHabitDayStatusLabel("not_tracked"),
+      progressPercent: null,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: "/my-library/habits",
+    };
+  }
+
+  if (isHabitMetricCoverageIncomplete(habitSnapshot.daySummary.metricCoverage)) {
+    return {
+      state: "tracking_incomplete",
+      title: "Habits",
+      detail:
+        "One or more Habit outcomes are excluded because this cadence period does not have enough tracked days.",
+      progressLabel: getHabitItemTrackingStateLabel("incomplete"),
+      progressPercent: null,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: "/my-library/habits",
     };
   }
 
@@ -318,12 +388,17 @@ function buildMicroSessionsQuickSubtitle(
 
 function buildHabitsQuickHref(state: TodaySurfaceState) {
   if (state.state === "setup") return "/my-library/habits?view=active#add-habit";
+  if (state.state === "not_tracked" || state.state === "tracking_incomplete") {
+    return "/my-library/habits";
+  }
   return "/my-library/habits?view=active#today-habits";
 }
 
 function buildHabitsQuickSubtitle(state: TodaySurfaceState) {
   if (state.state === "complete") return "Done today";
   if (state.state === "review") return state.progressLabel;
+  if (state.state === "not_tracked") return state.progressLabel;
+  if (state.state === "tracking_incomplete") return state.progressLabel;
   if (state.state === "ready") return state.progressLabel;
   if (state.state === "syncing") return "Syncing";
   if (state.state === "error") return "Open to retry";

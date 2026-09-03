@@ -386,6 +386,181 @@ describe("CalendarPlanWeekHub", () => {
     );
   });
 
+  it("shows not-tracked Calendar days and week coverage without adding outcome totals", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          dailyLayersByDate: {
+            "2026-06-22": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                tone: "muted",
+                compactLabel: "Not tracked",
+                summary: "Habit activity was not tracked on this date.",
+                metrics: [{ id: "habit_not_tracked", label: "Status", value: "Not tracked" }],
+                stats: {
+                  dailyHabitCompletedCount: 0,
+                  dailyHabitTotalCount: 0,
+                  habitPotentialDayCount: 1,
+                  habitIncludedDayCount: 0,
+                  habitNotTrackedDayCount: 1,
+                },
+              }),
+            ],
+            "2026-06-23": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                compactLabel: "3/4 habits",
+                stats: {
+                  dailyHabitCompletedCount: 3,
+                  dailyHabitTotalCount: 4,
+                  habitPotentialDayCount: 1,
+                  habitIncludedDayCount: 1,
+                  habitNotTrackedDayCount: 0,
+                },
+              }),
+            ],
+          },
+        })}
+      />
+    );
+
+    const weekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(weekTotal).getByText("Daily habits")).toBeVisible();
+    expect(within(weekTotal).getByText("3/4")).toBeVisible();
+    expect(within(weekTotal).getByText("Coverage")).toBeVisible();
+    expect(within(weekTotal).getByText("1/2 · 50%")).toBeVisible();
+    expect(within(weekTotal).getByText("Not tracked")).toBeVisible();
+    expect(within(weekTotal).getByText("1 day")).toBeVisible();
+    expect(weekTotal).toHaveAccessibleName(/Habit coverage 1\/2 · 50%/);
+    expect(weekTotal).toHaveAccessibleName(/Not tracked 1 day/);
+
+    const selectedLayer = within(
+      screen.getByTestId("calendar-plan-selected-day-2026-06-22")
+    ).getByTestId("calendar-daily-layer-habits");
+    expect(within(selectedLayer).getAllByText("Not tracked")).toHaveLength(2);
+    expect(within(selectedLayer).queryByText("Daily habits")).toBeNull();
+    expect(within(selectedLayer).queryByText("Due")).toBeNull();
+    expect(within(selectedLayer).queryByText("Rest")).toBeNull();
+    expect(within(selectedLayer).queryByText("Slips")).toBeNull();
+  });
+
+  it("counts a mid-week weekly-any not-tracked marker in the month week total only as coverage", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          dailyLayersByDate: {
+            "2026-06-23": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                tone: "muted",
+                compactLabel: "Not tracked",
+                summary: "Habit activity was not tracked on this date.",
+                metrics: [{ id: "habit_not_tracked", label: "Status", value: "Not tracked" }],
+                stats: {
+                  dailyHabitCompletedCount: 0,
+                  dailyHabitTotalCount: 0,
+                  habitPotentialDayCount: 0,
+                  habitIncludedDayCount: 0,
+                  habitNotTrackedDayCount: 1,
+                },
+              }),
+            ],
+            "2026-06-28": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                tone: "muted",
+                compactLabel: "Tracking incomplete",
+                metrics: [
+                  {
+                    id: "habit_tracking_incomplete",
+                    label: "Coverage",
+                    value: "Tracking incomplete",
+                  },
+                ],
+                stats: {
+                  dailyHabitCompletedCount: 0,
+                  dailyHabitTotalCount: 0,
+                  habitPotentialDayCount: 1,
+                  habitIncludedDayCount: 0,
+                  habitNotTrackedDayCount: 0,
+                  weeklyHabitCompletedCount: 0,
+                  weeklyHabitTotalCount: 0,
+                },
+              }),
+            ],
+          },
+        })}
+      />
+    );
+
+    const weekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(weekTotal).getByText("Coverage")).toBeVisible();
+    expect(within(weekTotal).getByText("0/1 · 0%")).toBeVisible();
+    expect(within(weekTotal).getByText("Not tracked")).toBeVisible();
+    expect(within(weekTotal).getByText("1 day")).toBeVisible();
+    expect(within(weekTotal).queryByText("Daily habits")).toBeNull();
+    expect(within(weekTotal).queryByText("Weekly habits")).toBeNull();
+    expect(weekTotal).toHaveAccessibleName(/Habit coverage 0\/1 · 0%/);
+    expect(weekTotal).toHaveAccessibleName(/Not tracked 1 day/);
+  });
+
+  it("fails closed for month-week Habit totals when one day needs review", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          dailyLayersByDate: {
+            "2026-06-22": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                compactLabel: "Needs review",
+                status: "review",
+                tone: "warning",
+                stats: {
+                  dailyHabitCompletedCount: 0,
+                  dailyHabitTotalCount: 0,
+                  habitPotentialDayCount: 1,
+                  habitIncludedDayCount: 0,
+                },
+              }),
+            ],
+            "2026-06-23": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                compactLabel: "3/3 habits",
+                stats: {
+                  dailyHabitCompletedCount: 3,
+                  dailyHabitTotalCount: 3,
+                  weeklyHabitCompletedCount: 1,
+                  weeklyHabitTotalCount: 1,
+                  habitPotentialDayCount: 1,
+                  habitIncludedDayCount: 1,
+                },
+              }),
+            ],
+          },
+        })}
+      />
+    );
+
+    const weekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(weekTotal).getByText("Habits")).toBeVisible();
+    expect(within(weekTotal).getByText("Needs review")).toBeVisible();
+    expect(weekTotal).toHaveAccessibleName(/Habit metrics need review/);
+    expect(weekTotal).not.toHaveAccessibleName(/Daily habits 3\/3/);
+    expect(weekTotal).not.toHaveAccessibleName(/Weekly habits 1\/1/);
+    expect(weekTotal).not.toHaveAccessibleName(/Habit coverage/);
+    expect(within(weekTotal).queryByText("3/3")).toBeNull();
+    expect(within(weekTotal).queryByText("1/1")).toBeNull();
+    expect(within(weekTotal).queryByText("50%")).toBeNull();
+  });
+
   it("renders recover actions for skipped selected-day items", () => {
     render(
       <CalendarPlanWeekHub

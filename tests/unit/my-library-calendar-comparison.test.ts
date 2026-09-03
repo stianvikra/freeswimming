@@ -241,7 +241,7 @@ function buildCompletedActivityEventRow(
 
 type QueryCall = {
   table: string;
-  method: "from" | "select" | "eq" | "gte" | "lte" | "order";
+  method: "from" | "select" | "eq" | "gte" | "lte" | "or" | "order";
   column?: string;
   value?: unknown;
 };
@@ -256,6 +256,7 @@ interface QueryBuilderLike extends PromiseLike<QueryResult> {
   eq(column: string, value: unknown): QueryBuilderLike;
   gte(column: string, value: unknown): QueryBuilderLike;
   lte(column: string, value: unknown): QueryBuilderLike;
+  or(filters: string): QueryBuilderLike;
   order(column: string, options?: unknown): QueryBuilderLike;
 }
 
@@ -279,6 +280,10 @@ function createComparisonSupabaseClient(results: Record<string, QueryResult>) {
       },
       lte(column, value) {
         calls.push({ table, method: "lte", column, value });
+        return query;
+      },
+      or(filters) {
+        calls.push({ table, method: "or", value: filters });
         return query;
       },
       order(column, options) {
@@ -356,9 +361,20 @@ describe("my library calendar comparison", () => {
         supportLabel: "Only active perfect-day habits are included in on-target comparison.",
       },
       {
-        id: "tracked_days",
-        label: "Tracked days",
-        value: "4 days",
+        id: "included_days",
+        label: "Included days",
+        value: "4/4 days",
+        supportLabel: "Not-tracked dates stay in potential coverage but not performance.",
+      },
+      {
+        id: "habit_coverage",
+        label: "Coverage",
+        value: "4/4 · 100%",
+      },
+      {
+        id: "habit_not_tracked",
+        label: "Not tracked",
+        value: "0 days",
       },
       {
         id: "habit_reset_markers",
@@ -376,6 +392,229 @@ describe("my library calendar comparison", () => {
     expect(source.metrics.find((metric) => metric.id === "habit_rest_slips")).toMatchObject({
       currentLabel: "1 rest / 0 slips",
       comparisonLabel: "0 rest / 0 slips",
+    });
+  });
+
+  it("excludes not-tracked days from performance while preserving coverage", () => {
+    const sevenDayWindow = buildMyLibraryCalendarComparisonWindow({
+      selectedDate: "2026-06-07",
+      todayDate: "2026-06-07",
+      period: "week",
+    });
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"].map((checkInDate) =>
+        buildCheckIn({ checkInDate })
+      ),
+      dayStatusEntries: [
+        { reviewDate: "2026-06-06", dayStatus: "not_tracked" },
+        { reviewDate: "2026-06-07", dayStatus: "not_tracked" },
+      ],
+      window: sevenDayWindow,
+    });
+
+    expect(source.summary).toContain("on target 80% across 5 included days");
+    expect(source.summary).toContain("Coverage was 5/7 · 71% with 2 days not tracked");
+    expect(source.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "included_days", value: "5/7 days" }),
+        expect.objectContaining({ id: "habit_coverage", value: "5/7 · 71%" }),
+        expect.objectContaining({ id: "habit_not_tracked", value: "2 days" }),
+      ])
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toMatchObject(
+      {
+        currentLabel: "80%",
+        deltaLabel: "Coverage differs",
+        tone: "neutral",
+      }
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_on_target_slots")).toMatchObject({
+      currentLabel: "4/5",
+      deltaLabel: "Coverage differs",
+      tone: "neutral",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_coverage")).toMatchObject({
+      currentLabel: "5/7 · 71%",
+      comparisonLabel: "7/7 · 100%",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_perfect_days")).toMatchObject({
+      deltaLabel: "Coverage differs",
+      tone: "neutral",
+    });
+  });
+
+  it("shows no tracked data instead of a false zero percent when coverage is empty", () => {
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: [],
+      dayStatusEntries: ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05"].map(
+        (reviewDate) => ({ reviewDate, dayStatus: "not_tracked" as const })
+      ),
+      window,
+    });
+
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toMatchObject(
+      {
+        currentLabel: "No tracked data",
+        deltaLabel: "Coverage only",
+        tone: "neutral",
+      }
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_coverage")).toMatchObject({
+      currentLabel: "0/5 · 0%",
+    });
+    expect(source.summary).toContain("No tracked Habit data in the selected range");
+    expect(source.summary).not.toContain("on target 0%");
+  });
+
+  it("gives supported check-ins precedence and fails closed on unknown day statuses", () => {
+    const overridden = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: [buildCheckIn({ checkInDate: "2026-06-02" })],
+      dayStatusEntries: [{ reviewDate: "2026-06-02", dayStatus: "not_tracked" }],
+      window,
+    });
+
+    expect(overridden.details?.find((detail) => detail.id === "habit_not_tracked")).toMatchObject({
+      value: "0 days",
+    });
+    expect(overridden.details?.find((detail) => detail.id === "habit_coverage")).toMatchObject({
+      value: "5/5 · 100%",
+    });
+
+    const unsupported = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: [],
+      dayStatusEntries: [{ reviewDate: "2026-06-04", dayStatus: "unsupported" }],
+      window,
+    });
+
+    expect(unsupported).toMatchObject({
+      status: "review",
+      summary: "Habit day status needs review before these ranges can be compared.",
+      metrics: [],
+    });
+    expect(JSON.stringify(unsupported)).not.toContain("future_status");
+  });
+
+  it("excludes an uncertain any-day period end from Trends performance", () => {
+    const closedWeekWindow = buildMyLibraryCalendarComparisonWindow({
+      selectedDate: "2026-06-07",
+      todayDate: "2026-06-07",
+      period: "week",
+    });
+    const weeklyHabit = buildHabit({
+      cadencePeriod: "weekly",
+      cadenceTargetCount: 2,
+      cadenceDayPolicy: "any",
+      cadenceLabel: "2 times per week",
+      startDate: "2026-06-01",
+    });
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [weeklyHabit],
+      checkIns: [buildCheckIn({ checkInDate: "2026-06-01" })],
+      dayStatusEntries: [{ reviewDate: "2026-06-03", dayStatus: "not_tracked" }],
+      window: closedWeekWindow,
+    });
+
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toMatchObject(
+      { currentLabel: "100%" }
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_on_target_slots")).toMatchObject({
+      currentLabel: "1/1",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_perfect_days")).toMatchObject({
+      currentLabel: "1 day",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_coverage")).toMatchObject({
+      currentLabel: "1/2 · 50%",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_not_tracked")).toMatchObject({
+      currentLabel: "1 day",
+    });
+  });
+
+  it("keeps known units and actuals from a partially known day without awarding Perfect Day", () => {
+    const closedWeekWindow = buildMyLibraryCalendarComparisonWindow({
+      selectedDate: "2026-06-07",
+      todayDate: "2026-06-07",
+      period: "week",
+    });
+    const durationHabit = buildHabit({
+      id: "habit-duration",
+      title: "Move",
+      habitMode: "timed",
+      habitType: "duration",
+      targetValueNumeric: 10,
+      targetUnit: "minutes",
+      targetLabel: "10 minutes",
+      timerEnabled: true,
+      timerTargetSeconds: 600,
+      startDate: "2026-06-07",
+    });
+    const countHabit = buildHabit({
+      id: "habit-count",
+      title: "Water",
+      habitType: "count",
+      targetValueNumeric: 3,
+      targetUnit: "glasses",
+      targetLabel: "3 glasses",
+      startDate: "2026-06-07",
+    });
+    const uncertainWeeklyHabit = buildHabit({
+      id: "habit-weekly",
+      title: "Weekly swim",
+      cadencePeriod: "weekly",
+      cadenceTargetCount: 1,
+      cadenceDayPolicy: "any",
+      cadenceLabel: "Once per week",
+      startDate: "2026-06-01",
+    });
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [durationHabit, countHabit, uncertainWeeklyHabit],
+      checkIns: [
+        buildCheckIn({
+          id: "duration-check-in",
+          habitId: durationHabit.id,
+          checkInDate: "2026-06-07",
+          valueBoolean: null,
+          valueNumeric: 12,
+        }),
+        buildCheckIn({
+          id: "count-check-in",
+          habitId: countHabit.id,
+          checkInDate: "2026-06-07",
+          valueBoolean: null,
+          valueNumeric: 4,
+        }),
+      ],
+      dayStatusEntries: [{ reviewDate: "2026-06-03", dayStatus: "not_tracked" }],
+      window: closedWeekWindow,
+    });
+
+    expect(source.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "included_days", value: "1/1 days" }),
+        expect.objectContaining({ id: "habit_coverage", value: "2/3 · 67%" }),
+      ])
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toMatchObject(
+      {
+        currentLabel: "100%",
+      }
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_on_target_slots")).toMatchObject({
+      currentLabel: "2/2",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_timed_minutes")).toMatchObject({
+      currentLabel: "12 minutes",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_perfect_days")).toMatchObject({
+      currentLabel: "0 days",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_coverage")).toMatchObject({
+      currentLabel: "2/3 · 67%",
     });
   });
 
@@ -705,7 +944,7 @@ describe("my library calendar comparison", () => {
 
   it("filters unsupported Habit child rows before building Trends", async () => {
     const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
-    const { client } = createComparisonSupabaseClient({
+    const { calls, client } = createComparisonSupabaseClient({
       habit_definitions: {
         data: [
           buildHabitRow(),
@@ -739,6 +978,10 @@ describe("my library calendar comparison", () => {
         ],
         error: null,
       },
+      habit_absence_review_acknowledgements: {
+        data: [{ review_date: "2026-06-04", day_status: "not_tracked", status: "reviewed" }],
+        error: null,
+      },
     });
 
     const model = await loadMyLibraryCalendarComparison(client as never, "user-1", {
@@ -757,6 +1000,7 @@ describe("my library calendar comparison", () => {
       expect.arrayContaining([
         expect.objectContaining({ id: "active_habits", value: "1 habit" }),
         expect.objectContaining({ id: "habit_reset_markers", value: "0 markers" }),
+        expect.objectContaining({ id: "habit_not_tracked", value: "1 day" }),
         expect.objectContaining({ id: "habit_review", value: "1 habit" }),
       ])
     );
@@ -764,6 +1008,199 @@ describe("my library calendar comparison", () => {
       currentLabel: "0 rest / 0 slips",
     });
     expect(JSON.stringify(habits)).not.toContain("future_type");
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "eq",
+          column: "user_id",
+          value: "user-1",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "eq",
+          column: "review_scope",
+          value: "weekly_absence_review",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "gte",
+          column: "review_date",
+          value: "2026-05-01",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "lte",
+          column: "review_date",
+          value: "2026-06-05",
+        },
+      ])
+    );
+  });
+
+  it("loads monthly any-day evidence from the month start before the earliest compared range", async () => {
+    const { calls, client } = createComparisonSupabaseClient({
+      habit_definitions: {
+        data: [
+          buildHabitRow({
+            start_date: "2026-06-01",
+            cadence_period: "monthly",
+            cadence_target_count: 1,
+            cadence_day_policy: "any",
+          }),
+        ],
+        error: null,
+      },
+      habit_check_ins: {
+        data: [
+          buildCheckInRow({
+            check_in_date: "2026-06-10",
+            completed_at: "2026-06-10T08:00:00.000Z",
+          }),
+        ],
+        error: null,
+      },
+      habit_motivation_resets: { data: [], error: null },
+      habit_absence_review_acknowledgements: {
+        data: [{ review_date: "2026-06-11", day_status: "not_tracked", status: "reviewed" }],
+        error: null,
+      },
+    });
+
+    const model = await loadMyLibraryCalendarComparison(client as never, "user-1", {
+      selectedDate: "2026-06-30",
+      todayDate: "2026-06-30",
+      selectedSource: "habits",
+      selectedPeriod: "week",
+    });
+
+    expect(model.window.current).toMatchObject({
+      startDate: "2026-06-29",
+      endDate: "2026-06-30",
+    });
+    expect(model.sourceComparisons[0]).toMatchObject({
+      source: "habits",
+      status: "no_data",
+      summary: "No Habits data in either compared range.",
+    });
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        {
+          table: "habit_check_ins",
+          method: "gte",
+          column: "check_in_date",
+          value: "2026-06-01",
+        },
+        {
+          table: "habit_check_ins",
+          method: "lte",
+          column: "check_in_date",
+          value: "2026-06-30",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "gte",
+          column: "review_date",
+          value: "2026-06-01",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "lte",
+          column: "review_date",
+          value: "2026-06-30",
+        },
+      ])
+    );
+  });
+
+  it("loads weekly any-day evidence from before a month comparison boundary", async () => {
+    const { calls, client } = createComparisonSupabaseClient({
+      habit_definitions: {
+        data: [
+          buildHabitRow({
+            start_date: "2026-06-29",
+            cadence_period: "weekly",
+            cadence_target_count: 1,
+            cadence_day_policy: "any",
+          }),
+        ],
+        error: null,
+      },
+      habit_check_ins: {
+        data: [
+          buildCheckInRow({
+            check_in_date: "2026-06-30",
+            completed_at: "2026-06-30T08:00:00.000Z",
+          }),
+        ],
+        error: null,
+      },
+      habit_motivation_resets: { data: [], error: null },
+      habit_absence_review_acknowledgements: {
+        data: [
+          {
+            review_date: "2026-06-29",
+            day_status: "not_tracked",
+            status: "reviewed",
+          },
+        ],
+        error: null,
+      },
+    });
+
+    const model = await loadMyLibraryCalendarComparison(client as never, "user-1", {
+      selectedDate: "2026-08-05",
+      todayDate: "2026-08-05",
+      selectedSource: "habits",
+      selectedPeriod: "month",
+    });
+
+    expect(model.window.comparison).toMatchObject({
+      startDate: "2026-07-01",
+      endDate: "2026-07-05",
+    });
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        {
+          table: "habit_check_ins",
+          method: "gte",
+          column: "check_in_date",
+          value: "2026-06-29",
+        },
+        {
+          table: "habit_absence_review_acknowledgements",
+          method: "gte",
+          column: "review_date",
+          value: "2026-06-29",
+        },
+      ])
+    );
+  });
+
+  it("does not assume zero day statuses when the bounded Trends load fails", async () => {
+    const { client } = createComparisonSupabaseClient({
+      habit_definitions: { data: [buildHabitRow()], error: null },
+      habit_check_ins: { data: [buildCheckInRow()], error: null },
+      habit_motivation_resets: { data: [], error: null },
+      habit_absence_review_acknowledgements: {
+        data: null,
+        error: { code: "PGRST500", message: "temporary read failure" },
+      },
+    });
+
+    const model = await loadMyLibraryCalendarComparison(client as never, "user-1", {
+      selectedDate: "2026-06-05",
+      todayDate: "2026-06-05",
+      selectedSource: "habits",
+      selectedPeriod: "week",
+    });
+
+    expect(model.sourceComparisons[0]).toMatchObject({
+      source: "habits",
+      status: "error",
+      summary: "Could not load Habits comparison right now.",
+      metrics: [],
+    });
   });
 
   it("loads Swimming through owner-scoped date-window history and avoids compatibility double counting", async () => {

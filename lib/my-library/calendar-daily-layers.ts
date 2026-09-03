@@ -1,13 +1,17 @@
 import {
   HABIT_CADENCE_DAY_POLICY_VALUES,
   HABIT_CADENCE_PERIOD_VALUES,
+  buildHabitDayStatusView,
   buildHabitDaySummary,
   classifyHabitDefinition,
+  getHabitDayStatusLabel,
+  getHabitItemTrackingStateLabel,
   type HabitCheckInView,
   type HabitDayItem,
   type HabitDefinitionRow,
   type HabitDefinitionView,
   type HabitMotivationResetView,
+  type HabitDayStatusView,
   type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
@@ -43,6 +47,9 @@ export type MyLibraryCalendarDailyLayerMetric = {
 export type MyLibraryCalendarDailyLayerStats = {
   dailyHabitCompletedCount?: number;
   dailyHabitTotalCount?: number;
+  habitPotentialDayCount?: number;
+  habitIncludedDayCount?: number;
+  habitNotTrackedDayCount?: number;
   weeklyHabitCompletedOnDateCount?: number;
   weeklyHabitCompletedCount?: number;
   weeklyHabitTotalCount?: number;
@@ -79,6 +86,42 @@ type UnsupportedHabitScope = {
   labels: string[];
 };
 
+export type CalendarHabitDayStatusEntry = HabitDayStatusView;
+
+export type CalendarHabitDayStatusState =
+  | {
+      status: "ready";
+      entries: CalendarHabitDayStatusEntry[];
+    }
+  | {
+      status: "schema_missing" | "error";
+    };
+
+export type CalendarHabitDayStatusRow = {
+  review_date: string;
+  day_status: string | null;
+  status: string;
+};
+
+export function buildCalendarHabitDayStatusState(
+  rows: CalendarHabitDayStatusRow[]
+): CalendarHabitDayStatusState {
+  try {
+    const entries = rows.flatMap((row) => {
+      const entry = buildHabitDayStatusView({
+        reviewDate: row.review_date,
+        dayStatus: row.day_status,
+        acknowledgementStatus: row.status,
+      });
+      return entry ? [entry] : [];
+    });
+
+    return { status: "ready", entries };
+  } catch {
+    return { status: "error" };
+  }
+}
+
 type CalendarHabitLayerState =
   | {
       status: "ready";
@@ -86,6 +129,7 @@ type CalendarHabitLayerState =
       checkIns: HabitCheckInView[];
       resetEvents: HabitMotivationResetView[];
       unsupported: UnsupportedHabitScope;
+      dayStatuses?: CalendarHabitDayStatusState;
     }
   | {
       status: "schema_missing" | "error";
@@ -251,10 +295,12 @@ function getHabitLayerCompactLabel(input: {
   weeklyCompletedOnDateCount: number;
   monthlyCompletedOnDateCount: number;
   hasReview: boolean;
+  hasIncompleteTracking: boolean;
 }) {
   if (input.dailyTotalCount > 0) {
     const progress = `${input.dailyCompletedCount}/${input.dailyTotalCount} habits`;
-    return input.hasReview ? `${progress} · review` : progress;
+    if (input.hasReview) return `${progress} · review`;
+    return input.hasIncompleteTracking ? `${progress} · coverage gap` : progress;
   }
 
   if (input.weeklyCompletedOnDateCount > 0) {
@@ -268,6 +314,7 @@ function getHabitLayerCompactLabel(input: {
   }
 
   if (input.hasReview) return "Habits review needed";
+  if (input.hasIncompleteTracking) return getHabitItemTrackingStateLabel("incomplete");
   return "No habits";
 }
 
@@ -278,6 +325,7 @@ function getHabitLayerSummary(input: {
   monthlyCompletedOnDateCount: number;
   hasReview: boolean;
   hasVisibleItems: boolean;
+  hasIncompleteTracking: boolean;
 }) {
   const lines: string[] = [];
   if (input.dailyTotalCount > 0) {
@@ -293,6 +341,9 @@ function getHabitLayerSummary(input: {
   }
   if (input.hasReview) {
     lines.push("Some Habits need review before Calendar can count them.");
+  }
+  if (input.hasIncompleteTracking) {
+    lines.push("A cadence period has incomplete tracking and is excluded from performance.");
   }
   if (lines.length > 0) return lines.join(" ");
   if (input.hasVisibleItems)
@@ -352,13 +403,96 @@ function buildHabitsLayer(input: {
   }
 
   const supportedHabitIds = new Set(state.habits.map((habit) => habit.id));
+  const dayStatusState = state.dayStatuses ?? { status: "ready", entries: [] };
   const dayCheckIns = state.checkIns.filter(
     (checkIn) => supportedHabitIds.has(checkIn.habitId) && checkIn.checkInDate <= input.date
   );
-  const daySummary = buildHabitDaySummary(state.habits, dayCheckIns, input.date);
+  if (dayStatusState.status === "schema_missing") {
+    return buildUnavailableLayer({
+      source: "habits",
+      status: "schema_missing",
+      date: input.date,
+      compactLabel: "Habits syncing",
+      summary: "Habit day status is still syncing for this date.",
+      supportLabel: "No Habit result was counted because day-status coverage is not ready.",
+    });
+  }
+
+  if (dayStatusState.status === "error") {
+    return buildUnavailableLayer({
+      source: "habits",
+      status: "error",
+      date: input.date,
+      compactLabel: "Habits error",
+      summary: "Could not load Habit day status for this date.",
+      supportLabel: "Retry later; Calendar did not assume that this date was tracked.",
+    });
+  }
+
+  const daySummary = buildHabitDaySummary(state.habits, dayCheckIns, input.date, {
+    dayStatuses: dayStatusState.status === "ready" ? dayStatusState.entries : [],
+  });
+
+  if (
+    daySummary.trackingState === "needs_review" ||
+    daySummary.metricCoverage.state === "needs_review"
+  ) {
+    return {
+      source: "habits",
+      label: "Habits",
+      status: "review",
+      tone: "warning",
+      compactLabel: "Habits review needed",
+      summary: "This Habit day status needs review before Calendar can count the date.",
+      supportLabel: "The unknown status was not treated as Done, Missed, Rest, Slip, or success.",
+      href: `${SOURCE_HREFS.habits}?date=${input.date}`,
+      metrics: [
+        {
+          id: "habit_day_status_review",
+          label: "Status",
+          value: getHabitDayStatusLabel("unsupported"),
+          tone: "warning",
+        },
+      ],
+    };
+  }
+
+  if (daySummary.trackingState === "not_tracked") {
+    return {
+      source: "habits",
+      label: "Habits",
+      status: "mapped",
+      tone: "muted",
+      compactLabel: getHabitDayStatusLabel("not_tracked"),
+      summary: "Habit activity was not tracked on this date.",
+      supportLabel:
+        "This date is excluded from Habit performance but remains in coverage. A later check-in replaces this status.",
+      href: `${SOURCE_HREFS.habits}?date=${input.date}`,
+      metrics: [
+        {
+          id: "habit_not_tracked",
+          label: "Status",
+          value: getHabitDayStatusLabel("not_tracked"),
+          tone: "muted",
+        },
+      ],
+      stats: {
+        dailyHabitCompletedCount: 0,
+        dailyHabitTotalCount: 0,
+        habitPotentialDayCount: daySummary.potentialPerfectDayItemCount > 0 ? 1 : 0,
+        habitIncludedDayCount: 0,
+        // Keep the raw whole-day status visible in Calendar week totals even
+        // when an any-day cadence has its performance opportunity later in
+        // the week or month. This is coverage evidence, never an outcome.
+        habitNotTrackedDayCount: 1,
+      },
+    };
+  }
+
   const visibleItems = getHabitVisibleItems(daySummary.items);
   const dailyHabitItems = getDailyHabitItems(daySummary.items);
   const weeklyHabitItems = getWeeklyHabitItems(daySummary.items);
+  const knownWeeklyHabitItems = weeklyHabitItems.filter((item) => item.trackingState === "known");
   const dailyHabitTotalCount = dailyHabitItems.length;
   const dailyHabitCompletedCount = dailyHabitItems.filter(
     (item) => item.evaluation.isSatisfied
@@ -366,11 +500,11 @@ function buildHabitsLayer(input: {
   const weeklyHabitCompletedOnDateCount = getWeeklyHabitCompletedOnDateCount(weeklyHabitItems);
   const monthlyHabitItems = getMonthlyHabitItems(daySummary.items);
   const monthlyHabitCompletedOnDateCount = getWeeklyHabitCompletedOnDateCount(monthlyHabitItems);
-  const weeklyHabitTotalCount = weeklyHabitItems.reduce(
+  const weeklyHabitTotalCount = knownWeeklyHabitItems.reduce(
     (total, item) => total + item.cadenceProgress.targetCount,
     0
   );
-  const weeklyHabitCompletedCount = weeklyHabitItems.reduce(
+  const weeklyHabitCompletedCount = knownWeeklyHabitItems.reduce(
     (total, item) =>
       total + Math.min(item.cadenceProgress.completedCount, item.cadenceProgress.targetCount),
     0
@@ -388,13 +522,17 @@ function buildHabitsLayer(input: {
       reset.status === "active"
   ).length;
   const hasReview = state.unsupported.count > 0;
+  const hasIncompleteTracking = daySummary.items.some(
+    (item) => item.trackingState === "incomplete"
+  );
   const hasUserVisibleSignal =
     dailyHabitTotalCount > 0 ||
     weeklyHabitCompletedOnDateCount > 0 ||
     monthlyHabitCompletedOnDateCount > 0 ||
     restCount > 0 ||
     slipCount > 0 ||
-    resetCount > 0;
+    resetCount > 0 ||
+    hasIncompleteTracking;
   const status: MyLibraryCalendarDailyLayerStatus = hasReview
     ? "review"
     : hasUserVisibleSignal
@@ -406,6 +544,7 @@ function buildHabitsLayer(input: {
     weeklyCompletedOnDateCount: weeklyHabitCompletedOnDateCount,
     monthlyCompletedOnDateCount: monthlyHabitCompletedOnDateCount,
     hasReview,
+    hasIncompleteTracking,
   });
   const reviewSupport =
     state.unsupported.count > 0
@@ -472,9 +611,19 @@ function buildHabitsLayer(input: {
       ? [
           {
             id: "habit_review",
-            label: "Needs review",
+            label: getHabitDayStatusLabel("unsupported"),
             value: pluralize(state.unsupported.count, "habit"),
             tone: "warning" as const,
+          },
+        ]
+      : []),
+    ...(hasIncompleteTracking
+      ? [
+          {
+            id: "habit_tracking_incomplete",
+            label: "Coverage",
+            value: getHabitItemTrackingStateLabel("incomplete"),
+            tone: "muted" as const,
           },
         ]
       : []),
@@ -484,7 +633,14 @@ function buildHabitsLayer(input: {
     source: "habits",
     label: "Habits",
     status,
-    tone: status === "review" ? "warning" : hasUserVisibleSignal ? "neutral" : "muted",
+    tone:
+      status === "review"
+        ? "warning"
+        : hasIncompleteTracking
+          ? "muted"
+          : hasUserVisibleSignal
+            ? "neutral"
+            : "muted",
     compactLabel,
     summary: getHabitLayerSummary({
       dailyCompletedCount: dailyHabitCompletedCount,
@@ -493,6 +649,7 @@ function buildHabitsLayer(input: {
       monthlyCompletedOnDateCount: monthlyHabitCompletedOnDateCount,
       hasReview,
       hasVisibleItems: visibleItems.length > 0,
+      hasIncompleteTracking,
     }),
     supportLabel: `Daily Habits are counted on the date. Weekly Habits are credited on the completion date and summarized in the week total; unfinished weekly Habits do not make Sunday look like a failed daily Habit.${reviewSupport}`,
     href: `${SOURCE_HREFS.habits}?date=${input.date}`,
@@ -500,6 +657,13 @@ function buildHabitsLayer(input: {
     stats: {
       dailyHabitCompletedCount,
       dailyHabitTotalCount,
+      habitPotentialDayCount: daySummary.potentialPerfectDayItemCount > 0 ? 1 : 0,
+      habitIncludedDayCount:
+        daySummary.potentialPerfectDayItemCount > 0 &&
+        daySummary.metricCoverage.knownUnitCount === daySummary.metricCoverage.potentialUnitCount
+          ? 1
+          : 0,
+      habitNotTrackedDayCount: 0,
       weeklyHabitCompletedOnDateCount,
       weeklyHabitCompletedCount,
       weeklyHabitTotalCount,

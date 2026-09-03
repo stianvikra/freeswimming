@@ -11,6 +11,11 @@ type HabitMotivationResetRow = Database["public"]["Tables"]["habit_motivation_re
 type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
+type HabitDayStatusRow = {
+  review_date: string;
+  day_status: string | null;
+  status: string;
+};
 
 function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
   return {
@@ -235,6 +240,8 @@ function buildSupabaseMock(input: {
   habitDefinitions?: HabitDefinitionRow[];
   habitCheckIns?: HabitCheckInRow[];
   habitResets?: HabitMotivationResetRow[];
+  habitDayStatuses?: HabitDayStatusRow[];
+  habitDayStatusError?: { code?: string; message?: string };
   microPlans?: DrylandMicroPlanRow[];
 }) {
   const habitDefinitionsOrderUpdated = vi.fn().mockResolvedValue({
@@ -257,6 +264,14 @@ function buildSupabaseMock(input: {
   });
   const habitResetsGte = vi.fn(() => ({ lte: habitResetsLte }));
   const habitResetsEq = vi.fn(() => ({ gte: habitResetsGte }));
+
+  const habitDayStatusesLte = vi.fn().mockResolvedValue({
+    data: input.habitDayStatuses ?? [],
+    error: input.habitDayStatusError ?? null,
+  });
+  const habitDayStatusesGte = vi.fn(() => ({ lte: habitDayStatusesLte }));
+  const habitDayStatusesScopeEq = vi.fn(() => ({ gte: habitDayStatusesGte }));
+  const habitDayStatusesUserEq = vi.fn(() => ({ eq: habitDayStatusesScopeEq }));
 
   const microPlansGte = vi.fn().mockResolvedValue({
     data: input.microPlans ?? [],
@@ -336,6 +351,12 @@ function buildSupabaseMock(input: {
       };
     }
 
+    if (table === "habit_absence_review_acknowledgements") {
+      return {
+        select: vi.fn(() => ({ eq: habitDayStatusesUserEq })),
+      };
+    }
+
     if (table === "dryland_micro_plans") {
       return {
         select: vi.fn(() => ({ eq: microPlansEq })),
@@ -353,6 +374,8 @@ function buildSupabaseMock(input: {
     completedActivityIn,
     habitCheckInsGte,
     habitCheckInsLte,
+    habitDayStatusesGte,
+    habitDayStatusesLte,
     microPlansLte,
     microPlansGte,
   };
@@ -368,6 +391,8 @@ describe("my library calendar plan loader", () => {
       completedActivityIn,
       habitCheckInsGte,
       habitCheckInsLte,
+      habitDayStatusesGte,
+      habitDayStatusesLte,
       microPlansLte,
       microPlansGte,
     } = buildSupabaseMock({
@@ -399,6 +424,8 @@ describe("my library calendar plan loader", () => {
     expect(instancesLte).toHaveBeenCalledWith("planned_on", "2026-07-05");
     expect(habitCheckInsGte).toHaveBeenCalledWith("check_in_date", "2026-06-01");
     expect(habitCheckInsLte).toHaveBeenCalledWith("check_in_date", "2026-06-20");
+    expect(habitDayStatusesGte).toHaveBeenCalledWith("review_date", "2026-06-01");
+    expect(habitDayStatusesLte).toHaveBeenCalledWith("review_date", "2026-06-20");
     expect(microPlansLte).toHaveBeenCalledWith("week_starts_at", "2026-07-05T23:59:59.999Z");
     expect(microPlansGte).toHaveBeenCalledWith("week_ends_at", "2026-06-01T00:00:00.000Z");
     expect(model.sessionCount).toBe(1);
@@ -453,6 +480,48 @@ describe("my library calendar plan loader", () => {
     ]);
   });
 
+  it("loads monthly any-day evidence from the month start before the earliest grid date", async () => {
+    const { from, habitCheckInsGte, habitCheckInsLte, habitDayStatusesGte, habitDayStatusesLte } =
+      buildSupabaseMock({
+        programs: [],
+        instances: [],
+        habitDefinitions: [
+          buildHabitDefinitionRow({
+            start_date: "2026-03-01",
+            cadence_period: "monthly",
+            cadence_target_count: 1,
+            cadence_day_policy: "any",
+          }),
+        ],
+        habitCheckIns: [
+          buildHabitCheckInRow({
+            check_in_date: "2026-03-10",
+            completed_at: "2026-03-10T08:00:00.000Z",
+          }),
+        ],
+        habitDayStatuses: [
+          { review_date: "2026-03-11", day_status: "not_tracked", status: "reviewed" },
+        ],
+      });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-04-15",
+      todayDate: "2026-04-15",
+      selectedProgramId: null,
+    });
+
+    expect(model.month.gridStartDate).toBe("2026-03-30");
+    expect(habitCheckInsGte).toHaveBeenCalledWith("check_in_date", "2026-03-01");
+    expect(habitCheckInsLte).toHaveBeenCalledWith("check_in_date", "2026-04-15");
+    expect(habitDayStatusesGte).toHaveBeenCalledWith("review_date", "2026-03-01");
+    expect(habitDayStatusesLte).toHaveBeenCalledWith("review_date", "2026-04-15");
+    expect(
+      model.monthDays
+        .find((day) => day.date === "2026-03-31")
+        ?.dailyLayers.find((layer) => layer.source === "habits")?.stats
+    ).toMatchObject({ habitPotentialDayCount: 0 });
+  });
+
   it("reviews unsupported Habit definitions and excludes their check-ins and resets", async () => {
     const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
     const { from } = buildSupabaseMock({
@@ -503,6 +572,78 @@ describe("my library calendar plan loader", () => {
       ])
     );
     expect(JSON.stringify(habitLayer)).not.toContain("future_type");
+  });
+
+  it("loads a bounded not-tracked day as a neutral Calendar layer", async () => {
+    const { from } = buildSupabaseMock({
+      habitDefinitions: [buildHabitDefinitionRow()],
+      habitDayStatuses: [
+        { review_date: "2026-06-20", day_status: "not_tracked", status: "reviewed" },
+      ],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-20",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+    const habitLayer = model.selectedDay.dailyLayers.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({
+      status: "mapped",
+      tone: "muted",
+      compactLabel: "Not tracked",
+      metrics: [{ id: "habit_not_tracked", label: "Status", value: "Not tracked" }],
+      stats: {
+        dailyHabitCompletedCount: 0,
+        dailyHabitTotalCount: 0,
+        habitPotentialDayCount: 1,
+        habitIncludedDayCount: 0,
+        habitNotTrackedDayCount: 1,
+      },
+    });
+    expect(JSON.stringify(habitLayer)).not.toMatch(/Done|Missed|Rest|Slip|Perfect/);
+  });
+
+  it("lets a supported check-in override a stale not-tracked Calendar marker", async () => {
+    const { from } = buildSupabaseMock({
+      habitDefinitions: [buildHabitDefinitionRow()],
+      habitCheckIns: [buildHabitCheckInRow({ check_in_date: "2026-06-20" })],
+      habitDayStatuses: [
+        { review_date: "2026-06-20", day_status: "not_tracked", status: "reviewed" },
+      ],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-20",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+    const habitLayer = model.selectedDay.dailyLayers.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({ compactLabel: "1/1 habits" });
+    expect(habitLayer?.metrics.find((metric) => metric.id === "habit_not_tracked")).toBeUndefined();
+  });
+
+  it("keeps Calendar unavailable when day-status loading fails", async () => {
+    const { from } = buildSupabaseMock({
+      habitDefinitions: [buildHabitDefinitionRow()],
+      habitDayStatusError: { code: "PGRST500", message: "temporary read failure" },
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-20",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+    const habitLayer = model.selectedDay.dailyLayers.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({
+      status: "error",
+      compactLabel: "Habits error",
+      metrics: [],
+    });
+    expect(habitLayer?.summary).toContain("Could not load Habit day status");
   });
 
   it("hydrates manual completed activity events as actual outcome truth", async () => {
