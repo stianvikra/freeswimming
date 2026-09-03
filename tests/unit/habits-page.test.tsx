@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MyLibraryHabitsPage from "@/app/my-library/habits/page";
-import type { HabitSnapshot } from "@/lib/habits/shared";
+import { buildHabitMetricCoverage, type HabitSnapshot } from "@/lib/habits/shared";
 
 const {
   getServerSupabaseUserIfAuthCookiePresentMock,
@@ -90,8 +90,10 @@ vi.mock("next/navigation", () => ({
 function buildSnapshot(
   input: {
     activeHabitCount?: number;
-    completionPercent?: number;
+    completionPercent?: number | null;
+    trackingState?: "known" | "not_tracked" | "needs_review";
     unsupportedHabitCount?: number;
+    metricCoverage?: HabitSnapshot["daySummary"]["metricCoverage"];
   } = {}
 ): HabitSnapshot {
   return {
@@ -99,7 +101,9 @@ function buildSnapshot(
       id: `habit-${index + 1}`,
     })),
     daySummary: {
-      completionPercent: input.completionPercent ?? 50,
+      completionPercent: input.completionPercent === undefined ? 50 : input.completionPercent,
+      trackingState: input.trackingState ?? "known",
+      metricCoverage: input.metricCoverage,
     },
     unsupportedHabits: Array.from({ length: input.unsupportedHabitCount ?? 0 }, (_, index) => ({
       id: `unsupported-${index + 1}`,
@@ -200,6 +204,81 @@ describe("MyLibraryHabitsPage", () => {
       payload: {
         activeHabitCount: 0,
         perfectDayPercent: 0,
+      },
+    });
+  });
+
+  it("does not emit a false zero-percent KPI for a not-tracked day", async () => {
+    loadHabitSnapshotMock.mockResolvedValue(
+      buildSnapshot({ completionPercent: null, trackingState: "not_tracked" })
+    );
+
+    render(
+      await MyLibraryHabitsPage({
+        searchParams: Promise.resolve({ date: "2026-05-09" }),
+      })
+    );
+
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "habits_viewed",
+      localDayTimezone: "Europe/Oslo",
+      payload: {
+        activeHabitCount: 1,
+        perfectDayPercent: null,
+        dayTrackingState: "not_tracked",
+      },
+    });
+  });
+
+  it("preserves the needs-review signal for unsupported day-status evidence", async () => {
+    loadHabitSnapshotMock.mockResolvedValue(
+      buildSnapshot({
+        completionPercent: null,
+        trackingState: "needs_review",
+        metricCoverage: buildHabitMetricCoverage({
+          potentialUnitCount: 1,
+          knownUnitCount: 0,
+          successfulUnitCount: 0,
+          hasUnsupportedDayStatus: true,
+        }),
+      })
+    );
+
+    render(await MyLibraryHabitsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "habits_viewed",
+      localDayTimezone: "Europe/Oslo",
+      payload: {
+        activeHabitCount: 1,
+        perfectDayPercent: null,
+        dayTrackingState: "needs_review",
+      },
+    });
+  });
+
+  it("does not emit a success KPI for incomplete cadence tracking", async () => {
+    loadHabitSnapshotMock.mockResolvedValue(
+      buildSnapshot({
+        completionPercent: 100,
+        metricCoverage: buildHabitMetricCoverage({
+          potentialUnitCount: 2,
+          knownUnitCount: 1,
+          successfulUnitCount: 1,
+          notTrackedDayCount: 1,
+        }),
+      })
+    );
+
+    render(await MyLibraryHabitsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "habits_viewed",
+      localDayTimezone: "Europe/Oslo",
+      payload: {
+        activeHabitCount: 1,
+        perfectDayPercent: null,
+        dayTrackingState: "tracking_incomplete",
       },
     });
   });

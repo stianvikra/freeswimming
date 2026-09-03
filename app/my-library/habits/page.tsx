@@ -5,6 +5,7 @@ import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import LocalDayTimezoneSynchronizer from "@/components/my-library/LocalDayTimezoneSynchronizer";
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
 import { loadHabitSnapshot } from "@/lib/habits/server";
+import { isHabitMetricCoverageIncomplete } from "@/lib/habits/shared";
 import { normalizeMyLibraryCalendarDateParam } from "@/lib/my-library/calendar";
 import { getRequestReadLocalDayContext } from "@/lib/my-library/local-day-server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
@@ -40,6 +41,19 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
   });
   const selectedDateLabel =
     initialSnapshot.selectedDate === todayDate ? "today" : initialSnapshot.selectedDate;
+  const dayTrackingState =
+    initialSnapshot.dayStatusesReady === false
+      ? "needs_review"
+      : initialSnapshot.daySummary.trackingState === "needs_review" ||
+          initialSnapshot.daySummary.metricCoverage?.state === "needs_review"
+        ? "needs_review"
+        : initialSnapshot.daySummary.trackingState === "not_tracked"
+          ? "not_tracked"
+          : isHabitMetricCoverageIncomplete(initialSnapshot.daySummary.metricCoverage)
+            ? "tracking_incomplete"
+            : "known";
+  const perfectDayPercent =
+    dayTrackingState === "known" ? initialSnapshot.daySummary.completionPercent : null;
 
   return (
     <SiteChrome>
@@ -55,7 +69,8 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
           localDayTimezone={localDayContext.timezone}
           payload={{
             activeHabitCount: initialSnapshot.activeHabits.length,
-            perfectDayPercent: initialSnapshot.daySummary.completionPercent,
+            perfectDayPercent,
+            ...(dayTrackingState === "known" ? {} : { dayTrackingState }),
           }}
         />
         {preferMobileActiveFocus ? <h1 className="sr-only">Habits</h1> : null}

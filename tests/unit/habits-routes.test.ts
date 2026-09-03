@@ -1,19 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  createAdminSupabaseClientMock,
   createRouteHandlerSupabaseClientMock,
   getRequestLocalDayContextMock,
   loadHabitSnapshotMock,
+  getHabitAbsenceReviewCandidateDatesMock,
   trackAnalyticsEventMock,
 } = vi.hoisted(() => ({
+  createAdminSupabaseClientMock: vi.fn(),
   createRouteHandlerSupabaseClientMock: vi.fn(),
   getRequestLocalDayContextMock: vi.fn(),
   loadHabitSnapshotMock: vi.fn(),
+  getHabitAbsenceReviewCandidateDatesMock: vi.fn(),
   trackAnalyticsEventMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
+}));
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminSupabaseClient: createAdminSupabaseClientMock,
 }));
 
 vi.mock("@/lib/habits/server", () => ({
@@ -23,6 +31,14 @@ vi.mock("@/lib/habits/server", () => ({
   HABIT_ABSENCE_REVIEW_SELECT: "habit absence review select",
   loadHabitSnapshot: loadHabitSnapshotMock,
 }));
+
+vi.mock("@/lib/habits/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/habits/shared")>();
+  return {
+    ...actual,
+    getHabitAbsenceReviewCandidateDates: getHabitAbsenceReviewCandidateDatesMock,
+  };
+});
 
 vi.mock("@/lib/my-library/local-day-server", () => ({
   getRequestLocalDayContext: getRequestLocalDayContextMock,
@@ -45,11 +61,15 @@ function applyResponseCookiesIdentity<T>(response: T): T {
 function buildSnapshot() {
   return {
     schemaReady: true,
+    absenceReviewAcknowledgementsReady: true,
+    dayStatusesReady: true,
+    dayStatuses: [],
     loadError: null,
     selectedDate: "2026-05-10",
     activeHabits: [],
     archivedHabits: [],
     unsupportedHabits: [],
+    absenceReviewRecordedCheckInDates: [],
     daySummary: {
       date: "2026-05-10",
       scheduledHabitCount: 0,
@@ -62,7 +82,15 @@ function buildSnapshot() {
       items: [],
     },
     weekSummary: {
-      days: [],
+      days: [
+        "2026-05-04",
+        "2026-05-05",
+        "2026-05-06",
+        "2026-05-07",
+        "2026-05-08",
+        "2026-05-09",
+        "2026-05-10",
+      ].map((date) => ({ date })),
       perfectDayCount: 0,
       averageCompletionPercent: 0,
       totalDurationMinutes: 0,
@@ -108,7 +136,7 @@ const HABIT_MUTATION_ROUTES = [
   ["create", "POST", "", { title: "Read" }],
   ["update", "PATCH", `/${HABIT_ID}`, { title: "Read" }],
   ["check-in", "POST", "/check-ins", { habitId: HABIT_ID, valueBoolean: true }],
-  ["absence-review", "POST", "/absence-review", { dates: ["2026-05-10"] }],
+  ["absence-review", "POST", "/absence-review", { dates: ["2026-05-10"], action: "mark" }],
   ["reset-stats", "POST", `/${HABIT_ID}/reset-stats`, { effectiveDate: "2026-05-10" }],
 ] as const;
 type HabitMutationRoute = (typeof HABIT_MUTATION_ROUTES)[number];
@@ -126,6 +154,25 @@ function mockAuthenticatedRouteClient(from = vi.fn()) {
   };
   createRouteHandlerSupabaseClientMock.mockResolvedValue(client);
   return from;
+}
+
+function mockAuthenticatedAbsenceReviewRpc(result: {
+  data: { review_date: string; day_status: string | null; was_changed: boolean }[] | null;
+  error: { code?: string | null; message?: string | null } | null;
+}) {
+  const from = vi.fn();
+  const rpc = vi.fn().mockResolvedValue(result);
+  createRouteHandlerSupabaseClientMock.mockResolvedValue({
+    supabase: {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+      },
+      from,
+    },
+    applySupabaseCookies: applyResponseCookiesIdentity,
+  });
+  createAdminSupabaseClientMock.mockReturnValue({ rpc });
+  return { from, rpc };
 }
 
 function callHabitMutation(route: HabitMutationRoute, serializedBody: string) {
@@ -188,6 +235,7 @@ function mockResetStatsClient(startDate: string) {
 
 describe("habits routes", () => {
   beforeEach(() => {
+    createAdminSupabaseClientMock.mockReset();
     createRouteHandlerSupabaseClientMock.mockReset();
     getRequestLocalDayContextMock.mockReset();
     getRequestLocalDayContextMock.mockImplementation(({ now }: { now: Date }) =>
@@ -200,6 +248,7 @@ describe("habits routes", () => {
       })
     );
     loadHabitSnapshotMock.mockResolvedValue(buildSnapshot());
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05", "2026-05-06"]);
   });
 
   afterEach(() => {
@@ -363,10 +412,638 @@ describe("habits routes", () => {
     );
   });
 
+  it("atomically marks one server-derived visible review day as not tracked", async () => {
+    const { from, rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [{ review_date: "2026-05-05", day_status: "not_tracked", was_changed: true }],
+      error: null,
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05", "2026-05-06"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      action: "not_tracked_single",
+      affectedDates: ["2026-05-05"],
+      affectedCount: 1,
+      visibleCandidateDates: ["2026-05-05", "2026-05-06"],
+    });
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-05"],
+      p_day_status: "not_tracked",
+    });
+    expect(from).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_absence_review_acknowledged",
+        payload: expect.objectContaining({
+          reviewAction: "not_tracked_single",
+          reviewDateCount: 1,
+          reviewScope: "weekly_absence_review",
+        }),
+      })
+    );
+  });
+
+  it("sorts and atomically marks exactly all visible review days", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [
+        { review_date: "2026-05-05", day_status: "not_tracked", was_changed: false },
+        { review_date: "2026-05-06", day_status: "not_tracked", was_changed: true },
+      ],
+      error: null,
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05", "2026-05-06"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_visible_batch",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-06", "2026-05-05"],
+          selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      affectedDates: ["2026-05-06"],
+      affectedCount: 1,
+    });
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-05", "2026-05-06"],
+      p_day_status: "not_tracked",
+    });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ reviewDateCount: 1 }),
+      })
+    );
+  });
+
+  it("keeps a saved not-tracked date outside the server-authorized visible batch", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [{ review_date: "2026-05-06", day_status: "not_tracked", was_changed: true }],
+      error: null,
+    });
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }],
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-06"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_visible_batch",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-06"],
+          selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      visibleCandidateDates: ["2026-05-06"],
+      affectedDates: ["2026-05-06"],
+      affectedCount: 1,
+    });
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-06"],
+      p_day_status: "not_tracked",
+    });
+  });
+
+  it("accepts a single lost-response retry after reload as an exact zero-change success", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [{ review_date: "2026-05-05", day_status: "not_tracked", was_changed: false }],
+      error: null,
+    });
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      selectedDate: "2026-05-05",
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }],
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue([]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      visibleCandidateDates: [],
+      affectedDates: [],
+      affectedCount: 0,
+    });
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-05"],
+      p_day_status: "not_tracked",
+    });
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a batch lost-response retry after reload as an exact zero-change success", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [
+        { review_date: "2026-05-05", day_status: "not_tracked", was_changed: false },
+        { review_date: "2026-05-06", day_status: "not_tracked", was_changed: false },
+      ],
+      error: null,
+    });
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      dayStatuses: [
+        { reviewDate: "2026-05-05", dayStatus: "not_tracked" },
+        { reviewDate: "2026-05-06", dayStatus: "not_tracked" },
+      ],
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue([]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_visible_batch",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-06", "2026-05-05"],
+          selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      visibleCandidateDates: [],
+      affectedDates: [],
+      affectedCount: 0,
+    });
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-05", "2026-05-06"],
+      p_day_status: "not_tracked",
+    });
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("allows Undo for an existing owner acknowledgement after the date stops being a candidate", async () => {
+    const snapshot = {
+      ...buildSnapshot(),
+      absenceReviewAcknowledgedDates: ["2026-05-05"],
+      dayStatusesReady: true,
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" as const }],
+    };
+    loadHabitSnapshotMock.mockResolvedValue(snapshot);
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue([]);
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: [{ review_date: "2026-05-05", day_status: null, was_changed: true }],
+      error: null,
+    });
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_undo",
+          dayStatus: null,
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("habit_absence_review_set_day_status", {
+      p_user_id: "user-1",
+      p_review_dates: ["2026-05-05"],
+      p_day_status: null,
+    });
+  });
+
+  it("reports a concurrent Undo retry from the locked RPC without double-counting", async () => {
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      absenceReviewAcknowledgedDates: ["2026-05-05"],
+      dayStatusesReady: true,
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" as const }],
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue([]);
+    mockAuthenticatedAbsenceReviewRpc({
+      data: [{ review_date: "2026-05-05", day_status: null, was_changed: false }],
+      error: null,
+    });
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_undo",
+          dayStatus: null,
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      affectedDates: [],
+      affectedCount: 0,
+    });
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps Undo inside the selected ISO week even for an existing marker", async () => {
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      absenceReviewAcknowledgedDates: ["2026-04-28"],
+      dayStatusesReady: true,
+      dayStatuses: [{ reviewDate: "2026-04-28", dayStatus: "not_tracked" as const }],
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue([]);
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_undo",
+          dayStatus: null,
+          dates: ["2026-04-28"],
+          selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "ABSENCE_REVIEW_CANDIDATE_CONFLICT",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      name: "unknown action",
+      body: { action: "future_status", dates: ["2026-05-05"] },
+      code: "INVALID_REVIEW_ACTION",
+    },
+    {
+      name: "unknown day status",
+      body: {
+        action: "not_tracked_single",
+        dayStatus: "vacation",
+        dates: ["2026-05-05"],
+      },
+      code: "INVALID_DAY_STATUS",
+    },
+    {
+      name: "duplicate date",
+      body: { action: "mark", dates: ["2026-05-05", "2026-05-05"] },
+      code: "DUPLICATE_REVIEW_DATE",
+    },
+    {
+      name: "more than one visible ISO week",
+      body: {
+        action: "not_tracked_visible_batch",
+        dayStatus: "not_tracked",
+        dates: [
+          "2026-05-01",
+          "2026-05-02",
+          "2026-05-03",
+          "2026-05-04",
+          "2026-05-05",
+          "2026-05-06",
+          "2026-05-07",
+          "2026-05-08",
+        ],
+      },
+      code: "TOO_MANY_REVIEW_DATES",
+    },
+  ])("rejects $name before absence-review writes", async ({ body, code }) => {
+    const { from, rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...body,
+          selectedDate: "2026-05-10",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ ok: false, code });
+    expect(from).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["malformed", "not-a-date", "INVALID_DATE"],
+    ["future", "2026-05-11", "FUTURE_REVIEW_DATE"],
+  ] as const)(
+    "rejects a %s selected review date instead of clamping its authority scope",
+    async (_case, selectedDate, code) => {
+      const { from, rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+
+      const response = await postHabitAbsenceReview(
+        new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "not_tracked_single",
+            dayStatus: "not_tracked",
+            dates: ["2026-05-05"],
+            selectedDate,
+            renderedTodayDate: "2026-05-10",
+          }),
+        })
+      );
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({ ok: false, code });
+      expect(from).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+      expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    {
+      name: "single action",
+      action: "not_tracked_single",
+      dates: ["2026-05-05"],
+      selectedDate: "2026-05-05",
+    },
+    {
+      name: "visible batch",
+      action: "not_tracked_visible_batch",
+      dates: ["2026-05-05", "2026-05-06"],
+      selectedDate: "2026-05-10",
+    },
+  ])(
+    "returns a zero-write conflict for a $name when recorded evidence removes a candidate",
+    async ({ action, dates, selectedDate }) => {
+      const { from, rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+      getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-06"]);
+
+      const response = await postHabitAbsenceReview(
+        new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            dayStatus: "not_tracked",
+            dates,
+            selectedDate,
+            renderedTodayDate: "2026-05-10",
+          }),
+        })
+      );
+
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toMatchObject({
+        ok: false,
+        code: "ABSENCE_REVIEW_CANDIDATE_CONFLICT",
+        visibleCandidateDates: ["2026-05-06"],
+      });
+      expect(from).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it("maps a concurrent check-in winner to a typed zero-event conflict", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: null,
+      error: { code: "P0001", message: "HABIT_ABSENCE_REVIEW_CHECK_IN_EXISTS" },
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "ABSENCE_REVIEW_CHECK_IN_CONFLICT",
+    });
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("maps a concurrent unknown workflow status to a generic zero-event conflict", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: null,
+      error: {
+        code: "P0001",
+        message: "HABIT_ABSENCE_REVIEW_WORKFLOW_STATUS_UNSUPPORTED",
+      },
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+    const rawPayload = await response.text();
+
+    expect(response.status).toBe(409);
+    expect(JSON.parse(rawPayload)).toMatchObject({
+      ok: false,
+      code: "ABSENCE_REVIEW_STATUS_UNSUPPORTED",
+    });
+    expect(rawPayload).not.toContain("WORKFLOW_STATUS_UNSUPPORTED");
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("maps unavailable day-status storage to a typed 503 without analytics", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({
+      data: null,
+      error: { code: "42883", message: "habit_absence_review_set_day_status does not exist" },
+    });
+    getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05"]);
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "ABSENCE_REVIEW_UNAVAILABLE",
+    });
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed before RPC when the day-status reader is not ready", async () => {
+    const { rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+    loadHabitSnapshotMock.mockResolvedValue({
+      ...buildSnapshot(),
+      dayStatusesReady: false,
+    });
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "not_tracked_single",
+          dayStatus: "not_tracked",
+          dates: ["2026-05-05"],
+          selectedDate: "2026-05-05",
+          renderedTodayDate: "2026-05-10",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "ABSENCE_REVIEW_UNAVAILABLE",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["mark", undefined],
+    ["finish", undefined],
+    ["not_tracked_single", "not_tracked"],
+    ["not_tracked_visible_batch", "not_tracked"],
+    ["not_tracked_undo", null],
+  ] as const)(
+    "fails closed for an unknown existing day status on the %s path",
+    async (action, dayStatus) => {
+      const { from, rpc } = mockAuthenticatedAbsenceReviewRpc({ data: [], error: null });
+      loadHabitSnapshotMock.mockResolvedValue({
+        ...buildSnapshot(),
+        dayStatuses: [
+          {
+            reviewDate: "2026-05-05",
+            dayStatus: "unsupported" as const,
+            rawStoredValue: "future_day_status",
+          },
+        ],
+      });
+      getHabitAbsenceReviewCandidateDatesMock.mockReturnValue(["2026-05-05"]);
+
+      const response = await postHabitAbsenceReview(
+        new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            ...(dayStatus !== undefined ? { dayStatus } : {}),
+            dates: ["2026-05-05"],
+            selectedDate: "2026-05-05",
+            renderedTodayDate: "2026-05-10",
+          }),
+        })
+      );
+      const rawPayload = await response.text();
+      const payload = JSON.parse(rawPayload) as { ok: boolean; code: string };
+
+      expect(response.status).toBe(409);
+      expect(payload).toMatchObject({
+        ok: false,
+        code: "ABSENCE_REVIEW_STATUS_UNSUPPORTED",
+      });
+      expect(rawPayload).not.toContain("not_tracked");
+      expect(rawPayload).not.toContain("unsupported");
+      expect(rawPayload).not.toContain("future_day_status");
+      expect(from).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+      expect(getHabitAbsenceReviewCandidateDatesMock).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
+
   it.each([
     {
       name: "future",
-      body: { dates: ["2026-05-11"], selectedDate: "2026-05-11" },
+      body: { dates: ["2026-05-11"], selectedDate: "2026-05-10" },
       expected: { ok: false, error: "Review dates cannot be in the future." },
       checksSnapshot: true,
     },
