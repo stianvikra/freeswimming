@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-09-03-aw-006-habits-full-definition-compatibility-boundary-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-09-03`
 - `updated`: `2026-09-03`
@@ -13,17 +13,17 @@
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `parent_child`: `Child AC`
 - `target_findings`: `H-081`
-- `execution_mode`: `active implementation; stop at owner screenshot approval before pre-PR gates`
+- `execution_mode`: `completed and merged through PR #1257`
 - `intended_branch`: `codex/aw-006-habits-full-definition-compatibility-boundary`
 - `strict_10_10_mode`: `yes; visible review-state behavior requires screenshot approval before pre-PR gates`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-09-03`
-- `base`: clean synced `main@5651b9a1` plus the validated parent/child planning diff carried onto `codex/aw-006-habits-full-definition-compatibility-boundary`
-- `audit_status`: `ready`
-- `decision`: The owner explicitly authorized Child AC. It is the only active/selected Habits child and owns exactly H-081; H-071 and H-074 remain separate.
-- `reason`: Current pre-view normalization can turn unknown or malformed category, target, timer, cadence, and schedule data into known semantics, let consumers disagree, or overwrite raw values during ordinary edits. One shared pre-normalization boundary can close this without a migration, new product semantic, or history rewrite.
+- `base`: implementation started from clean synced `main@5651b9a1`; PR `#1257` merged to `main` as `af6a4483`
+- `audit_status`: `complete`
+- `decision`: Child AC completed exactly H-081 through one shared full-definition compatibility boundary. No next Habits child is active, planned, selected, or implied; H-071 and H-074 remain separate open decisions.
+- `reason`: The shipped pre-normalization classifier prevents unknown or malformed category, target, timer, cadence, and schedule data from receiving known semantics or being overwritten during ordinary edits, without a migration, new product semantic, or history rewrite.
 - `must_refresh_before_execution_if`: Refresh if `origin/main`, `AGENTS.md`, the parent H-081 disposition, `lib/habits/{shared,server}.ts`, Habit definition migrations/generated types, create/update/check-in/reset routes, Today/Home/My Routines, Calendar Plan/Trends, Motivation, linked Micro Session credit, H-080/H-082 contracts, private export, analytics, support/Help, scorecard categories, screenshot rules, or validation lanes change after `main@5651b9a1`.
 - `scope_stop`: Stop and revise before implementation expands into a database migration or constraint change, production-data repair, a new Habit value or semantic, definition-history versioning, an admin repair surface, H-071, H-074, or a broad redesign. If the boundary cannot be centralized atomically inside the named surfaces and PR-size gate, return to the parent for a new architecture decision.
 
@@ -291,15 +291,15 @@ Capability audit on `2026-09-03`:
 - No plugin, connector, MCP server, skill install, dependency, production-data write, or local Codex configuration change is needed.
 - Current synthetic fixture/visual-harness paths are safer than weakening constraints or using owner data.
 
-| Surface                       | Finding                                                                                          | Severity | Recommended Type                 | Owner Decision Needed                                       | Follow-Up Brief Path       |
-| ----------------------------- | ------------------------------------------------------------------------------------------------ | -------- | -------------------------------- | ----------------------------------------------------------- | -------------------------- |
-| Full definition compatibility | H-081 has route-local/permissive category/target/cadence/schedule fallbacks before semantic use. | `high`   | `bounded implementation child`   | `no`: the owner selected Child AC for active implementation | this in-progress brief     |
-| Snapshot read cost            | H-074 overfetch remains real but lacks a route/query/payload/latency baseline.                   | `medium` | `bounded implementation child`   | `yes`: select a measured compact-read child later           | `TBD after owner decision` |
-| Historical review breadth     | H-071 cannot safely infer all history from today's mutable definition.                           | `medium` | `deferred architecture decision` | `yes`: choose bounded window/versioning policy later        | `TBD after owner decision` |
+| Surface                       | Finding                                                                                                                            | Severity   | Recommended Type                 | Owner Decision Needed                                | Follow-Up Brief Path       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------- | ---------------------------------------------------- | -------------------------- |
+| Full definition compatibility | H-081 is resolved by the shared canonical/legacy/unsupported classifier and fail-closed read/write boundary shipped in PR `#1257`. | `resolved` | `bounded implementation child`   | `no`: Child AC is complete                           | this done brief            |
+| Snapshot read cost            | H-074 overfetch remains real but lacks a route/query/payload/latency baseline.                                                     | `medium`   | `bounded implementation child`   | `yes`: select a measured compact-read child later    | `TBD after owner decision` |
+| Historical review breadth     | H-071 cannot safely infer all history from today's mutable definition.                                                             | `medium`   | `deferred architecture decision` | `yes`: choose bounded window/versioning policy later | `TBD after owner decision` |
 
-Top recommended next step: complete scoped H-081 implementation and targeted QA, then stop for owner screenshot approval before pre-PR gates.
+Top recommended next step: no next Habits child is selected. Return to the parent for a fresh owner decision before H-071 or H-074 work.
 
-Return path: parent remains `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`; Child AC is the only active/selected child at this in-progress path; last runtime PR stack is `#1253/#1254/#1255` with closeout `#1256`.
+Return path: parent remains `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`; Child AC is complete at this done path through PR `#1257` / `af6a4483`, H-081 is resolved, and no Habits child is active, planned, selected, or recommended. H-071 and H-074 remain open.
 
 ## Expected Implementation Scope
 
@@ -426,8 +426,8 @@ Any code, test, config, script, migration, workflow, or runtime diff uses the fu
 
 ## Automation, Git, And Session Continuity
 
-- Child AC is executing on its named branch from `main@5651b9a1` under the automation-first contract and screenshot stop: implementation, targeted tests, screenshot handoff/approval, then pre-PR/commit/push/PR/CI/pre-merge.
-- Never merge without explicit owner approval.
+- Child AC executed on its named branch from `main@5651b9a1` under the automation-first contract and screenshot stop; the owner approved the final screenshots and later explicitly approved merge.
+- PR `#1257` passed the required local and CI gates and merged as `af6a4483`.
 - Commit/push only validated scoped work. Recovery order is `git status -sb`, `git log --oneline -n 10`, then this brief/parent at the latest checkpoint.
 - Record each meaningful checkpoint as `date | commit/working tree | completed scope | next step`.
 - If tooling, credentials, screenshots, or CI block execution, state the exact blocker, one owner action, and the resume point.
@@ -450,12 +450,37 @@ Any code, test, config, script, migration, workflow, or runtime diff uses the fu
 - `2026-09-03 | screenshot-approved | owner replied "godkjent" after reviewing the four after/reference artifacts; no product rendering/style/asset/export HTML changed after final capture | next: fetch origin, run verify:pre-pr, then commit/push/open PR and continue through CI plus verify:pre-merge without merging`
 - `2026-09-03 | pre-pr-green | current branch remained 0 behind/0 ahead of origin/main@5651b9a1; full-lane npm run verify:pre-pr passed quality/brief gates, lint, typecheck, 265 files/2067 unit tests, production build, public performance budgets, and Playwright with 111 passed/573 environment-skipped; artifact artifacts/test-runs/20260903-192452 | next: commit, push, open the PR, record delivery evidence, monitor required CI, then run verify:pre-merge without merging`
 - `2026-09-03 | pr-open | implementation committed as 3b361c09, pushed on codex/aw-006-habits-full-definition-compatibility-boundary, and opened as PR #1257 with canonical generated metadata; no product rendering/style/asset/export HTML changed after the approved capture | next: push this evidence-only docs checkpoint, monitor required CI on the final PR head, then run verify:pre-merge without merging`
+- `2026-09-03 | done | final PR head f081ab4f passed all required CI plus current-head verify:pre-merge; the owner explicitly approved merge and PR #1257 merged as squash commit af6a4483. H-081 is resolved, this brief moved to done, no next Habits child is selected, and H-071/H-074 remain separate open candidates | next: complete this single repo-managed docs-only closeout, sync/prune main, rerun post-merge preflight, and perform the mandatory chat-handoff assessment`
 
 ## Completion Record
 
-- `status`: `in progress; PR #1257 open, required CI and pre-merge validation active`
-- `10/10 claim`: `no; required CI and current-head pre-merge evidence remain`
+- `completed`: `2026-09-03`
+- `merged_pr`: `#1257` (`https://github.com/stianvikra/freeswimming/pull/1257`)
 - `implementation_commit`: `3b361c09`
-- `pull_request`: `#1257` (`https://github.com/stianvikra/freeswimming/pull/1257`)
-- `screenshots`: `output/playwright/habits-full-definition-compatibility-2026-09-03-190420` (`after/reference`, captured locally 2026-09-03 19:04–19:12)
-- `validation`: `exposure 0/49; targeted 17 files/516 tests; typecheck, lint, all-brief lint, Prettier, diff, responsive, console, and scoped axe passed; full-lane pre-PR PASS at artifacts/test-runs/20260903-192452 (265 files/2067 unit tests, build/performance, Playwright 111 passed/573 environment-skipped); CI/pre-merge pending`
+- `final_pr_head`: `f081ab4f`
+- `squash_commit`: `af6a4483`
+- `result`: One shared three-way classifier now keeps supported definitions unchanged, preserves only the exact legacy cadence form, and makes every other unknown or malformed full definition read-only and fail-closed across Habits, Today/Home/My Routines, Calendar, Motivation, Micro linkage, writes, analytics, support, and private export. This prevents false progress and silent raw-data replacement while retaining stable identity and history.
+- `screenshots`: `output/playwright/habits-full-definition-compatibility-2026-09-03-190420` (`after/reference`, owner-approved, captured locally 2026-09-03 19:04–19:12; no rendering/style/asset/export HTML changed afterward)
+- `validation`: privacy-safe exposure `0/49`; targeted Vitest `17 files / 516 tests`; typecheck, ESLint, all-brief lint, targeted Prettier, diff check, responsive overflow, console, and scoped axe evidence passed; full-lane pre-PR passed at `artifacts/test-runs/20260903-192452`; final-head pre-merge passed at `artifacts/test-runs/20260903-194327` on `f081ab4f`, including `265 files / 2067 unit tests`, production build/performance, and Playwright `111 passed / 573 environment-skipped`; every required GitHub CI, CodeQL, PR-size, and Vercel check was green before merge.
+- `10/10 claim`: `yes; all 18 target categories reached 5/5, including every critical target category`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                        | Gaps / Notes                                                                                                                                        |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | H-081 alone closed through PR `#1257`; parent, queue, inventory, and this done brief preserve the boundary.                                                                     | H-071 and H-074 remain explicitly out of scope and unselected.                                                                                      |
+| UX flow clarity                               | `5/5`          | Mixed and unsupported-only fixtures reuse one read-only `Needs review` state with no false setup, completion, or mutation action.                                               | None in Child AC scope.                                                                                                                             |
+| Visual design quality                         | `5/5`          | Four owner-approved after/reference artifacts prove the reused pattern at mobile, tablet, and desktop widths with zero horizontal overflow.                                     | No rendering files changed after the approved capture.                                                                                              |
+| Business logic correctness and data integrity | `5/5`          | The canonical/legacy/unsupported classifier, `0/49` exposure gate, exact legacy fixtures, preservation tests, and zero-write/event negative paths passed.                       | None in Child AC scope.                                                                                                                             |
+| Accessibility (a11y)                          | `5/5`          | Scoped review, Motivation, Today, Calendar, and Micro checks had zero serious/critical axe findings and retained keyboard/status semantics.                                     | Five unchanged Weekly Overview baseline nodes remain outside this diff: three prohibited `div[aria-label]` uses and two `4.37:1` contrast findings. |
+| Performance (CWV + payloads)                  | `5/5`          | Classification stays O(d), adds zero read queries/N+1/history expansion, writers stay one-query, and the bounded descriptor measured `161 -> 406` bytes; full perf gate passed. | H-074 authenticated compact-read baselining remains a separate open candidate.                                                                      |
+| Data placement and sync boundaries            | `5/5`          | Raw rows, IDs, children, and export remain server-canonical; classification is derived with no read-time rewrite or new local truth.                                            | None in Child AC scope.                                                                                                                             |
+| Reliability and failure handling              | `5/5`          | Unsupported input and rows return typed `400/409`, mixed reads stay available, Micro primary truth remains independent, and the negative matrix produced no unexpected `500`.   | None in Child AC scope.                                                                                                                             |
+| Security and authz                            | `5/5`          | Owner-scoped guards run before mutation; unauthenticated, cross-owner, and missing paths remain non-disclosing; required security and CodeQL checks passed.                     | None in Child AC scope.                                                                                                                             |
+| Privacy and compliance                        | `5/5`          | Private export preserves raw values 1:1 while UI, analytics, normal logs, and generic support evidence expose no raw unknown values, notes, or titles.                          | None in Child AC scope.                                                                                                                             |
+| Content governance                            | `5/5`          | API, user-flow, support, GDPR, parent, queue, inventory, tests, and child lifecycle records use the same classifier/error/recovery contract.                                    | None in Child AC scope.                                                                                                                             |
+| Analytics and KPI observability               | `5/5`          | Unsupported rows contribute zero active/success counts or events; known event IDs/payloads remain stable and privacy-bounded.                                                   | H-075 taxonomy cleanup remains separate and unselected.                                                                                             |
+| Incident response and support operations      | `5/5`          | Support docs record stable code, bounded reasons, owner-authorized evidence, recovery/escalation, exact legacy handling, and no-rewrite guidance.                               | No admin repair tool was added by design.                                                                                                           |
+| i18n operational readiness                    | `5/5`          | Shared labels and bounded generic reasons keep raw machine values out of copy; responsive evidence covers longer review messaging.                                              | A genuinely new machine value still requires explicit mapping before release.                                                                       |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js route/server boundaries, TypeScript domain classifier, Supabase/RLS patterns, shared renderers, and test stack were reused with no migration or dependency.    | None in Child AC scope.                                                                                                                             |
+| Testing and QA automation                     | `5/5`          | `17/516` targeted tests, `265/2067` full unit tests, build, Playwright `111/573`, screenshots, pre-PR, CI, and current-head pre-merge all passed.                               | `573` Playwright cases were environment-skipped by the supported matrix; required CI site-lock smoke was green.                                     |
+| Scalability and cost efficiency               | `5/5`          | One O(d) partition, bounded 13-reason descriptors, zero added read round trips/jobs/external calls, and unchanged supported history windows were proven.                        | H-074 owns any later compact-read optimization.                                                                                                     |
+| DevOps and rollback readiness                 | `5/5`          | Atomic no-migration/no-secret/no-dependency PR, green required CI, current-head pre-merge, explicit merge approval, and conditional fail-closed rollback contract are recorded. | Local private-mode Playwright was intentionally off under `SITE_LOCK_ENABLED=0`; CI `site-lock-smoke` passed.                                       |
