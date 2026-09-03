@@ -5,6 +5,7 @@ import {
   buildTodayRoutineQuickActions,
 } from "@/lib/my-library/today";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
+import { buildHabitMetricCoverage } from "@/lib/habits/shared";
 import type {
   HabitDefinitionView,
   HabitSnapshot,
@@ -143,7 +144,10 @@ function buildHabitSnapshot(options?: {
     unsupportedHabits: options?.unsupportedHabits ?? [],
     daySummary: {
       date: "2026-05-10",
+      dayStatus: null,
+      trackingState: "known",
       scheduledHabitCount: activeCount,
+      potentialPerfectDayItemCount: perfectDayItemCount,
       perfectDayItemCount,
       satisfiedPerfectDayItemCount: satisfiedCount,
       completionPercent:
@@ -151,6 +155,11 @@ function buildHabitSnapshot(options?: {
       isPerfectDay: perfectDayItemCount > 0 && satisfiedCount === perfectDayItemCount,
       completedDurationMinutes: 0,
       completedCountTotal: 0,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: perfectDayItemCount,
+        knownUnitCount: perfectDayItemCount,
+        successfulUnitCount: satisfiedCount,
+      }),
       items: [],
     },
     weekSummary: {
@@ -159,6 +168,11 @@ function buildHabitSnapshot(options?: {
       averageCompletionPercent: 0,
       totalDurationMinutes: 0,
       totalCount: 0,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 0,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+      }),
     },
   };
 }

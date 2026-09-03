@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import TodayTabsPanel from "@/components/my-library/TodayTabsPanel";
 import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type { DrylandLibrarySnapshot } from "@/lib/dryland/shared";
-import type { HabitSnapshot } from "@/lib/habits/shared";
+import { buildHabitMetricCoverage, type HabitSnapshot } from "@/lib/habits/shared";
 
 function buildDrylandLibrary(): Pick<
   DrylandLibrarySnapshot,
@@ -61,13 +61,21 @@ function buildHabitSnapshot(): HabitSnapshot {
     unsupportedHabits: [],
     daySummary: {
       date: "2026-05-10",
+      dayStatus: null,
+      trackingState: "known",
       scheduledHabitCount: 2,
+      potentialPerfectDayItemCount: 2,
       perfectDayItemCount: 2,
       satisfiedPerfectDayItemCount: 1,
       completionPercent: 50,
       isPerfectDay: false,
       completedDurationMinutes: 0,
       completedCountTotal: 0,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 2,
+        successfulUnitCount: 1,
+      }),
       items: [],
     },
     weekSummary: {
@@ -76,6 +84,11 @@ function buildHabitSnapshot(): HabitSnapshot {
       averageCompletionPercent: 0,
       totalDurationMinutes: 0,
       totalCount: 0,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 0,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+      }),
     },
   };
 }

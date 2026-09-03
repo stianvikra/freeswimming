@@ -42,6 +42,11 @@ export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
 export const HABIT_MOTIVATION_RESET_TYPE_VALUES = ["reset_stats"] as const;
 export const HABIT_MOTIVATION_RESET_STATUS_VALUES = ["active", "voided"] as const;
 export const HABIT_STATUS_VALUES = ["active", "archived"] as const;
+export const HABIT_DAY_STATUS_VALUES = ["not_tracked"] as const;
+export const HABIT_DAY_STATUS_LABELS = {
+  not_tracked: "Not tracked",
+  unsupported: "Needs review",
+} as const satisfies Record<HabitDayStatusState, string>;
 export const UNSUPPORTED_HABIT_DEFINITION_CODE = "UNSUPPORTED_HABIT_DEFINITION" as const;
 export const UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE =
   "UNSUPPORTED_HABIT_DEFINITION_VALUE" as const;
@@ -62,6 +67,9 @@ export type HabitMotivationResetStatus =
   | (typeof HABIT_MOTIVATION_RESET_STATUS_VALUES)[number]
   | "unsupported";
 export type HabitStatus = (typeof HABIT_STATUS_VALUES)[number];
+export type HabitDayStatus = (typeof HABIT_DAY_STATUS_VALUES)[number];
+export type HabitDayStatusState = HabitDayStatus | "unsupported";
+export type HabitItemTrackingState = "known" | "not_tracked" | "incomplete" | "needs_review";
 export type HabitCheckInSourceKind =
   | (typeof HABIT_CHECK_IN_SOURCE_KIND_VALUES)[number]
   | "unsupported";
@@ -99,6 +107,8 @@ export type HabitPriorityGroup =
   | "due_weekly"
   | "due_monthly"
   | "quit_status"
+  | "not_tracked"
+  | "tracking_incomplete"
   | "rest_day"
   | "done_today"
   | "done_period"
@@ -117,6 +127,33 @@ export type HabitMotivationResetRow =
 export type HabitMotivationResetInsert =
   Database["public"]["Tables"]["habit_motivation_resets"]["Insert"];
 export type HabitCheckInStatus = "logged" | "skipped" | "unsupported";
+
+export type HabitDayStatusView = {
+  reviewDate: string;
+  dayStatus: HabitDayStatusState;
+};
+
+export type HabitDayStatusClassification =
+  | { kind: "none" }
+  | { kind: "supported"; dayStatus: HabitDayStatus }
+  | { kind: "unsupported" };
+
+export type HabitMetricCoverageState = "available" | "no_tracked_data" | "needs_review";
+
+export type HabitMetricCoverage = {
+  potentialUnitCount: number;
+  knownUnitCount: number;
+  successfulUnitCount: number;
+  performancePercent: number | null;
+  coveragePercent: number | null;
+  notTrackedDayCount: number;
+  state: HabitMetricCoverageState;
+};
+
+export type HabitMetricOptions = {
+  dayStatuses?: readonly HabitDayStatusView[];
+  dayStatusPrecedenceCheckIns?: readonly HabitCheckInView[];
+};
 
 export type HabitUnsupportedDefinitionField =
   | "unknown_habit_type"
@@ -260,27 +297,33 @@ export type HabitDayItem = {
   evaluation: HabitEvaluation;
   cadenceProgress: HabitCadenceProgress;
   isScheduledForDate: boolean;
+  trackingState: HabitItemTrackingState;
   priorityGroup: HabitPriorityGroup;
 };
 
 export type HabitDaySummary = {
   date: string;
+  dayStatus: HabitDayStatusState | null;
+  trackingState: "known" | "not_tracked" | "needs_review";
   scheduledHabitCount: number;
+  potentialPerfectDayItemCount: number;
   perfectDayItemCount: number;
   satisfiedPerfectDayItemCount: number;
-  completionPercent: number;
+  completionPercent: number | null;
   isPerfectDay: boolean;
   completedDurationMinutes: number;
   completedCountTotal: number;
+  metricCoverage: HabitMetricCoverage;
   items: HabitDayItem[];
 };
 
 export type HabitWeekSummary = {
   days: HabitDaySummary[];
   perfectDayCount: number;
-  averageCompletionPercent: number;
+  averageCompletionPercent: number | null;
   totalDurationMinutes: number;
   totalCount: number;
+  metricCoverage: HabitMetricCoverage;
 };
 
 export type HabitMotivationItem = {
@@ -295,8 +338,11 @@ export type HabitMotivationItem = {
   resetBoundaries: HabitMotivationResetBoundary[];
   beforeResetSummary: HabitMotivationBeforeResetSummary | null;
   lastTrackedDate: string | null;
+  potentialDayCount: number;
   eligibleDayCount: number;
   onTrackDayCount: number;
+  notTrackedDayCount: number;
+  unknownPeriodCount: number;
   restDayCount: number;
   slipCount: number;
   noteCount: number;
@@ -306,6 +352,7 @@ export type HabitMotivationItem = {
   habitScore: number | null;
   totalTimedMinutes: number;
   totalCount: number;
+  metricCoverage: HabitMetricCoverage;
 };
 
 export type HabitMotivationSummary = {
@@ -314,8 +361,10 @@ export type HabitMotivationSummary = {
   activeHabitCount: number;
   archivedHabitCount: number;
   lastTrackedDate: string | null;
+  potentialDayCount: number;
   eligibleDayCount: number;
   onTrackDayCount: number;
+  notTrackedDayCount: number;
   restDayCount: number;
   slipCount: number;
   noteCount: number;
@@ -325,6 +374,7 @@ export type HabitMotivationSummary = {
   habitScore: number | null;
   totalTimedMinutes: number;
   totalCount: number;
+  metricCoverage: HabitMetricCoverage;
   items: HabitMotivationItem[];
 };
 
@@ -354,7 +404,10 @@ export type HabitSnapshot = {
   unsupportedHabits: HabitUnsupportedDefinitionView[];
   daySummary: HabitDaySummary;
   weekSummary: HabitWeekSummary;
+  absenceReviewRecordedCheckInDates?: string[];
   absenceReviewAcknowledgedDates?: string[];
+  dayStatusesReady?: boolean;
+  dayStatuses?: HabitDayStatusView[];
   motivationSummary?: HabitMotivationSummary;
   motivationSummaries?: HabitMotivationRangeSummaries;
 };
@@ -422,6 +475,88 @@ const DEFAULT_WEEKDAYS: HabitWeekday[] = [...HABIT_WEEKDAY_VALUES];
 
 function isOneOf<T extends readonly string[]>(values: T, value: unknown): value is T[number] {
   return typeof value === "string" && values.includes(value as T[number]);
+}
+
+export function classifyHabitDayStatus(value: unknown): HabitDayStatusClassification {
+  if (value === null || value === undefined) return { kind: "none" };
+  if (isOneOf(HABIT_DAY_STATUS_VALUES, value)) {
+    return { kind: "supported", dayStatus: value };
+  }
+  return { kind: "unsupported" };
+}
+
+export function getHabitDayStatusLabel(value: HabitDayStatusState): string {
+  return HABIT_DAY_STATUS_LABELS[value];
+}
+
+export function getHabitItemTrackingStateLabel(value: HabitItemTrackingState): string {
+  if (value === "not_tracked") return getHabitDayStatusLabel("not_tracked");
+  if (value === "needs_review") return getHabitDayStatusLabel("unsupported");
+  if (value === "incomplete") return "Tracking incomplete";
+  return "Tracked";
+}
+
+export function buildHabitDayStatusView(input: {
+  reviewDate: unknown;
+  dayStatus: unknown;
+  acknowledgementStatus?: unknown;
+}): HabitDayStatusView | null {
+  if (!isLocalDayDateKey(input.reviewDate)) {
+    throw new Error("Habit day status date must be a real YYYY-MM-DD date.");
+  }
+  if (input.acknowledgementStatus !== undefined && input.acknowledgementStatus !== "reviewed") {
+    return { reviewDate: input.reviewDate, dayStatus: "unsupported" };
+  }
+  const classification = classifyHabitDayStatus(input.dayStatus);
+  if (classification.kind === "none") return null;
+  return {
+    reviewDate: input.reviewDate,
+    dayStatus: classification.kind === "supported" ? classification.dayStatus : "unsupported",
+  };
+}
+
+export function buildHabitMetricCoverage(input: {
+  potentialUnitCount: number;
+  knownUnitCount: number;
+  successfulUnitCount: number;
+  notTrackedDayCount?: number;
+  hasUnsupportedDayStatus?: boolean;
+}): HabitMetricCoverage {
+  const potentialUnitCount = Math.max(0, Math.trunc(input.potentialUnitCount));
+  const knownUnitCount = Math.min(
+    potentialUnitCount,
+    Math.max(0, Math.trunc(input.knownUnitCount))
+  );
+  const successfulUnitCount = Math.min(
+    knownUnitCount,
+    Math.max(0, Math.trunc(input.successfulUnitCount))
+  );
+  const notTrackedDayCount = Math.max(0, Math.trunc(input.notTrackedDayCount ?? 0));
+  const state: HabitMetricCoverageState = input.hasUnsupportedDayStatus
+    ? "needs_review"
+    : knownUnitCount <= 0
+      ? "no_tracked_data"
+      : "available";
+
+  return {
+    potentialUnitCount,
+    knownUnitCount,
+    successfulUnitCount,
+    performancePercent:
+      state === "available" ? Math.round((successfulUnitCount / knownUnitCount) * 100) : null,
+    coveragePercent:
+      state !== "needs_review" && potentialUnitCount > 0
+        ? Math.round((knownUnitCount / potentialUnitCount) * 100)
+        : null,
+    notTrackedDayCount,
+    state,
+  };
+}
+
+export function isHabitMetricCoverageIncomplete(
+  coverage: HabitMetricCoverage | null | undefined
+): boolean {
+  return Boolean(coverage && coverage.knownUnitCount < coverage.potentialUnitCount);
 }
 
 export function classifyHabitDefinition<T extends HabitDefinitionCore>(
@@ -1410,6 +1545,55 @@ function isUnsupportedCheckIn(checkIn: HabitCheckInView | null | undefined): boo
   return checkIn?.status === "unsupported";
 }
 
+function isSupportedCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
+  return checkIn?.status === "logged" || checkIn?.status === "skipped";
+}
+
+export function getEffectiveHabitDayStatus(
+  date: string,
+  dayStatuses: readonly HabitDayStatusView[] = [],
+  checkIns: readonly HabitCheckInView[] = []
+): HabitDayStatusState | null {
+  if (checkIns.some((checkIn) => checkIn.checkInDate === date && isSupportedCheckIn(checkIn))) {
+    return null;
+  }
+
+  let effectiveStatus: HabitDayStatusState | null = null;
+  for (const candidate of dayStatuses) {
+    if (candidate.reviewDate !== date) continue;
+    if (candidate.dayStatus === "unsupported") return "unsupported";
+    effectiveStatus = candidate.dayStatus;
+  }
+  return effectiveStatus;
+}
+
+export function getHabitDayStatusRangeEvidence(input: {
+  periodStart: string;
+  periodEnd: string;
+  throughDate: string;
+  dayStatuses?: readonly HabitDayStatusView[];
+  precedenceCheckIns?: readonly HabitCheckInView[];
+}) {
+  const lastDate = input.periodEnd < input.throughDate ? input.periodEnd : input.throughDate;
+  const statusDates = [
+    ...new Set(
+      (input.dayStatuses ?? [])
+        .filter((status) => status.reviewDate >= input.periodStart && status.reviewDate <= lastDate)
+        .map((status) => status.reviewDate)
+    ),
+  ];
+  const effectiveStatuses = statusDates
+    .map((reviewDate) =>
+      getEffectiveHabitDayStatus(reviewDate, input.dayStatuses, input.precedenceCheckIns)
+    )
+    .filter((status): status is HabitDayStatusState => status !== null);
+
+  return {
+    notTrackedDayCount: effectiveStatuses.filter((status) => status === "not_tracked").length,
+    hasUnsupportedDayStatus: effectiveStatuses.includes("unsupported"),
+  };
+}
+
 function isQuitLapseCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
   return (
     checkIn?.status === "logged" &&
@@ -1459,10 +1643,12 @@ function getDailyBuildMotivation(
   habit: HabitDefinitionView,
   checkIn: HabitCheckInView | null,
   date: string,
-  checkIns: HabitCheckInView[]
+  checkIns: HabitCheckInView[],
+  options?: HabitMetricOptions
 ): { valueLabel: string; supportingLabel: string | null; progressRatio: number } | null {
   if (!isDailyBuildMotivationCandidate(habit)) return null;
   if (isAfterHabitDate(habit.startDate, date)) return null;
+  const precedenceCheckIns = options?.dayStatusPrecedenceCheckIns ?? checkIns;
 
   const checkInsByDate = new Map<string, HabitCheckInView>();
   for (const candidate of checkIns) {
@@ -1481,6 +1667,7 @@ function getDailyBuildMotivation(
   for (let index = 0; index <= totalDays; index += 1) {
     const day = addUtcDays(habit.startDate, index);
     if (!isHabitScheduledOnDate(habit, day)) continue;
+    if (getEffectiveHabitDayStatus(day, options?.dayStatuses, precedenceCheckIns)) continue;
     const candidate = checkInsByDate.get(day) ?? null;
     if (isRestDayCheckIn(candidate)) continue;
     trackedDays += 1;
@@ -1493,6 +1680,7 @@ function getDailyBuildMotivation(
   for (let index = totalDays; index >= 0; index -= 1) {
     const day = addUtcDays(habit.startDate, index);
     if (!isHabitScheduledOnDate(habit, day)) continue;
+    if (getEffectiveHabitDayStatus(day, options?.dayStatuses, precedenceCheckIns)) break;
     const candidate = checkInsByDate.get(day) ?? null;
     if (day === date && !candidate) continue;
     if (isRestDayCheckIn(candidate)) continue;
@@ -1544,7 +1732,8 @@ function evaluateQuitHabitForDate(
   habit: HabitDefinitionView,
   checkIn: HabitCheckInView | null,
   date: string,
-  checkIns: HabitCheckInView[]
+  checkIns: HabitCheckInView[],
+  options?: HabitMetricOptions
 ): HabitEvaluation {
   const started = !isAfterHabitDate(habit.startDate, date);
   if (!started) {
@@ -1561,8 +1750,38 @@ function evaluateQuitHabitForDate(
   const lapseDates = getQuitLapseDates(habit, checkIn, checkIns, date);
   const latestLapseDate = lapseDates.at(-1) ?? null;
   const anchorDate = latestLapseDate ?? habit.startDate;
-  const daysSince = getDayDelta(anchorDate, date);
-  const totalDays = getDayDelta(habit.startDate, date) + 1;
+  let daysSince = getDayDelta(anchorDate, date);
+  let totalDays = getDayDelta(habit.startDate, date) + 1;
+  const dayStatuses = options?.dayStatuses ?? [];
+  const precedenceCheckIns = options?.dayStatusPrecedenceCheckIns ?? checkIns;
+  const hasEffectiveDayStatus = dayStatuses.some(
+    (status) =>
+      status.reviewDate >= habit.startDate &&
+      status.reviewDate <= date &&
+      getEffectiveHabitDayStatus(status.reviewDate, dayStatuses, precedenceCheckIns) !== null
+  );
+
+  if (hasEffectiveDayStatus) {
+    totalDays = 0;
+    daysSince = 0;
+    let continuityBroken = false;
+    const totalCalendarDays = getDayDelta(habit.startDate, date);
+    for (let index = 0; index <= totalCalendarDays; index += 1) {
+      const day = addUtcDays(habit.startDate, index);
+      if (getEffectiveHabitDayStatus(day, dayStatuses, precedenceCheckIns)) {
+        continuityBroken = true;
+        daysSince = 0;
+        continue;
+      }
+      totalDays += 1;
+      if (lapseDates.includes(day)) {
+        continuityBroken = true;
+        daysSince = 0;
+        continue;
+      }
+      if (continuityBroken || day > habit.startDate) daysSince += 1;
+    }
+  }
 
   if (lapseDates.length > 0) {
     const onTrackDays = Math.max(0, totalDays - lapseDates.length);
@@ -1588,7 +1807,8 @@ export function evaluateHabitForDate(
   habit: HabitDefinitionView,
   checkIn: HabitCheckInView | null,
   date: string,
-  checkIns: HabitCheckInView[] = checkIn ? [checkIn] : []
+  checkIns: HabitCheckInView[] = checkIn ? [checkIn] : [],
+  options?: HabitMetricOptions
 ): HabitEvaluation {
   if (isUnsupportedCheckIn(checkIn)) {
     return {
@@ -1601,12 +1821,12 @@ export function evaluateHabitForDate(
   }
 
   if (habit.habitMode === "quit") {
-    return evaluateQuitHabitForDate(habit, checkIn, date, checkIns);
+    return evaluateQuitHabitForDate(habit, checkIn, date, checkIns, options);
   }
 
   if (!checkIn || isRestDayCheckIn(checkIn)) {
     const motivation = !isRestDayCheckIn(checkIn)
-      ? getDailyBuildMotivation(habit, checkIn, date, checkIns)
+      ? getDailyBuildMotivation(habit, checkIn, date, checkIns, options)
       : null;
     return {
       isSatisfied: false,
@@ -1621,7 +1841,7 @@ export function evaluateHabitForDate(
 
   if (habit.habitType === "binary") {
     const isSatisfied = checkIn.valueBoolean === true;
-    const motivation = getDailyBuildMotivation(habit, checkIn, date, checkIns);
+    const motivation = getDailyBuildMotivation(habit, checkIn, date, checkIns, options);
     return {
       isSatisfied,
       valueLabel: isSatisfied
@@ -1784,11 +2004,13 @@ function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
     due_weekly: 2,
     due_monthly: 3,
     quit_status: 4,
-    rest_day: 5,
-    done_today: 6,
-    done_period: 7,
-    not_due: 8,
-    archived: 9,
+    not_tracked: 5,
+    tracking_incomplete: 6,
+    rest_day: 7,
+    done_today: 8,
+    done_period: 9,
+    not_due: 10,
+    archived: 11,
   };
   const cadenceOrder: Record<HabitCadencePeriod, number> = {
     daily: 0,
@@ -1818,35 +2040,121 @@ function countsTowardPerfectDay(item: HabitDayItem, date: string): boolean {
   return date === item.cadenceProgress.periodEnd;
 }
 
+function getAnyCadencePeriodTrackingState(
+  item: HabitDayItem,
+  checkIns: HabitCheckInView[],
+  date: string,
+  options?: HabitMetricOptions
+): HabitDayItem["trackingState"] {
+  if (item.habit.cadenceDayPolicy !== "any" || item.habit.cadencePeriod === "daily") {
+    return "known";
+  }
+  if (item.cadenceProgress.isTargetMet || date !== item.cadenceProgress.periodEnd) {
+    return "known";
+  }
+
+  const evidence = getHabitDayStatusRangeEvidence({
+    periodStart:
+      item.cadenceProgress.periodStart < item.habit.startDate
+        ? item.habit.startDate
+        : item.cadenceProgress.periodStart,
+    periodEnd: item.cadenceProgress.periodEnd,
+    throughDate: date,
+    dayStatuses: options?.dayStatuses,
+    precedenceCheckIns: options?.dayStatusPrecedenceCheckIns ?? checkIns,
+  });
+  if (evidence.hasUnsupportedDayStatus) return "needs_review";
+  if (
+    item.cadenceProgress.completedCount + evidence.notTrackedDayCount >=
+    item.cadenceProgress.targetCount
+  ) {
+    return "incomplete";
+  }
+  return "known";
+}
+
+function applyHabitItemTrackingState(
+  item: HabitDayItem,
+  trackingState: Exclude<HabitDayItem["trackingState"], "known">,
+  supportingLabel?: string
+): HabitDayItem {
+  const label = getHabitItemTrackingStateLabel(trackingState);
+  return {
+    ...item,
+    evaluation: {
+      isSatisfied: false,
+      valueLabel: label,
+      stateLabel: label,
+      supportingLabel:
+        supportingLabel ??
+        (trackingState === "not_tracked"
+          ? "Excluded from performance"
+          : trackingState === "incomplete"
+            ? "Cadence period excluded from performance"
+            : "Status is not supported"),
+      progressRatio: 0,
+    },
+    trackingState,
+    priorityGroup: trackingState === "incomplete" ? "tracking_incomplete" : "not_tracked",
+  };
+}
+
 export function buildHabitDaySummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
-  date: string
+  date: string,
+  options?: HabitMetricOptions
 ): HabitDaySummary {
-  const items = habits
-    .map((habit) => {
-      const checkIn = getCheckInForHabitDate(habit, checkIns, date);
-      const evaluation = evaluateHabitForDate(habit, checkIn, date, checkIns);
-      const cadenceProgress = buildHabitCadenceProgress(habit, checkIns, date);
-      const isScheduledForDate = isHabitScheduledForDate(habit, date, checkIns);
-      return {
+  const effectiveDayStatus = getEffectiveHabitDayStatus(date, options?.dayStatuses, checkIns);
+  const trackingState =
+    effectiveDayStatus === "not_tracked"
+      ? "not_tracked"
+      : effectiveDayStatus === "unsupported"
+        ? "needs_review"
+        : "known";
+  const normalItems = habits.map((habit): HabitDayItem => {
+    const checkIn = getCheckInForHabitDate(habit, checkIns, date);
+    const evaluation = evaluateHabitForDate(habit, checkIn, date, checkIns, options);
+    const cadenceProgress = buildHabitCadenceProgress(habit, checkIns, date);
+    const isScheduledForDate = isHabitScheduledForDate(habit, date, checkIns);
+    const item: HabitDayItem = {
+      habit,
+      checkIn,
+      evaluation,
+      cadenceProgress,
+      isScheduledForDate,
+      trackingState: "known",
+      priorityGroup: getHabitPriorityGroup(
         habit,
         checkIn,
         evaluation,
         cadenceProgress,
         isScheduledForDate,
-        priorityGroup: getHabitPriorityGroup(
-          habit,
-          checkIn,
-          evaluation,
-          cadenceProgress,
-          isScheduledForDate,
-          date
-        ),
-      };
+        date
+      ),
+    };
+    const itemTrackingState = getAnyCadencePeriodTrackingState(item, checkIns, date, options);
+    return itemTrackingState === "known"
+      ? item
+      : applyHabitItemTrackingState(
+          item,
+          itemTrackingState,
+          itemTrackingState === "incomplete"
+            ? "This cadence period is excluded from performance because tracking is incomplete"
+            : undefined
+        );
+  });
+  const potentialPerfectDayItems = normalItems.filter((item) => countsTowardPerfectDay(item, date));
+  const items = normalItems
+    .map((item): HabitDayItem => {
+      if (trackingState === "known") return item;
+      return applyHabitItemTrackingState(item, trackingState);
     })
     .sort(compareHabitDayItems);
-  const perfectDayItems = items.filter((item) => countsTowardPerfectDay(item, date));
+  const perfectDayItems =
+    trackingState === "known"
+      ? potentialPerfectDayItems.filter((item) => item.trackingState === "known")
+      : [];
   const satisfiedPerfectDayItemCount = perfectDayItems.filter(
     (item) => item.evaluation.isSatisfied
   ).length;
@@ -1859,19 +2167,33 @@ export function buildHabitDaySummary(
     if (!item.evaluation.isSatisfied || item.habit.habitType !== "count") return total;
     return total + (item.checkIn?.valueNumeric ?? 0);
   }, 0);
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialPerfectDayItems.length,
+    knownUnitCount: perfectDayItemCount,
+    successfulUnitCount: satisfiedPerfectDayItemCount,
+    notTrackedDayCount:
+      trackingState === "not_tracked" && potentialPerfectDayItems.length > 0 ? 1 : 0,
+    hasUnsupportedDayStatus:
+      trackingState === "needs_review" ||
+      potentialPerfectDayItems.some((item) => item.trackingState === "needs_review"),
+  });
 
   return {
     date,
+    dayStatus: effectiveDayStatus,
+    trackingState,
     scheduledHabitCount: items.filter((item) => item.isScheduledForDate).length,
+    potentialPerfectDayItemCount: potentialPerfectDayItems.length,
     perfectDayItemCount,
     satisfiedPerfectDayItemCount,
-    completionPercent:
-      perfectDayItemCount > 0
-        ? Math.round((satisfiedPerfectDayItemCount / perfectDayItemCount) * 100)
-        : 0,
-    isPerfectDay: perfectDayItemCount > 0 && satisfiedPerfectDayItemCount === perfectDayItemCount,
-    completedDurationMinutes,
-    completedCountTotal,
+    completionPercent: metricCoverage.performancePercent,
+    isPerfectDay:
+      perfectDayItemCount > 0 &&
+      perfectDayItemCount === potentialPerfectDayItems.length &&
+      satisfiedPerfectDayItemCount === perfectDayItemCount,
+    completedDurationMinutes: trackingState === "known" ? completedDurationMinutes : 0,
+    completedCountTotal: trackingState === "known" ? completedCountTotal : 0,
+    metricCoverage,
     items,
   };
 }
@@ -1879,28 +2201,108 @@ export function buildHabitDaySummary(
 export function buildHabitWeekSummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
-  selectedDate: string
+  selectedDate: string,
+  options?: HabitMetricOptions
 ): HabitWeekSummary {
   const weekStart = getCalendarWeekStartDate(selectedDate);
   const days = Array.from({ length: 7 }, (_, index) => {
     const dateKey = addUtcDays(weekStart, index);
-    return buildHabitDaySummary(habits, checkIns, dateKey);
+    return buildHabitDaySummary(habits, checkIns, dateKey, options);
   });
-  const daysWithItems = days.filter((day) => day.perfectDayItemCount > 0);
+  const potentialDays = days.filter((day) => day.potentialPerfectDayItemCount > 0);
+  const knownDays = potentialDays.filter(
+    (day) =>
+      day.trackingState === "known" &&
+      day.metricCoverage.state !== "needs_review" &&
+      day.metricCoverage.knownUnitCount === day.metricCoverage.potentialUnitCount
+  );
+  const successfulDays = knownDays.filter((day) => day.isPerfectDay);
+  const relevantDayStatuses = (options?.dayStatuses ?? []).filter(
+    (status) =>
+      status.reviewDate >= weekStart &&
+      status.reviewDate <= addUtcDays(weekStart, 6) &&
+      habits.some((habit) => habit.startDate <= status.reviewDate)
+  );
+  const weekStatusEvidence = getHabitDayStatusRangeEvidence({
+    periodStart: weekStart,
+    periodEnd: addUtcDays(weekStart, 6),
+    throughDate: addUtcDays(weekStart, 6),
+    dayStatuses: relevantDayStatuses,
+    precedenceCheckIns: options?.dayStatusPrecedenceCheckIns ?? checkIns,
+  });
+  const hasUnsupportedDayStatus =
+    weekStatusEvidence.hasUnsupportedDayStatus ||
+    potentialDays.some(
+      (day) => day.trackingState === "needs_review" || day.metricCoverage.state === "needs_review"
+    );
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialDays.length,
+    knownUnitCount: knownDays.length,
+    successfulUnitCount: successfulDays.length,
+    notTrackedDayCount: weekStatusEvidence.notTrackedDayCount,
+    hasUnsupportedDayStatus,
+  });
 
   return {
     days,
-    perfectDayCount: days.filter((day) => day.isPerfectDay).length,
+    perfectDayCount: successfulDays.length,
     averageCompletionPercent:
-      daysWithItems.length > 0
+      metricCoverage.state === "available"
         ? Math.round(
-            daysWithItems.reduce((total, day) => total + day.completionPercent, 0) /
-              daysWithItems.length
+            knownDays.reduce((total, day) => total + (day.completionPercent ?? 0), 0) /
+              knownDays.length
           )
-        : 0,
+        : null,
     totalDurationMinutes: days.reduce((total, day) => total + day.completedDurationMinutes, 0),
     totalCount: days.reduce((total, day) => total + day.completedCountTotal, 0),
+    metricCoverage,
   };
+}
+
+function isHabitAbsenceReviewCandidateItem(item: HabitDayItem): boolean {
+  if (item.habit.status !== "active") return false;
+  if (!item.habit.isPerfectDayItem) return false;
+  if (item.habit.habitMode === "quit") return false;
+  if (item.habit.microSessionLink || item.checkIn?.sourceKind === "micro_session") return false;
+  if (!item.isScheduledForDate || !item.cadenceProgress.isDueToday) return false;
+  if (item.checkIn?.status === "skipped") return false;
+  return !item.evaluation.isSatisfied;
+}
+
+export function getHabitAbsenceReviewCandidateDates(
+  snapshot: HabitSnapshot,
+  todayDate: string
+): string[] {
+  if (!isLocalDayDateKey(todayDate)) return [];
+  const recordedCheckInDates = new Set(snapshot.absenceReviewRecordedCheckInDates ?? []);
+  const notTrackedDates = new Set(
+    (snapshot.dayStatuses ?? [])
+      .filter((status) => status.dayStatus === "not_tracked")
+      .map((status) => status.reviewDate)
+  );
+  const lastTrackedDate =
+    snapshot.motivationSummaries?.all?.lastTrackedDate ??
+    snapshot.motivationSummary?.lastTrackedDate ??
+    null;
+  const hasRecoveryHistory =
+    Boolean(lastTrackedDate && lastTrackedDate < todayDate) ||
+    snapshot.weekSummary.days.some(
+      (day) => day.date < todayDate && day.items.some((item) => item.checkIn !== null)
+    );
+  if (!hasRecoveryHistory) return [];
+
+  return snapshot.weekSummary.days
+    .filter(
+      (day) =>
+        day.date < todayDate &&
+        day.potentialPerfectDayItemCount > 0 &&
+        !notTrackedDates.has(day.date) &&
+        !recordedCheckInDates.has(day.date) &&
+        !day.items.some((item) => item.checkIn !== null) &&
+        day.items.some(isHabitAbsenceReviewCandidateItem)
+    )
+    .map((day) => day.date)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function getCheckInsForHabit(
@@ -2039,7 +2441,8 @@ function buildPerfectDayMotivationStats(
   checkIns: HabitCheckInView[],
   resetEvents: HabitMotivationResetView[],
   historyStartDate: string,
-  historyEndDate: string
+  historyEndDate: string,
+  options?: HabitMetricOptions
 ) {
   const perfectDayHabits = habits
     .filter(
@@ -2058,29 +2461,71 @@ function buildPerfectDayMotivationStats(
         ? { ...habit, startDate: resetBoundary.effectiveDate }
         : habit;
     });
+  let potentialDayCount = 0;
   let eligibleDayCount = 0;
   let perfectDayCount = 0;
+  let notTrackedDayCount = 0;
+  let hasUnsupportedDayStatus = false;
   let currentStreakDays = 0;
   let bestStreakDays = 0;
   let runningStreakDays = 0;
 
   if (perfectDayHabits.length === 0) {
     return {
+      potentialDayCount,
       eligibleDayCount,
       perfectDayCount,
+      notTrackedDayCount,
       currentStreakDays,
       bestStreakDays,
       consistencyPercent: null,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 0,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+      }),
     };
   }
 
   const totalDays = getDayDelta(historyStartDate, historyEndDate);
+  const relevantDayStatuses = (options?.dayStatuses ?? []).filter(
+    (status) =>
+      status.reviewDate >= historyStartDate &&
+      status.reviewDate <= historyEndDate &&
+      perfectDayHabits.some((habit) => habit.startDate <= status.reviewDate)
+  );
+  const rangeStatusEvidence = getHabitDayStatusRangeEvidence({
+    periodStart: historyStartDate,
+    periodEnd: historyEndDate,
+    throughDate: historyEndDate,
+    dayStatuses: relevantDayStatuses,
+    precedenceCheckIns: options?.dayStatusPrecedenceCheckIns ?? checkIns,
+  });
+  notTrackedDayCount = rangeStatusEvidence.notTrackedDayCount;
+  hasUnsupportedDayStatus = rangeStatusEvidence.hasUnsupportedDayStatus;
 
   for (let index = 0; index <= totalDays; index += 1) {
     const day = addUtcDays(historyStartDate, index);
-    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day);
-    if (daySummary.perfectDayItemCount <= 0) continue;
-
+    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day, options);
+    const hasPotentialPerfectDayItems = daySummary.potentialPerfectDayItemCount > 0;
+    if (hasPotentialPerfectDayItems) potentialDayCount += 1;
+    if (daySummary.trackingState === "not_tracked") {
+      runningStreakDays = 0;
+      continue;
+    }
+    if (
+      daySummary.trackingState === "needs_review" ||
+      daySummary.metricCoverage.state === "needs_review"
+    ) {
+      hasUnsupportedDayStatus = true;
+      runningStreakDays = 0;
+      continue;
+    }
+    if (!hasPotentialPerfectDayItems) continue;
+    if (daySummary.metricCoverage.knownUnitCount !== daySummary.metricCoverage.potentialUnitCount) {
+      runningStreakDays = 0;
+      continue;
+    }
     eligibleDayCount += 1;
     if (daySummary.isPerfectDay) {
       perfectDayCount += 1;
@@ -2093,8 +2538,17 @@ function buildPerfectDayMotivationStats(
 
   for (let index = totalDays; index >= 0; index -= 1) {
     const day = addUtcDays(historyStartDate, index);
-    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day);
-    if (daySummary.perfectDayItemCount <= 0) continue;
+    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day, options);
+    if (
+      daySummary.trackingState !== "known" ||
+      daySummary.metricCoverage.state === "needs_review"
+    ) {
+      break;
+    }
+    if (daySummary.potentialPerfectDayItemCount <= 0) continue;
+    if (daySummary.metricCoverage.knownUnitCount !== daySummary.metricCoverage.potentialUnitCount) {
+      break;
+    }
 
     if (daySummary.isPerfectDay) {
       currentStreakDays += 1;
@@ -2106,21 +2560,34 @@ function buildPerfectDayMotivationStats(
     break;
   }
 
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialDayCount,
+    knownUnitCount: eligibleDayCount,
+    successfulUnitCount: perfectDayCount,
+    notTrackedDayCount,
+    hasUnsupportedDayStatus,
+  });
+
   return {
+    potentialDayCount,
     eligibleDayCount,
     perfectDayCount,
+    notTrackedDayCount,
     currentStreakDays,
     bestStreakDays,
-    consistencyPercent:
-      eligibleDayCount > 0 ? Math.round((perfectDayCount / eligibleDayCount) * 100) : null,
+    consistencyPercent: metricCoverage.performancePercent,
+    metricCoverage,
   };
 }
 
 function buildAnyCadencePeriodMotivationStats(
   habit: HabitDefinitionView,
-  metricCheckIns: HabitCheckInView[],
+  periodCheckIns: HabitCheckInView[],
+  precedenceCheckIns: HabitCheckInView[],
   metricStartDate: string,
-  historyEndDate: string
+  periodEvidenceStartDate: string,
+  historyEndDate: string,
+  options?: HabitMetricOptions
 ) {
   const periods: Array<{ periodStart: string; periodEnd: string }> = [];
   let cursor = metricStartDate;
@@ -2129,71 +2596,145 @@ function buildAnyCadencePeriodMotivationStats(
   while (cursor <= historyEndDate && guard < 500) {
     const cadenceWindow = getHabitCadenceWindow(habit, cursor);
     const periodStart =
-      cadenceWindow.periodStart < metricStartDate ? metricStartDate : cadenceWindow.periodStart;
+      cadenceWindow.periodStart < periodEvidenceStartDate
+        ? periodEvidenceStartDate
+        : cadenceWindow.periodStart;
     periods.push({ periodStart, periodEnd: cadenceWindow.periodEnd });
     cursor = addUtcDays(cadenceWindow.periodEnd, 1);
     guard += 1;
   }
 
+  let potentialDayCount = 0;
   let eligibleDayCount = 0;
   let onTrackDayCount = 0;
+  let notTrackedDayCount = 0;
+  let unknownPeriodCount = 0;
+  let hasUnsupportedDayStatus = false;
   let currentStreakDays = 0;
   let bestStreakDays = 0;
   let runningStreakDays = 0;
-  const eligiblePeriods: Array<{ isTargetMet: boolean }> = [];
+  let hasOpenPeriodContinuityGap = false;
+  const periodOutcomes: Array<"met" | "met_with_gap" | "missed" | "unknown" | "needs_review"> = [];
 
   for (const period of periods) {
     const completedCount = countCadenceCompletions(
       habit,
-      metricCheckIns,
+      periodCheckIns,
       period.periodStart,
       period.periodEnd
     );
     const isTargetMet = completedCount >= habit.cadenceTargetCount;
     const isClosedPeriod = period.periodEnd <= historyEndDate;
-    if (!isTargetMet && !isClosedPeriod) continue;
+    const periodStatusEvidence = getHabitDayStatusRangeEvidence({
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
+      throughDate: historyEndDate,
+      dayStatuses: options?.dayStatuses,
+      precedenceCheckIns,
+    });
+    const periodNotTrackedDayCount = periodStatusEvidence.notTrackedDayCount;
+    const reportedPeriodStart =
+      period.periodStart < metricStartDate ? metricStartDate : period.periodStart;
+    const reportedPeriodStatusEvidence =
+      reportedPeriodStart === period.periodStart
+        ? periodStatusEvidence
+        : getHabitDayStatusRangeEvidence({
+            periodStart: reportedPeriodStart,
+            periodEnd: period.periodEnd,
+            throughDate: historyEndDate,
+            dayStatuses: options?.dayStatuses,
+            precedenceCheckIns,
+          });
+    notTrackedDayCount += reportedPeriodStatusEvidence.notTrackedDayCount;
+    const periodHasUnsupportedDayStatus = periodStatusEvidence.hasUnsupportedDayStatus;
 
-    eligibleDayCount += 1;
-    eligiblePeriods.push({ isTargetMet });
-    if (isTargetMet) {
+    // An open period that has not met its target is not yet a performance
+    // opportunity. Its day-level coverage evidence still remains visible and
+    // unknown values must still fail closed.
+    if (!isTargetMet && !isClosedPeriod) {
+      if (periodHasUnsupportedDayStatus) hasUnsupportedDayStatus = true;
+      if (periodHasUnsupportedDayStatus || periodNotTrackedDayCount > 0) {
+        hasOpenPeriodContinuityGap = true;
+        runningStreakDays = 0;
+      }
+      continue;
+    }
+
+    potentialDayCount += 1;
+
+    if (periodHasUnsupportedDayStatus) {
+      hasUnsupportedDayStatus = true;
+      periodOutcomes.push("needs_review");
+      runningStreakDays = 0;
+    } else if (isTargetMet) {
+      eligibleDayCount += 1;
       onTrackDayCount += 1;
-      runningStreakDays += 1;
-      bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+      if (periodNotTrackedDayCount > 0) {
+        periodOutcomes.push("met_with_gap");
+        runningStreakDays = 0;
+      } else {
+        periodOutcomes.push("met");
+        runningStreakDays += 1;
+        bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+      }
+    } else if (completedCount + periodNotTrackedDayCount >= habit.cadenceTargetCount) {
+      unknownPeriodCount += 1;
+      periodOutcomes.push("unknown");
+      runningStreakDays = 0;
     } else {
+      eligibleDayCount += 1;
+      periodOutcomes.push("missed");
       runningStreakDays = 0;
     }
   }
 
-  for (let index = eligiblePeriods.length - 1; index >= 0; index -= 1) {
-    if (!eligiblePeriods[index]?.isTargetMet) break;
+  for (let index = periodOutcomes.length - 1; index >= 0; index -= 1) {
+    if (periodOutcomes[index] !== "met") break;
     currentStreakDays += 1;
   }
+  if (hasOpenPeriodContinuityGap) currentStreakDays = 0;
+
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialDayCount,
+    knownUnitCount: eligibleDayCount,
+    successfulUnitCount: onTrackDayCount,
+    notTrackedDayCount,
+    hasUnsupportedDayStatus,
+  });
 
   return {
+    potentialDayCount,
     eligibleDayCount,
     onTrackDayCount,
+    notTrackedDayCount,
+    unknownPeriodCount,
     currentStreakDays,
     bestStreakDays,
-    consistencyPercent:
-      eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null,
+    consistencyPercent: metricCoverage.performancePercent,
+    metricCoverage,
   };
 }
 
 function buildNonQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
+  precedenceCheckIns: HabitCheckInView[],
   historyStartDate: string,
   historyEndDate: string,
   resetBoundaries: HabitMotivationResetBoundary[],
-  beforeResetCheckIns: HabitCheckInView[]
+  beforeResetCheckIns: HabitCheckInView[],
+  options?: HabitMetricOptions
 ): HabitMotivationItem {
   const resetBoundary = resetBoundaries[0] ?? null;
   const metricStartDate = getMotivationMetricStartDate(habit, historyStartDate, resetBoundary);
   const metricCheckIns = habitCheckIns.filter((checkIn) => checkIn.checkInDate >= metricStartDate);
   const checkInsByDate = getCheckInsByDate(metricCheckIns);
   const totalDays = getDayDelta(metricStartDate, historyEndDate);
+  let potentialDayCount = 0;
   let eligibleDayCount = 0;
   let onTrackDayCount = 0;
+  let notTrackedDayCount = 0;
+  let hasUnsupportedDayStatus = false;
   let restDayCount = 0;
   let noteCount = 0;
   let totalTimedMinutes = 0;
@@ -2211,13 +2752,30 @@ function buildNonQuitMotivationItem(
 
   if (habit.cadenceDayPolicy === "any" && habit.cadencePeriod !== "daily") {
     restDayCount = metricCheckIns.filter(isRestDayCheckIn).length;
+    const cadencePeriodStart = getHabitCadenceWindow(habit, metricStartDate).periodStart;
+    const lifecycleStartDate =
+      resetBoundary && resetBoundary.effectiveDate > habit.startDate
+        ? resetBoundary.effectiveDate
+        : habit.startDate;
+    const periodEvidenceStartDate =
+      cadencePeriodStart < lifecycleStartDate ? lifecycleStartDate : cadencePeriodStart;
+    const periodCheckIns = precedenceCheckIns.filter(
+      (checkIn) =>
+        checkIn.habitId === habit.id &&
+        checkIn.checkInDate >= periodEvidenceStartDate &&
+        checkIn.checkInDate <= historyEndDate
+    );
     const periodStats = buildAnyCadencePeriodMotivationStats(
       habit,
-      metricCheckIns,
+      periodCheckIns,
+      precedenceCheckIns,
       metricStartDate,
-      historyEndDate
+      periodEvidenceStartDate,
+      historyEndDate,
+      options
     );
-    const habitScore = buildHabitScore(periodStats);
+    const habitScore =
+      periodStats.metricCoverage.state === "available" ? buildHabitScore(periodStats) : null;
 
     return {
       habitId: habit.id,
@@ -2231,8 +2789,11 @@ function buildNonQuitMotivationItem(
       resetBoundaries,
       beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
       lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? null,
+      potentialDayCount: periodStats.potentialDayCount,
       eligibleDayCount: periodStats.eligibleDayCount,
       onTrackDayCount: periodStats.onTrackDayCount,
+      notTrackedDayCount: periodStats.notTrackedDayCount,
+      unknownPeriodCount: periodStats.unknownPeriodCount,
       restDayCount,
       slipCount: 0,
       noteCount,
@@ -2242,6 +2803,7 @@ function buildNonQuitMotivationItem(
       habitScore,
       totalTimedMinutes,
       totalCount,
+      metricCoverage: periodStats.metricCoverage,
     };
   }
 
@@ -2256,7 +2818,24 @@ function buildNonQuitMotivationItem(
       continue;
     }
 
-    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns);
+    potentialDayCount += 1;
+    const effectiveDayStatus = getEffectiveHabitDayStatus(
+      day,
+      options?.dayStatuses,
+      precedenceCheckIns
+    );
+    if (effectiveDayStatus === "not_tracked") {
+      notTrackedDayCount += 1;
+      runningStreakDays = 0;
+      continue;
+    }
+    if (effectiveDayStatus === "unsupported") {
+      hasUnsupportedDayStatus = true;
+      runningStreakDays = 0;
+      continue;
+    }
+
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns, options);
     eligibleDayCount += 1;
     if (evaluation.isSatisfied) {
       onTrackDayCount += 1;
@@ -2273,7 +2852,11 @@ function buildNonQuitMotivationItem(
     const isScheduled = isHabitScheduledForDate(habit, day, metricCheckIns);
     if (!isScheduled && !checkIn) continue;
     if (isRestDayCheckIn(checkIn)) continue;
-    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns);
+    if (getEffectiveHabitDayStatus(day, options?.dayStatuses, precedenceCheckIns)) {
+      hasCurrentStreakBroken = true;
+      break;
+    }
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns, options);
     if (evaluation.isSatisfied) {
       currentStreakDays += 1;
       continue;
@@ -2287,14 +2870,23 @@ function buildNonQuitMotivationItem(
     currentStreakDays = bestStreakDays;
   }
 
-  const consistencyPercent =
-    eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null;
-  const habitScore = buildHabitScore({
-    eligibleDayCount,
-    onTrackDayCount,
-    currentStreakDays,
-    bestStreakDays,
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialDayCount,
+    knownUnitCount: eligibleDayCount,
+    successfulUnitCount: onTrackDayCount,
+    notTrackedDayCount,
+    hasUnsupportedDayStatus,
   });
+  const consistencyPercent = metricCoverage.performancePercent;
+  const habitScore =
+    metricCoverage.state === "available"
+      ? buildHabitScore({
+          eligibleDayCount,
+          onTrackDayCount,
+          currentStreakDays,
+          bestStreakDays,
+        })
+      : null;
 
   return {
     habitId: habit.id,
@@ -2308,8 +2900,11 @@ function buildNonQuitMotivationItem(
     resetBoundaries,
     beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
     lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? null,
+    potentialDayCount,
     eligibleDayCount,
     onTrackDayCount,
+    notTrackedDayCount,
+    unknownPeriodCount: 0,
     restDayCount,
     slipCount: 0,
     noteCount,
@@ -2319,16 +2914,19 @@ function buildNonQuitMotivationItem(
     habitScore,
     totalTimedMinutes,
     totalCount,
+    metricCoverage,
   };
 }
 
 function buildQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
+  precedenceCheckIns: HabitCheckInView[],
   historyStartDate: string,
   historyEndDate: string,
   resetBoundaries: HabitMotivationResetBoundary[],
-  beforeResetCheckIns: HabitCheckInView[]
+  beforeResetCheckIns: HabitCheckInView[],
+  options?: HabitMetricOptions
 ): HabitMotivationItem {
   const resetBoundary = resetBoundaries[0] ?? null;
   const metricStartDate = getMotivationMetricStartDate(habit, historyStartDate, resetBoundary);
@@ -2349,6 +2947,11 @@ function buildQuitMotivationItem(
   let currentStreakDays = 0;
   let bestStreakDays = 0;
   let runningStreakDays = 0;
+  let potentialDayCount = 0;
+  let eligibleDayCount = 0;
+  let onTrackDayCount = 0;
+  let notTrackedDayCount = 0;
+  let hasUnsupportedDayStatus = false;
 
   for (const checkIn of metricCheckIns) {
     if (checkIn.note) noteCount += 1;
@@ -2356,31 +2959,58 @@ function buildQuitMotivationItem(
 
   for (let index = 0; index <= totalDays; index += 1) {
     const day = addUtcDays(metricStartDate, index);
+    potentialDayCount += 1;
+    const effectiveDayStatus = getEffectiveHabitDayStatus(
+      day,
+      options?.dayStatuses,
+      precedenceCheckIns
+    );
+    if (effectiveDayStatus === "not_tracked") {
+      notTrackedDayCount += 1;
+      runningStreakDays = 0;
+      continue;
+    }
+    if (effectiveDayStatus === "unsupported") {
+      hasUnsupportedDayStatus = true;
+      runningStreakDays = 0;
+      continue;
+    }
+
+    eligibleDayCount += 1;
     if (lapseDates.has(day)) {
       runningStreakDays = 0;
       continue;
     }
+    onTrackDayCount += 1;
     runningStreakDays += 1;
     bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
   }
 
   for (let index = totalDays; index >= 0; index -= 1) {
     const day = addUtcDays(metricStartDate, index);
+    if (getEffectiveHabitDayStatus(day, options?.dayStatuses, precedenceCheckIns)) break;
     if (lapseDates.has(day)) break;
     currentStreakDays += 1;
   }
 
-  const eligibleDayCount = totalDays + 1;
   const slipCount = lapseDates.size;
-  const onTrackDayCount = Math.max(0, eligibleDayCount - slipCount);
-  const consistencyPercent =
-    eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null;
-  const habitScore = buildHabitScore({
-    eligibleDayCount,
-    onTrackDayCount,
-    currentStreakDays,
-    bestStreakDays,
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialDayCount,
+    knownUnitCount: eligibleDayCount,
+    successfulUnitCount: onTrackDayCount,
+    notTrackedDayCount,
+    hasUnsupportedDayStatus,
   });
+  const consistencyPercent = metricCoverage.performancePercent;
+  const habitScore =
+    metricCoverage.state === "available"
+      ? buildHabitScore({
+          eligibleDayCount,
+          onTrackDayCount,
+          currentStreakDays,
+          bestStreakDays,
+        })
+      : null;
 
   return {
     habitId: habit.id,
@@ -2394,8 +3024,11 @@ function buildQuitMotivationItem(
     resetBoundaries,
     beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
     lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? latestMetricLapseDate,
+    potentialDayCount,
     eligibleDayCount,
     onTrackDayCount,
+    notTrackedDayCount,
+    unknownPeriodCount: 0,
     restDayCount: 0,
     slipCount,
     noteCount,
@@ -2405,6 +3038,7 @@ function buildQuitMotivationItem(
     habitScore,
     totalTimedMinutes: 0,
     totalCount: 0,
+    metricCoverage,
   };
 }
 
@@ -2422,10 +3056,17 @@ export function buildHabitMotivationSummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
   selectedDate: string,
-  options?: { historyStartDate?: string | null; resetEvents?: HabitMotivationResetView[] }
+  options?: HabitMetricOptions & {
+    historyStartDate?: string | null;
+    resetEvents?: HabitMotivationResetView[];
+  }
 ): HabitMotivationSummary {
   const historyEndDate = selectedDate;
   const resetEvents = options?.resetEvents ?? [];
+  const metricOptions: HabitMetricOptions = {
+    dayStatuses: options?.dayStatuses,
+    dayStatusPrecedenceCheckIns: checkIns,
+  };
   const earliestHabitStartDate =
     habits.reduce<string | null>(
       (earliest, habit) =>
@@ -2458,18 +3099,22 @@ export function buildHabitMotivationSummary(
         ? buildQuitMotivationItem(
             habit,
             habitCheckIns,
+            checkIns,
             historyStartDate,
             historyEndDate,
             resetBoundaries,
-            allHabitCheckIns
+            allHabitCheckIns,
+            metricOptions
           )
         : buildNonQuitMotivationItem(
             habit,
             habitCheckIns,
+            checkIns,
             historyStartDate,
             historyEndDate,
             resetBoundaries,
-            allHabitCheckIns
+            allHabitCheckIns,
+            metricOptions
           );
     })
     .sort(compareMotivationItems);
@@ -2478,7 +3123,8 @@ export function buildHabitMotivationSummary(
     checkIns,
     resetEvents,
     historyStartDate,
-    historyEndDate
+    historyEndDate,
+    metricOptions
   );
 
   return {
@@ -2492,8 +3138,10 @@ export function buildHabitMotivationSummary(
         .filter((date): date is string => Boolean(date))
         .sort()
         .at(-1) ?? null,
+    potentialDayCount: perfectDayStats.potentialDayCount,
     eligibleDayCount: perfectDayStats.eligibleDayCount,
     onTrackDayCount: perfectDayStats.perfectDayCount,
+    notTrackedDayCount: perfectDayStats.notTrackedDayCount,
     restDayCount: items.reduce((total, item) => total + item.restDayCount, 0),
     slipCount: items.reduce((total, item) => total + item.slipCount, 0),
     noteCount: items.reduce((total, item) => total + item.noteCount, 0),
@@ -2504,6 +3152,7 @@ export function buildHabitMotivationSummary(
     totalTimedMinutes:
       Math.round(items.reduce((total, item) => total + item.totalTimedMinutes, 0) * 100) / 100,
     totalCount: Math.round(items.reduce((total, item) => total + item.totalCount, 0) * 100) / 100,
+    metricCoverage: perfectDayStats.metricCoverage,
     items,
   };
 }

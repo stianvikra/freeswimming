@@ -44,7 +44,11 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 
 2026-09-01 planned Child AA note: the owner authorized the plan-only brief at `docs/task-briefs/planned/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` for H-080. A future explicitly authorized implementation will add one shared fail-closed boundary plus an accessible read-only `Needs review` state for unsupported Habit type/mode/status values; no runtime/UI change or screenshot evidence exists yet.
 
-2026-09-03 shipped Child AA note: PR `#1251` closed `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` as squash commit `5d12445b`. H-080 is resolved through the shared fail-closed boundary and accessible read-only `Needs review` state, with owner-approved after/reference screenshots. No additional notice redesign was included; the queue has no selected Habits child, and H-081 plus H-071-H-075 remain separate unowned findings.
+2026-09-03 shipped Child AA note: PR `#1251` closed `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` as squash commit `5d12445b`. H-080 is resolved through the shared fail-closed boundary and accessible read-only `Needs review` state, with owner-approved after/reference screenshots. No additional notice redesign was included; the queue has no selected Habits implementation child, and H-081 plus H-071-H-075 remain separate unowned findings.
+
+2026-09-03 planned Child AB note: `docs/task-briefs/planned/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` is the plan-only H-082 child. A future explicitly authorized implementation will reuse the date-first review surface for neutral `Not tracked`, one-day/all-visible/Undo actions, known-data performance plus coverage, and matching Calendar/Motivation/Trends states. It must provide owner-approved after/reference screenshots; no runtime/UI/schema change or visual evidence exists yet, and H-071 older-week/all-history review remains separate.
+
+2026-09-03 active Child AB note: the owner explicitly selected `docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` on `codex/aw-006-habits-absence-review-not-tracked-status` for H-082 only. It is the only active Habits child and must stop at owner-approved after/reference screenshots before pre-PR gates; H-071 older-week/all-history review remains separate.
 
 ## Representative Inventory
 

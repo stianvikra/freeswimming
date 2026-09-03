@@ -4207,6 +4207,14 @@ export default function HabitPerfectDayHub({
             >
               Needs review
             </div>
+          ) : snapshot.daySummary.completionPercent === null ? (
+            <div
+              role="status"
+              aria-label="No tracked Habit data"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-2 text-center text-sm font-bold text-slate-600"
+            >
+              No data
+            </div>
           ) : (
             <div
               role="progressbar"

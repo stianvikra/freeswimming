@@ -227,7 +227,7 @@
   "ok": true,
   "export": {
     "generatedAt": "2026-02-17T14:00:00.000Z",
-    "schemaVersion": "2026-06-23-training-activity-export",
+    "schemaVersion": "2026-09-03-habit-day-status-export",
     "user": {
       "id": "user-id",
       "email": "swimmer@example.com"
@@ -270,6 +270,18 @@
         "updatedAt": "2026-05-08T08:10:00.000Z"
       }
     ],
+    "habitDefinitions": [],
+    "habitCheckIns": [],
+    "habitDayStatuses": [
+      {
+        "id": "absence-review-row-id",
+        "reviewScope": "weekly_absence_review",
+        "reviewDate": "2026-09-01",
+        "dayStatus": "not_tracked",
+        "createdAt": "2026-09-03T08:00:00.000Z",
+        "updatedAt": "2026-09-03T08:00:00.000Z"
+      }
+    ],
     "workouts": [],
     "trainingActivityEvents": [],
     "providerConnections": [],
@@ -280,7 +292,8 @@
 ```
 
 - `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
-- `habitDefinitions` and `habitCheckIns` are owner-private data-rights evidence. The export preserves stable Habit IDs, titles, notes, child history, and raw `habitType`, `habitMode`, and definition `status` values 1:1, including values that the current app does not yet support. The fail-closed runtime classifier must not normalize, omit, or relabel these rows, and this compatibility behavior does not change the export schema version or shape.
+- `habitDefinitions`, `habitCheckIns`, and `habitDayStatuses` are owner-private data-rights evidence. The export preserves stable Habit IDs, titles, notes, child history, and raw definition/day-status machine values 1:1, including values that the current app does not yet support. `habitDayStatuses` contains only non-null whole-day statuses with row ID, review scope/date, raw status, and timestamps; acknowledgement-only rows are omitted and no check-in is fabricated. The additive list changes the export shape and is reflected in `schemaVersion`.
+- During rollout, a missing acknowledgement table or `day_status` column yields `habitDayStatuses: []`; any other status query failure fails the export instead of silently dropping canonical owner history.
 - Raw unsupported Habit values are an authenticated-export exception. Normal Habits, Home/My Routines, Calendar, Micro Session credit, analytics, and routine logs use only supported semantics or bounded review/error keys; they never copy raw unknown values from this export contract.
 - `trainingActivityEvents` contains private canonical activity-history foundation rows and compatibility aliases only. It never includes raw provider files, OAuth tokens, raw provider payloads, cookies, IP addresses, User-Agent strings, or full provider responses.
 - Generic training activity rows are not Calendar completion truth, Perfect Day truth, analytics KPI truth, or automated replanning truth unless a later slice explicitly maps the row and its source/sport/status. Calendar Trends Swimming counts only trusted manual swimming activity-history rows through this explicit mapping; unknown, unmapped, unsupported, duplicate, orphaned, schema-drift, provider-evidence-only, non-swim, and needs-review rows stay out of swim Trends and completion totals.

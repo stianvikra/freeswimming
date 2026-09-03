@@ -16,15 +16,15 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-09-03`
-- `base`: clean synced `main@5d12445b`
+- `base`: clean synced `main@4d874404` after repo-managed Child AA closeout PR `#1252`
 - `audit_status`: `ready`
-- `decision`: Keep this as the canonical Habits/Micro Sessions parent. Child AA shipped H-080 through PR `#1251`, squash commit `5d12445b`; no Habits child is active, planned, selected, or recommended.
-- `reason`: Child AA replaced silent coercion of unknown persisted or explicitly supplied definition `habit_type`, `habit_mode`, and `status` values with one shared fail-closed boundary. Unsupported rows are read-only and diagnosable, excluded from success-bearing summaries, blocked from direct Habit writes and new linked credit, and preserved with raw private export evidence. H-081 remains a separate legacy-compatibility audit for category/operator/unit/cadence/schedule/target fallbacks; H-071 still needs a product decision, H-074 needs measured performance evidence, and H-072/H-073/H-075 remain lower-risk browser/analytics compatibility candidates. A fresh audit and explicit owner selection are required before any next child.
-- `recommended_child`: `none`
+- `decision`: Keep this as the canonical Habits/Micro Sessions parent while Child AB is the only selected active child for H-082, an explicit reversible `not_tracked` review-day status.
+- `reason`: The current server-canonical acknowledgement only records `status = reviewed` and affects prompt visibility, while zero-action days continue to be derived as missed and quit days continue to be derived as clear. Child AB separates workflow acknowledgement from a new nullable day classification, makes its metric and check-in precedence explicit across Habits, Calendar, Motivation, and Trends, and keeps all older-week/all-history discovery outside the slice as H-071. H-081 remains a separate definition compatibility audit; H-072/H-073/H-075 and H-074 remain separate browser/analytics and performance candidates.
+- `recommended_child`: `none while Child AB is active`
 - `planned_child`: `none`
-- `selected_child`: `none`
-- `closed_children`: `Micro Sessions recurring Habit runtime done at docs/task-briefs/done/2026-06-08-aw-006-micro-sessions-recurring-habit-runtime-10-10.md via PR #1017/#1018; Habits timer completion polish done at docs/task-briefs/done/2026-06-08-aw-006-habits-timer-completion-copy-polish-10-10.md via PR #1019/#1020; Child S done at docs/task-briefs/done/2026-06-14-aw-006-habits-tracking-mode-catch-up-recovery-assistant-10-10.md; Child T deferred at docs/task-briefs/deferred/2026-06-15-aw-006-habits-setup-guide-tracking-mode-intent-10-10.md; Child U done at docs/task-briefs/done/2026-06-17-aw-006-habits-recovery-review-ux-10-10.md via PR #1147; Child V done at docs/task-briefs/done/2026-06-17-aw-006-habits-date-first-absence-review-10-10.md via PR #1151; Child W done at docs/task-briefs/done/2026-06-24-aw-006-habits-review-trust-count-ux-10-10.md via PR #1235; Habits Review Fatigue And Count Prefill follow-up done at docs/task-briefs/done/2026-06-25-habits-review-fatigue-count-prefill-10-10.md via PR #1237/#1238; Child X done at docs/task-briefs/done/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md via PR #1248 with repo-managed closeout PR #1249; Child AA done at docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md via PR #1251, squash commit 5d12445b`
-- `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, definition parser/partition/type-mode-status contracts, protected Habits writes, linked Micro Session credit, private user export, `habits_viewed`, habits API/storage/local timer contracts, cadence/check-in/timer behavior, absence review acknowledgement storage, local timezone/today rules, weekly overview labels, My Routines/Home Habits entrypoints, Calendar daily layers/comparison/month grid/week total/unsupported gates, Help/Guide/support rules, benchmark assumptions about habit apps, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before selecting a child brief.
+- `selected_child`: `Child AB at docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md for H-082 only`
+- `closed_children`: `Micro Sessions recurring Habit runtime done at docs/task-briefs/done/2026-06-08-aw-006-micro-sessions-recurring-habit-runtime-10-10.md via PR #1017/#1018; Habits timer completion polish done at docs/task-briefs/done/2026-06-08-aw-006-habits-timer-completion-copy-polish-10-10.md via PR #1019/#1020; Child S done at docs/task-briefs/done/2026-06-14-aw-006-habits-tracking-mode-catch-up-recovery-assistant-10-10.md; Child T deferred at docs/task-briefs/deferred/2026-06-15-aw-006-habits-setup-guide-tracking-mode-intent-10-10.md; Child U done at docs/task-briefs/done/2026-06-17-aw-006-habits-recovery-review-ux-10-10.md via PR #1147; Child V done at docs/task-briefs/done/2026-06-17-aw-006-habits-date-first-absence-review-10-10.md via PR #1151; Child W done at docs/task-briefs/done/2026-06-24-aw-006-habits-review-trust-count-ux-10-10.md via PR #1235; Habits Review Fatigue And Count Prefill follow-up done at docs/task-briefs/done/2026-06-25-habits-review-fatigue-count-prefill-10-10.md via PR #1237/#1238; Child X done at docs/task-briefs/done/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md via PR #1248 with repo-managed closeout PR #1249; Child AA done at docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md via PR #1251, squash commit 5d12445b, with repo-managed closeout PR #1252`
+- `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, definition parser/partition/type-mode-status contracts, protected Habits writes, linked Micro Session credit, private user export, `habits_viewed`, habits API/storage/local timer contracts, cadence/check-in/timer behavior, absence-review acknowledgement or day-status storage, review candidate derivation, local timezone/today rules, weekly overview labels, My Routines/Home Habits entrypoints, Calendar daily layers/comparison/month grid/week total/unsupported gates, Motivation/Trends percentage or coverage contracts, Help/Guide/support rules, benchmark assumptions about habit apps, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before selecting a child brief.
 
 ## Goal
 
@@ -40,9 +40,17 @@ Utenfor scope her er produktkode, databaseendringer, UI-endringer, screenshots, 
 
 Fremoverkompatibilitet: nye Habits-child briefs skal bruke denne parenten som kilde, oppdatere resolved/deferred status tilbake hit, og sikre at nye habit modes, labels, statuses, timer-kilder og historikkverdier enten flyter gjennom typed contracts/view-models eller krever eksplisitt mapping. Ukjente verdier skal ikke tolkes som en kjent suksess-status.
 
+## Current Active Child Slice (2026-09-03)
+
+- `recommendation/status`: Child AB for H-082 is active at `docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` on `codex/aw-006-habits-absence-review-not-tracked-status`; it is the only selected Habits child.
+- Hva: add a separate nullable `day_status = not_tracked` classification to the existing server-canonical absence-review acknowledgement identity. The user can mark one review date or all currently visible review dates, undo the classification, and later override it with any real supported check-in.
+- Hvorfor: a day with no recorded data must not silently become Done, Missed, Rest day, Slip, Perfect Day, or a clear Quit day. Performance percentages must use known data while a separate coverage value discloses how much of the possible range is actually included.
+- Utenfor scope: H-071 cross-week/all-history discovery, aggregate queue, or bulk action; H-074 history-read redesign; H-072/H-073/H-075 browser/analytics cleanup; H-081 definition fallback; reminders; broad Calendar redesign; new Habit semantics; or any further child without explicit owner execution.
+- Fremover: workflow acknowledgement (`status = reviewed`) and day classification (`day_status`) stay separate typed contracts. Day-status/state labels derive from one shared mapping; review action copy requires an explicit UI, analytics, accessibility, test, and support update. A new day/review status requires explicit schema, generated type, domain, consumer, analytics, export, test, and support mapping; unknown values never inherit `not_tracked`, reviewed, missed, or success semantics.
+
 ## Latest Completed Child Slice (2026-09-03)
 
-- `recommendation/status`: Child AA for H-080 completed at `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` through PR `#1251`, squash commit `5d12445b`; no next Habits child is selected or recommended.
+- `completion/evidence`: Child AA for H-080 completed at `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` through PR `#1251`, squash commit `5d12445b`, and repo-managed closeout PR `#1252`.
 - Hva: én delt type/mode/status-grense klassifiserer ukjente definisjoner som ustøttede. Habits viser dem skrivebeskyttet som `Needs review`; Today/Home, Calendar, Motivation, analytics og linked Micro credit holder dem utenfor suksess; direkte skriveruter avviser deterministisk; privat eksport beholder rå maskinverdier.
 - Hvorfor: en fremtidig eller delvis utrullet verdi kan ikke lenger bli tolket som en gyldig aktiv Do-habit og stille endre progresjon, streaks, Calendar eller analytics.
 - Utenfor scope: H-081 category/operator/unit/cadence/schedule/target-fallback, H-071–H-075, nye habit-semantikker eller labels, databasemigrasjon, admin-reparasjon, eksportformatendring og bred redesign.
@@ -50,7 +58,7 @@ Fremoverkompatibilitet: nye Habits-child briefs skal bruke denne parenten som ki
 
 ## Fresh Open-Findings Audit (2026-09-03)
 
-| Finding | Current evidence on `main@5d12445b` | Fresh disposition |
+| Finding | Current evidence on `main@4d874404` | Fresh disposition |
 | ------- | ------------------------------------ | ----------------- |
 | H-071 | `loadHabitSnapshot` and `HabitPerfectDayHub` still derive absence-review rows from the selected ISO-week snapshot. A true all-history backlog would reuse today's mutable definition against old dates and widen the already-deep read. | Keep as a product decision. If selected later, prefer a separate rolling recent-local-days contract instead of an unbounded backlog; do not combine with H-074. |
 | H-072/H-073 | Home still publishes `#add-habit`, the component opens it from the first-load hash, and current e2e checks only the href without clicking through and proving the form. My Routines currently links to the generic Habits route, so H-072 is a Home entrypoint gap, not a shared Home/My Routines hash contract. Primary add/check-in/review/date navigation browser coverage remains thin. | Keep as later Child Y browser hardening. Correct H-072 wording and do not mix it with definition data integrity. |
@@ -58,12 +66,13 @@ Fremoverkompatibilitet: nye Habits-child briefs skal bruke denne parenten som ki
 | H-075 | Only `habit_catch_up_assistant_shown` is still emitted; four other `habit_catch_up_*` names are retained only in the allowlist/tests, while current review actions use `habit_absence_review_*`. Renaming the emitted ID would split existing raw event history. | Keep as a later bounded compatibility/docs decision: retain the stable machine ID with current semantic documentation, and mark the unused names historical/deprecated unless a measured analytics need justifies a new canonical event. |
 | H-080 | PR `#1251` / `5d12445b` shipped one shared supported/unsupported boundary for stored and input `habit_type`, `habit_mode`, and definition `status`; read consumers exclude unsupported rows from success, Habits exposes read-only review, protected writes fail closed, linked Micro truth stays independent, and private export preserves raw values. | Resolved by Child AA at `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md`. |
 | H-081 | Category, target operator/unit, cadence period/day policy, and schedule normalization still include legacy fallbacks; Calendar Plan partially partitions cadence before the shared mapper, while other consumers do not. Child AA intentionally preserved these fields. | Keep as a separate compatibility audit. A later owner-selected child must distinguish intentional legacy compatibility from unknown future values before changing runtime or persistence. |
+| H-082 | `habit_absence_review_acknowledgements` records only workflow `status = reviewed`; the selected-week review can close zero-action dates but cannot explicitly say the whole local day was not tracked. Those dates still enter derived missed/Perfect Day/consistency truth, and Quit mode still treats every non-slip date as clear. Calendar, Motivation, and Trends do not read review-day state. | Active Child AB implements the bounded reversible server-canonical day classification, separate check-in/workflow acknowledgement, known-data performance, coverage, streak boundary, Calendar/Motivation/Trends, export, override, rollback, and unknown-status contracts. H-071 older-week/all-history review discovery stays separate. |
 
-External habit-app sources were not refreshed because the recommended slice changes no schedule, motivation, rest/skip, backfill, history-feature, or recovery-product semantics. The relevant evidence is the current repository contract.
+External habit-app sources were refreshed for H-082 because it changes recovery/history semantics. Habitify and Productive both expose explicit, reversible past-day states, but their `Skip` behavior is intentionally different: FreeSwimming `not_tracked` means evidence is unknown and must neither protect a streak nor count as rest/success. The current repository contract remains authoritative for exact implementation semantics.
 
 ## Latest Closed Child Slice (2026-09-03)
 
-`Child AA: Habits Type/Mode/Status Fail-Closed` shipped at `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` through PR `#1251`, squash commit `5d12445b`. H-080 is resolved and the queue has no selected Habits child.
+`Child AA: Habits Type/Mode/Status Fail-Closed` shipped at `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` through PR `#1251`, squash commit `5d12445b`. H-080 is resolved.
 
 - Hva ble gjort: Stille tolkning av ukjent lagret eller eksplisitt innsendt `habit_type`, `habit_mode` og definisjons-`status` ble erstattet med én delt H-080-grense. Ukjente rader vises skrivebeskyttet som `Needs review`, beholder stabil ID/tittel/rå maskinverdier for privat eksport og support, og holdes utenfor aktive/arkiverte suksessbærende samlinger og due/done/Perfect Day/streak/Motivation/Calendar-tellinger. Direkte Habit-oppdatering, check-in og reset avviser samme ustøttede definisjon; en gyldig Micro Session kan fortsatt lagres, men ny Habit-kreditering blokkeres med null Habit-write.
 - Hvorfor det betyr noe: En ukjent fremtidig eller delvis utrullet verdi kan ikke lenger se ut som en gyldig aktiv Do-habit og stille endre progresjon, streaks, Calendar eller analytics. Trygg avvisning beskytter tilliten samtidig som support kan finne raden uten å slette eller omskrive historikk.
@@ -168,6 +177,7 @@ Child AA closeout evidence:
 | H-079 | Habit create/update validated `startDate <= selectedDate`, but `selectedDate` was client-controlled and was not independently bounded by the server's effective local `today`.                                                                               | An authenticated client could submit both values in the future and create or move a habit start date beyond the real local day, weakening history and future-write invariants.                                                | Resolved by Child X in PR `#1248`: the same server-controlled local-day boundary now protects definition start dates with negative route/domain coverage.                                                      |
 | H-080 | Unknown persisted or explicitly supplied habit definition `habit_type`, `habit_mode`, and `status` values previously could be coerced into known success-bearing values. | A future or partially deployed definition value could be shown, mutated, linked, created, and counted as a known active Do habit instead of failing closed. | Resolved by Child AA in PR `#1251`, squash commit `5d12445b`; the completed brief is `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md`. |
 | H-081 | Other persisted definition semantics still have legacy/fallback normalization: unknown category becomes `other`, operator becomes `at_least`, unit becomes `null`, and cadence/day-policy/schedule values can derive legacy defaults; Calendar Plan retains a partial cadence partition. | A future value can be interpreted or excluded differently across Habits, Today/Home, Calendar Plan/Trends, and exports; a blanket fail-closed change could also break intentional legacy-row compatibility. | Separate residual compatibility audit. Child AA supplied an extensible boundary for type/mode/status while intentionally preserving current category/operator/unit/cadence behavior; it did not claim the complete definition contract is closed. |
+| H-082 | A zero-action review date can only be acknowledged as `reviewed`; the user cannot explicitly and reversibly say that the whole local day was not tracked. | The date still looks like derived Missed/failed Perfect Day and can count as a clear Quit day, so percentages, streaks, Calendar, Motivation, and Trends can claim evidence the user never recorded. | Active Child AB adds a separate nullable `day_status = not_tracked` classification on the existing acknowledgement identity, one-day and visible-week bulk marking plus Undo, later supported check-in precedence, and explicit H-071 older-week/all-history exclusion. |
 
 ## Current Audit Coverage Matrix
 
@@ -187,6 +197,7 @@ Use this matrix before creating or executing any new Habits child. H-067/H-068/H
 | H-079 definition date guard  | Add/Edit cannot choose a start date after effective local `today`.                                          | Quick-create paths use the same server boundary.                                       | Calendar never receives a definition whose start date was accepted through a client-selected future day.                 | Protected create/update routes bound start date independently of client `selectedDate`. | API/support docs state the local-date rejection contract if user-visible.                           | Domain and protected-route negative tests for matching future `startDate` + `selectedDate`.                            |
 | H-080 unknown definitions    | Unknown definition mode/type/status renders read-only unsupported/review, not as a known active Do habit.   | Today/Home excludes unsupported definitions from success counts and exposes generic review instead of false setup/done state. | Calendar Plan/Trends excludes unsupported definitions plus their check-ins/resets from mapped counts and exposes review state. | Shared read adapter and direct update/check-in/reset guards fail closed; Micro truth stays independent, new credit is blocked, and exact source-backed undo may retract its prior credit. | Private export preserves raw values; support gets a safe diagnostic; analytics/logs never receive raw unknown values or titles. | Future-value fixtures across definition view, snapshot/summaries, protected routes, linked credit/retraction, Today/Home, Calendar Plan/Trends, export, analytics, component, and support contract. |
 | H-081 remaining definition fallback | Later audit must distinguish intentional legacy null/default compatibility from unknown future category/operator/unit/cadence/schedule/target values. | Today/Home must eventually share the resulting classification. | Preserve Calendar Plan's existing cadence gate until a later shared contract supersedes it. | No H-081 mutation or migration change in Child AA; later work must classify success-bearing versus display-only fields first. | Export keeps raw values; support/analytics behavior requires a later explicit mapping decision. | Deferred with rationale in Child AA; later audit needs legacy fixtures plus unknown non-null/malformed future-value fixtures. |
+| H-082 explicit not-tracked day | Review shows separate one-day and visible-days actions, undo, truthful selected-week scope, and `Not tracked` instead of a false `0%`/miss. | Today/Home must not gain success or failure from the marker; later check-in uses normal truth. | Calendar, Motivation, and Trends exclude unknown units from performance, expose coverage/not-tracked count, and treat the date as a neutral streak boundary. | Persist on the owner/date/scope acknowledgement row without a check-in; server derives exact visible candidates; batch is atomic/idempotent; any supported check-in clears the marker. | Private export carries bounded status rows; day-state labels use one mapping while action copy follows an explicit update path; unknown statuses fail closed; support explains scope, undo, and override. | Domain/route/RLS/check-in/Micro override, summary/Calendar/Trends/export/analytics/component/e2e tests plus owner-approved after/reference screenshots and rollback evidence. |
 
 ## Current Habits Invariants
 
@@ -203,6 +214,12 @@ Use this matrix before creating or executing any new Habits child. H-067/H-068/H
 - Unknown definition modes/types/statuses must not be coerced into known success-bearing values or accepted by direct definition/check-in/reset mutations or new linked credit; exact provenance-safe retraction of an existing Micro-derived credit remains allowed on undo. Child AA closed this H-080 gap in PR `#1251`.
 - Raw unsupported definition values may remain in the private user export and a bounded support diagnostic, but must not be emitted to analytics or normal logs.
 - Child AA closeout does not claim that category/operator/unit/cadence/schedule/target fallback is fully solved; H-081 retains that legacy-versus-future mapping audit.
+- Workflow acknowledgement and day classification are different truths: `status = reviewed` may close a prompt, while only an explicit supported `day_status = not_tracked` may exclude that whole local date from evidence-bearing metrics.
+- `not_tracked` creates no `habit_check_ins`, is neither Done, Missed, Rest day, Slip, Perfect Day nor a clear Quit day, contributes no timed/count/source totals, and never changes `lastTrackedDate`.
+- Performance over a range uses only known evaluation units; coverage separately reports `included known units / potential units`. With zero included units, the result is `No tracked data`, never `0%` or `100%`.
+- A `not_tracked` date is a neutral hard streak boundary: it earns and protects no streak, is not labelled a failure, and a streak cannot bridge unknown evidence. Any later supported check-in wins and clears the marker; clearing that check-in must not silently resurrect the old marker.
+- Weekly/monthly any-day periods remain success when recorded check-ins already meet the target; otherwise unknown dates make the period unknown only when they could change the result. If the target is mathematically unreachable even with all unknown dates, the period may remain missed.
+- Child AB may create markers only for server-derived review candidates currently visible in the selected ISO week. H-071 owns any discovery or queue expansion into older weeks/all history; bounded consumers must still honor an already stored marker when their selected range includes it.
 - Every changed Habits child must prove the affected object level: habit definition, check-in, period summary, review acknowledgement, reset boundary, or derived view model.
 
 ## External Habit-App Audit Snapshot
@@ -213,8 +230,8 @@ Use official or primary sources where possible when refreshing this audit.
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Streaks, `https://streaksapp.com/`                                                                                                                                                                                                                                                                                                               | Streaks are core, but schedules can be daily, specific weekdays, or weekly counts; some goals can be auto-tracked through Health. | Keep streaks, but make schedules explicit and avoid hard daily assumptions.                                                                             |
 | Habitify progress, `https://habitify.me/onboarding-instruction/progress`                                                                                                                                                                                                                                                                         | Progress is summarized by day/week/month/year and includes average completion, total completed, and skipped.                      | Our history should separate today, period, and long-range views.                                                                                        |
-| Habitify streak/skip, `https://habitify.me/onboarding-instruction/start-a-streak` and `https://www.habitify.me/es/onboarding-instruction/use-skip`                                                                                                                                                                                               | Streaks are motivating, and Skip protects streaks when life interrupts.                                                           | Rest/skip should be a first-class non-failure state, not hidden in copy.                                                                                |
-| Productive stats/backfill/vacation, `https://support.productiveapp.io/hc/en-us/articles/26920754719633-How-to-read-statistics`, `https://support.productiveapp.io/hc/en-us/articles/26920673789585-How-to-mark-habits-for-previous-days`, `https://support.productiveapp.io/hc/en-us/articles/35968324455953-Vacation-mode-how-to-pause-a-habit` | Shows perfect days, current streak, totals, average per day; supports editing previous days and vacation mode.                    | Backfill, pause/rest, and multiple summary metrics are expected in strong habit products.                                                               |
+| Habitify streak/skip, `https://habitify.me/onboarding-instruction/start-a-streak` and `https://habitify.me/onboarding-instruction/use-skip`                                                                                                                                                                                                      | Streaks are motivating, and explicit Skip protects streaks when life interrupts.                                                  | Rest/Skip must remain distinct from FreeSwimming `not_tracked`, which means evidence is unknown and cannot protect or extend a streak.                   |
+| Productive stats/backfill/vacation/undo, `https://support.productiveapp.io/hc/en-us/articles/26920754719633-How-to-read-statistics`, `https://support.productiveapp.io/hc/en-us/articles/26920673789585-How-to-mark-habits-for-previous-days`, `https://support.productiveapp.io/hc/en-us/articles/35967057602065-How-to-mark-a-habit-as-done`, `https://support.productiveapp.io/hc/en-us/articles/35968324455953-Vacation-mode-how-to-pause-a-habit` | Shows perfect days, current streak, totals, average per day; supports editing previous days and undoing Done/Skip.                 | Past-day correction and reversibility are expected, but FreeSwimming must keep a whole-day unknown marker separate from per-habit Done/Rest evidence. |
 | Productive delete/history, `https://support.productiveapp.io/hc/en-us/articles/35968663947537-How-to-delete-habit-or-reset-data`                                                                                                                                                                                                                 | Can delete while keeping history.                                                                                                 | Archive/delete semantics must preserve user trust in history.                                                                                           |
 | Loop Habit Tracker, `https://play.google.com/store/apps/details?id=org.isoron.uhabits&hl=en_US&gl=US`                                                                                                                                                                                                                                            | Combines streaks with habit strength, detailed charts, complete history, flexible schedules, privacy, and export.                 | Useful inspiration for not letting one missed day erase all progress, but Freeswimming avoids black-box score copy in the top-level Motivation surface. |
 | ChainIt, `https://www.chainit.store/`                                                                                                                                                                                                                                                                                                            | One-tap tracking, 365-day grid, edit previous dates, weekly/monthly/yearly metrics, local data/export.                            | Useful simple-history reference, but lower priority than the larger established apps above.                                                             |
@@ -226,8 +243,9 @@ Use official or primary sources where possible when refreshing this audit.
   - per-habit Details should show each habit's own days hit, current streak, best streak, and consistency;
   - for quit habits, show both clear-day consistency and current streak after slip recovery.
 - Status model:
-  - distinguish `done`, `partial`, `missed`, `rest`, `slip`, `manual time`, `timer time`, `backfilled`, and `archived`;
+  - distinguish `done`, `partial`, `missed`, `rest`, `slip`, `not_tracked`, `manual time`, `timer time`, `backfilled`, and `archived`;
   - do not overload `skipped` to mean every non-done state.
+  - keep review workflow acknowledgement separate from a whole-day evidence classification; do not store `not_tracked` as a synthetic per-habit check-in.
 - Timed habits:
   - one visible source of truth for today's total;
   - manual time is an absolute external source, not an additive command;
@@ -289,6 +307,7 @@ Use official or primary sources where possible when refreshing this audit.
 | Child Y: Habits Flow Coverage And Contract Drift                       | Unselected later candidate for H-072, H-073, and the remaining H-075 compatibility decision. A future owner-selected slice may add focused browser coverage for the Home hash entry plus add/check-in/review/date navigation; it should retain and document the still-emitted `habit_catch_up_assistant_shown` machine ID, mark the four non-emitted legacy names historical/deprecated, and prove at least one non-skipped authenticated Playwright run. My Routines keeps its generic Habits route.                                                                                                                                                                                                                                                                                                                  | New product behavior beyond what tests document, My Routines IA changes, database/rollup migrations, changes to the completed Child X local-day or Child AA fail-closed contracts, or broad visual redesign.                                                                                                                                                |
 | Child Z: Habits Snapshot History Performance                           | Unselected candidate for H-074. A future owner-selected slice may bound default Habits snapshot reads or split deep history into explicit views, with measured evidence that long histories do not slow routine Habits, Today/Home, or Calendar entrypoints.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | UX copy, review acknowledgement semantics, timezone decisions, or new history dashboard features unless explicitly selected.                                                                                                                                                                                                                              |
 | Child AA: Habits Type/Mode/Status Fail-Closed                          | Done in PR `#1251`, squash commit `5d12445b`: `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` closed H-080. It replaced silent coercion of unknown stored or explicitly supplied `habit_type`, `habit_mode`, and definition `status` with one shared supported/unsupported boundary. Unsupported rows remain read-only and diagnosable on Habits, preserve stable identity/raw private export values, and are excluded from success-bearing counts. Direct update/check-in/reset fail closed; valid Micro truth remains independent, new linked credit is blocked, and exact source-backed undo may retract only its prior credit. Today/Home, Calendar Plan/Trends, `habits_viewed`, export, support, tests, and approved screenshots prove the same contract. | Adding a new product type/mode/status, relabeling current values, changing known completion semantics, DB constraint migration, H-081 category/operator/unit/cadence/schedule/target fallback repair, H-071 through H-075, analytics taxonomy rename, performance/timezone work, broad UI redesign, or export-format redesign. |
+| Child AB: Habits Absence Review Not-Tracked Day Status                 | Active at `docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` for H-082 only. It implements nullable `day_status = not_tracked` on the existing owner/scope/date acknowledgement row; explicit one-day, visible-week bulk, and Undo actions; supported-check-in precedence; known-data performance plus separate coverage; neutral streak boundaries; truthful Habits, Calendar, Motivation, Trends, analytics, export, support, test, screenshot, and rollback contracts. | H-071 older-week/all-history discovery or queue expansion, H-074 history-read redesign, H-081 definition fallback work, H-072/H-073/H-075 flow/analytics work, per-habit unknown states, new Rest/Skip semantics, broad Calendar redesign, reminders, hard delete, or any further child without fresh owner scope. |
 
 Child A outcome: PR `#977` shipped `docs/task-briefs/done/2026-06-03-aw-006-habits-tracking-semantics-and-motivation-10-10.md`. The parent intake is again the return target; later Habits children require explicit owner selection after a fresh queue/design/code re-audit.
 
@@ -405,6 +424,7 @@ It closed read-only Habits motivation/history depth: compact total Motivation su
 | H-079 | Resolved in Child X / PR `#1248`                                    | `docs/task-briefs/done/2026-08-31-aw-006-habits-canonical-local-day-boundary-10-10.md` independently bounds definition start dates against server-derived effective local `today` and covers matching-future-value bypass attempts.                                                                                                                                                                                                                                                                                                                                       |
 | H-080 | Resolved in Child AA / PR `#1251`                                    | `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` shipped stored/input type-mode-status classification, direct Habit write guards, independent Micro truth plus credit/retraction rules, all read consumers, export/privacy, support, tests, and approved screenshots as commit `5d12445b`. |
 | H-081 | Separate residual definition-contract audit                          | Fresh audit confirms other definition fields retain legacy/default normalization and Calendar-only partial gating. Child AA explicitly preserved and deferred these fields; later work must classify intentional legacy compatibility before changing runtime or persistence.                                                                                                                                                                                                                                                                                              |
+| H-082 | Active Child AB; selected for implementation                          | `docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` owns only the explicit reversible whole-day `not_tracked` classification, its exact metric/consumer fallout, one/visible-week bulk/Undo actions, and later check-in override. H-071 remains the separate older-week/all-history product decision. |
 
 ## Return Contract
 
@@ -445,10 +465,15 @@ Before moving any child to `in-progress`, Codex must perform and record:
    - `app/api/my-library/habits/route.ts`
    - `app/api/my-library/habits/[habitId]/route.ts`
    - `app/api/my-library/habits/check-ins/route.ts`
+   - `app/api/my-library/habits/absence-review/route.ts`
+   - `app/api/user/export/route.ts`
+   - `lib/dryland/micro-habit-linkage.ts`
    - `lib/my-library/today.ts`
    - `lib/my-library/calendar.ts`
    - `lib/my-library/calendar-daily-layers.ts`
    - `lib/my-library/calendar-comparison.ts`
+   - `supabase/migrations/20260624130000_habit_absence_review_acknowledgements.sql`
+   - `types/database.ts`
    - `components/SiteChrome.tsx` if admin-notes spacing is in scope
    - `components/my-library/TodayTabsPanel.tsx` and Home/My Routines entrypoints if cadence/done-period behavior is in scope
    - `tests/unit/habits.test.ts`
@@ -456,6 +481,7 @@ Before moving any child to `in-progress`, Codex must perform and record:
    - `tests/unit/habits-routes.test.ts`
    - `tests/unit/my-library-today.test.ts`
    - `tests/unit/my-library-calendar-daily-layers.test.ts`
+   - Calendar comparison, private export, and linked Micro Session tests when review-day evidence changes.
    - `tests/e2e/my-library-habits.spec.ts`
    - `docs/api-contracts.md`
    - `docs/user-flow-map.md`
@@ -498,21 +524,32 @@ Completed Child AA domain granularity:
 | Analytics and private export | `reconcile` safe count versus raw private portability | Analytics/logs omit raw unknown values/titles; private export preserves the existing raw machine fields and shape. |
 | Remaining definition semantics | `defer` H-081 | Category/operator/unit/cadence/schedule/target legacy/default behavior is not changed or claimed complete by Child AA. |
 
+Active Child AB domain granularity:
+
+| Level | Active H-082 operation | Explicit boundary |
+| ----- | ----------------------- | ----------------- |
+| Review-day workflow row | `view`/`edit` one stable owner/scope/date row; add or clear nullable `day_status` while retaining workflow `status = reviewed` | `not_tracked` classifies the whole local date as unknown evidence. Undo clears only `day_status`; neither action creates or deletes a Habit check-in or reopens the review prompt. |
+| Visible review set | `view` one date at a time and `edit` one or all currently visible candidates | Server recomputes the exact selected-ISO-week zero-action candidate set; bulk is one atomic idempotent batch of at most seven past dates. H-071 older-week/all-history discovery is not supported. |
+| Habit check-in child rows | `reconcile` precedence after manual, timer, Rest, Slip, or linked Micro writes | Any later supported owner/date check-in wins and atomically clears `day_status`; stale readers also prefer check-in evidence. Clearing that check-in never resurrects the old marker. |
+| Day/period projections | `view` known performance, separate coverage, and not-tracked count across Habits, Calendar, Motivation, and Trends | Unknown dates contribute no success/failure/rest/slip/clear-Quit evidence and are neutral hard streak boundaries. Bounded readers honor existing markers inside their normal selected range without discovering an all-history queue. |
+| Export/analytics/support | `view` bounded private portability and safe public telemetry | Export includes only rows with a non-null day classification; analytics uses bounded mapped action/status values and never habit titles/notes/raw unknown status; support can diagnose scope, undo, and override. |
+
 ## Skill / Stack Readiness Radar (2026-09-03)
 
 - Available local/session capability: repo Vitest/route/domain tests, installed Playwright/browser tooling, and the existing screenshot-handoff runbooks. No plugin, skill, dependency, or local Codex configuration change is needed; session capability is not repo state.
-- Relevant stack surface: shared TypeScript discriminants/parsers, Habits server snapshot partitioning, protected route guards, linked Micro Session credit, React reference-surface review state, Today/Home and Calendar adapters, privacy-safe analytics, private export preservation, and support diagnostics.
-- Official provider/framework refresh was not needed for the parent-only audit. Child AA used local Next.js 16 guidance and introduced no schema/RLS migration.
+- Relevant stack surface for active Child AB: additive Supabase migration and owner-only RLS, generated types, exact server-derived review candidates, transactional check-in precedence across API and linked Micro writers, shared day/period view models, React review actions, Calendar/Motivation/Trends bounded readers, private export, privacy-safe analytics, support docs, and screenshot evidence.
+- Execution reviewed the local Next.js 16 route-handler, server/client-component, and caching guides plus the current repository Supabase migration/RLS pattern. The isolated local PostgreSQL smoke validates the transaction/RLS shape; no dependency or external service was added.
 
 | Surface | Finding | Severity | Recommended Type | Owner Decision Needed | Follow-Up Brief Path |
 | ------- | ------- | -------- | ---------------- | --------------------- | -------------------- |
 | Habit type/mode/status read + write boundary | H-080 previously allowed unknown core definition values and protected writes to inherit known behavior; PR `#1251` now fails closed. | `resolved` | `bounded implementation child` | `no`: Child AA is complete. | `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` |
+| Review-day evidence status | H-082 needs one reversible whole-day unknown state without synthetic check-ins, plus exact metric, override, privacy, export, cache, and rollback behavior. | `high` | `bounded implementation child` | `no`: owner explicitly selected Child AB and its screenshot approval stop remains. | `docs/task-briefs/in-progress/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md` |
 | Absence-review history breadth | H-071 is week-bound and an all-history interpretation is unsafe without a rolling-window/product decision and definition-history model. | `medium` | `deferred architecture decision` | `yes`: choose a bounded recent-day window versus a larger versioned-history product. | `TBD after owner decision` |
 | Remaining definition fallbacks | H-081 mixes intentional legacy/default normalization with future unknown category/operator/unit/cadence/schedule/target values. | `medium` | `deferred architecture decision` | `yes`: classify legacy compatibility and success-bearing fields before implementation. | `TBD after fresh owner decision` |
 
-Top recommended next step: complete this repo-managed docs-only closeout, sync `main`, rerun post-merge preflight, and start a fresh audit before the owner selects any later Habits child. `recommended_child`, `planned_child`, and `selected_child` are all `none`.
+Top recommended next step: complete the active Child AB implementation and stop at owner screenshot approval before pre-PR gates. `recommended_child` and `planned_child` are `none`; `selected_child` points only to Child AB.
 
-Return path: this parent remains the canonical intake; latest completed runtime PR is `#1251` at `5d12445b`, the current repo-managed docs-only closeout records its lifecycle, and no next child is selected. A fresh audit and explicit owner decision are required before another Habits child or a return to the broader AW-006 queue.
+Return path: this parent remains the canonical intake; latest completed runtime PR is `#1251` at `5d12445b` with closeout PR `#1252`, and Child AB is now active. After its implementation/merge/closeout, return here to record H-082 evidence and reassess H-071 separately.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -522,40 +559,45 @@ Critical target categories for a `10/10` claim on this planning parent:
 
 - `Product goals and IA`
 - `UX flow clarity`
+- `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Data placement and sync boundaries`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Privacy and compliance`
 - `Content governance`
+- `Analytics and KPI observability`
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
 - `DevOps and rollback readiness`
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                                    | Evidence                               | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | All Habits findings are captured, grouped into child-sized outcomes, and linked back to AW-006; exactly one owner-selected child may be active while every additional child remains unselected. | this parent + fresh audit disposition  | `5/5`                   |
-| UX flow clarity                               | `target`     | Parent defines the intended user-visible direction for timer, manual time, rest/slip, weekly completion, card hierarchy, and history before build.                                    | intake matrix + proposed child scopes  | `5/5`                   |
-| Visual design quality                         | `target`     | UI findings that require screenshots are explicitly tagged for child screenshot handoff and no visual change ships from this parent.                                                  | scope/out-of-scope + child visual gate | `5/5`                   |
-| Business logic correctness and data integrity | `target`     | Parent requires domain audit/data boundaries and records zero-success/zero-write fail-closed thresholds for unknown H-080 type/mode/status without hiding the H-081 residual.         | audit gate + Child AA closeout evidence | `5/5`                  |
+| Product goals and IA                          | `target`     | All findings remain linked to AW-006; exactly one Child AB is active for H-082, and H-071/H-074/H-081 plus other candidates remain separate.                                         | this parent + active child disposition | `5/5`                   |
+| UX flow clarity                               | `target`     | Child AB defines separate one-day, all-visible, Undo, and later-check-in override flows with truthful selected-week-only copy and no repurposed Dismiss action.                       | H-082 matrix + active child            | `5/5`                   |
+| Visual design quality                         | `target`     | Child AB must prove a neutral Not tracked state, coverage, bulk/Undo hierarchy, and 320/768/1440 layouts with 2-4 owner-approved after/reference screenshots before PR gates.          | active child visual gate               | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Child AB specifies zero synthetic check-ins and zero Done/Missed/Rest/Slip/Perfect/clear-Quit contributions, known-data denominators, separate coverage, neutral streak boundaries, and deterministic override/Undo. | H-082 invariants + active child         | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this parent changes no admin editor, CRUD, publish workflow, operator queue, or admin action surface.                                                                     | explicit admin-editor scope rationale  | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Any child UI change must preserve labels, keyboard flow, status semantics, focus visibility, contrast, and screenshot/a11y validation.                                                | child DoD requirements                 | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: parent creates no runtime payload; child briefs must avoid unnecessary client growth and set route-level impact notes when UI changes.                               | parent out-of-scope + child gate       | `4/5`                   |
-| Data placement and sync boundaries            | `target`     | Parent records required local/server/derived decisions for timers, manual time, sounds/preferences, rest/slip, history, and backfill before any child builds.                         | data placement section + child DoD     | `5/5`                   |
-| Caching and invalidation strategy             | `supporting` | Supporting only: no cache changes here; child briefs must state mutation refresh/cache behavior for changed habits reads or writes.                                                   | child audit gate                       | `4/5`                   |
-| Reliability and failure handling              | `target`     | Parent requires deterministic behavior for offline/latency/retry and avoids ambiguous timer/manual/rest/slip states before implementation.                                            | audit gate + acceptance criteria       | `5/5`                   |
-| Security and authz                            | `supporting` | Supporting only: no protected route or API changes here; child briefs touching habits APIs must preserve fail-closed auth and add negative-path tests where relevant.                 | child gate requirement                 | `4/5`                   |
-| Privacy and compliance                        | `target`     | Habits can contain sensitive quit/health behavior; raw unsupported values stay private/exportable, while analytics/logs receive no raw unknown value, title, or note.                 | privacy + forward-compat contract      | `5/5`                   |
+| Data placement and sync boundaries            | `target`     | Child AB keeps workflow `status` and nullable server-canonical `day_status` separate on one owner/date row; UI state is transient, summaries/coverage are derived, and check-in truth wins across devices. | data placement + identity contracts    | `5/5`                   |
+| Caching and invalidation strategy             | `target`     | Successful set/clear/check-in mutations must refresh every affected Habits snapshot and bounded Calendar/Motivation/Trends read; failure must not advance local truth.                | active Child AB cache thresholds       | `5/5`                   |
+| Reliability and failure handling              | `target`     | Set/clear and max-seven bulk are atomic/idempotent; stale candidates return typed conflict, schema/auth failures never become success, and retry creates no duplicate row/check-in.   | H-082 route/rollback contract          | `5/5`                   |
+| Security and authz                            | `target`     | Owner-only RLS and server-derived visible candidates must reject unauthenticated, cross-owner, invalid/future/out-of-week/partial-use writes with zero mutations.                     | migration/route negative-test plan     | `5/5`                   |
+| Privacy and compliance                        | `target`     | Day status is private behavior data; export is owner-only and bounded, while analytics/logs receive only mapped actions/counts and never titles, notes, or raw unknown values.          | privacy/export/analytics contract      | `5/5`                   |
 | Content governance                            | `target`     | Parent, AW-006 queue, and design inventory become the durable source of truth for all current and future owner Habits findings.                                                       | docs diff + brief lint                 | `5/5`                   |
-| Admin workflow and editability                | `supporting` | Supporting only: mobile contextual admin notes spacing is captured, but no admin workflow labels or operator actions change in this parent.                                           | intake H-008 + scope rationale         | `4/5`                   |
+| Admin workflow and editability                | `N/A`        | N/A because Child AB changes an authenticated end-user review/correction flow only; no admin queue, editor, support mutation, or operator action is added.                             | explicit admin-workflow rationale      | `N/A`                   |
 | SEO and crawlability                          | `N/A`        | N/A because `/my-library/habits` is private/authenticated and this parent changes no public metadata, sitemap, robots, canonical URL, or structured data.                             | private-route SEO rationale            | `N/A`                   |
 | AI discoverability                            | `N/A`        | N/A because this parent changes no crawl-safe public entity model, structured data, AI-facing page copy, or public docs surface.                                                      | AI-discoverability scope rationale     | `N/A`                   |
-| Analytics and KPI observability               | `supporting` | Supporting only: no analytics changes here; H-075 compatibility remains open and Child AA shipped H-080 active/unsupported count and raw-value exclusions.                            | fresh audit + forward-compat gate      | `4/5`                   |
+| Analytics and KPI observability               | `target`     | Child AB must preserve stable event IDs where possible, add only bounded mapped action/status/visible-count fields, avoid false success percentages, and never emit private/raw unknown values. | analytics contract + tests             | `5/5`                   |
 | Commerce and revenue ops                      | `N/A`        | N/A because this parent changes no Stripe, checkout, entitlement, catalog, portal, invoice, refund, payout, or revenue flow.                                                          | commerce scope rationale               | `N/A`                   |
-| Incident response and support operations      | `target`     | Parent requires Help/Guide/support impact decisions for workflow labels/recovery behavior and makes the return target visible in PR handoff.                                          | Return Contract + Help/Guide impact    | `5/5`                   |
+| Incident response and support operations      | `target`     | Support docs must explain selected-week scope, metric/coverage meaning, undo/check-in override, schema/unsupported states, and safe diagnosis without editing user history.             | Help/support impact + child evidence   | `5/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A with scope rationale: this parent changes no billing provider data, invoice/refund path, payout, finance report, reconciliation surface, entitlement truth, or revenue operation. | explicit finance scope rationale       | `N/A`                   |
-| i18n operational readiness                    | `target`     | Parent requires child UI to avoid tight fixed-width assumptions for habit labels, chips, timer text, status copy, and longer localized strings.                                       | child visual/i18n gate                 | `5/5`                   |
-| Stack-fit and dependency discipline           | `target`     | Parent requires reusing existing Habits domain helpers, view-models, route boundaries, tests, and My Library tokens before introducing new abstractions/dependencies.                 | stack gate + child DoD                 | `5/5`                   |
-| Testing and QA automation                     | `target`     | Parent defines required unit/domain/route/consumer/export/privacy/screenshot/e2e gates, future-value fixtures, zero-write checks, and changed-brief lint.                              | validation + Child AA closeout evidence | `5/5`                  |
-| Scalability and cost efficiency               | `supporting` | Supporting only: no runtime cost here; child scopes must avoid unnecessary storage/event bloat and document cost impact for history/timeline expansions.                              | child audit gate                       | `4/5`                   |
-| DevOps and rollback readiness                 | `target`     | Parent is docs-only and rollback is normal git revert; child briefs must define migrations/flags/rollback if data semantics change.                                                   | git diff + child DoD                   | `5/5`                   |
+| i18n operational readiness                    | `target`     | `Not tracked` and unsupported day-state labels use one shared mapping; coverage, bulk, and undo action copy follow an explicit surface/i18n/accessibility update path, and all remain usable with long localized strings at 320px without relying on colour.                     | shared-label + screenshot/a11y gates   | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Child AB must reuse the acknowledgement identity, HabitPerfectDayHub, shared summaries, Calendar adapters, current routes/tokens/tests, and add no dependency or parallel renderer.   | stack gate + active child              | `5/5`                   |
+| Testing and QA automation                     | `target`     | Domain/server/route/RLS/check-in/Micro/Calendar/Motivation/Trends/export/analytics/component tests must cover set/bulk/undo/override/unknown/zero-write plus focused e2e and screenshots. | planned validation matrix              | `5/5`                   |
+| Scalability and cost efficiency               | `supporting` | Supporting only: the review mutation is capped at the visible week, bounded consumers read only selected ranges, and the design forbids N+1 queries, jobs, and all-history discovery.  | H-071 boundary + performance gate      | `4/5`                   |
+| DevOps and rollback readiness                 | `target`     | Migration is expand-first/nullable; rollback disables new writes while preserving read/clear/override and stored rows; old code may ignore the column but no down migration drops user truth. | Child AB rollout/rollback plan          | `5/5`                   |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -565,22 +607,25 @@ Critical target categories for a `10/10` claim on this planning parent:
   - Use a shared Habits view-model/helper before scattering status labels across JSX.
   - Child X shipped one server-readable request-time timezone context and one shared instant-to-local-date helper across Habits, Home/My Routines, Calendar, loaders, and write guards after reviewing the relevant Next.js 16 local request/cookie docs.
 - TypeScript/domain contracts:
-  - Audit `HabitDefinitionView`, `HabitCheckInView`, `HabitDayItem`, `HabitEvaluation`, cadence helpers, timer helpers, check-in payload validation, review acknowledgement state, Calendar count view-models, and local-date helpers before data behavior changes.
+  - Audit `HabitDefinitionView`, `HabitCheckInView`, `HabitDayItem`, `HabitEvaluation`, cadence helpers, timer helpers, check-in payload validation, review acknowledgement/day-status state, Calendar count/comparison view-models, and local-date helpers before data behavior changes.
   - Future child briefs must define explicit invariants for rest/slip/manual/backfill/status totals, review acknowledgement durability, future-date rejection, Calendar count denominators, and timezone/date boundaries when touched.
   - Child X validates IANA timezone input, keeps normalized `YYYY-MM-DD` arithmetic deterministic, and distinguishes invalid explicit input from missing-input fallback without throwing an unexpected `500`.
   - Child AA shipped one central discriminated parser/partition for exactly `habit_type`, `habit_mode`, and `status`, then passes only supported rows to the strict known-definition builder. `binary`/`build`/`active` are no longer fallbacks for those unknown values.
   - Calendar Plan composes that H-080 parser with its current cadence partition until H-081 classifies the remaining legacy/default definition fields; Child AA preserved that gate and did not claim the broader contract is complete.
+  - Active Child AB uses shared typed workflow/day-status classification and one day-status label map. The shared summary contract carries nullable performance, included/potential units, coverage, not-tracked count, and explicit unsupported/load-failure states to every consumer.
 - Supabase/data layer:
   - Parent makes no data changes.
   - Child briefs that add persistent status/source/reason/history fields must use explicit migrations, RLS/authz review, generated type updates, and negative-path tests.
   - Child X required no schema migration: `habit_check_ins.timezone` remains write provenance, not a global user-timezone preference.
   - Child AA required no migration because current constraints remain unchanged; it protects partial rollout/rollback and schema-drift reads. Any later new definition value still requires constraint/generated-type/mapping work before release.
+  - Active Child AB uses an additive nullable `day_status` constraint on the existing acknowledgement row and preserves owner-only RLS plus `(user_id, review_scope, review_date)` idempotency. A DB-level transaction lock/trigger invariant clears it for every supported check-in writer, including linked Micro credit.
 - External services/tools:
   - N/A for parent.
   - Do not add external habit services, analytics vendors, HealthKit/native integrations, or sound libraries without a dedicated child rationale.
 - UI system:
   - Reference surfaces: current token-backed `/my-library/habits` after PR `#876/#877`, `HabitPerfectDayHub` inner parity after PR `#969`, My Library token/action classes, `fs-cta-*`, `fs-library-card`, `ui-field`, and mobile action layout contract.
   - Child AA reused the existing Calendar `review needed` pattern and Habits feedback/notice language for one accessible read-only state without route-local raw-value UI.
+  - Active Child AB reuses the date-first review sequence and Calendar's neutral status language, with distinct one-day, all-visible, and Undo actions; `Not tracked` never reuses Rest/Skip styling or success/failure colour alone.
   - Child UI changes require before/after or after/reference screenshots.
 - Testing:
   - Domain tests for cadence, slip/rest, streak/consistency, manual/timer totals, and history status derivation.
@@ -590,6 +635,7 @@ Critical target categories for a `10/10` claim on this planning parent:
   - Playwright/screenshot handoff for changed mobile/desktop Habits surfaces.
   - Child X shipped deterministic UTC, Europe/Oslo midnight and DST start/end, opposite date-boundary timezone, missing/invalid timezone, future definition/check-in/review/reset, and unauthorized protected-route coverage.
   - Child AA added type-only, mode-only, status-only, and mixed future-value fixtures; direct PATCH/check-in/reset share typed `409`/`UNSUPPORTED_HABIT_DEFINITION` plus zero-write assertions, while valid Micro save/undo remains independent, new credit is blocked with zero insert, and provenance-safe undo may remove only its exact prior source credit.
+  - Active Child AB adds daily/fixed/flexible cadence, Quit, Rest, Slip, Perfect Day, zero-denominator, coverage, streak-boundary, API/Micro override and no-resurrection fixtures; set/clear/bulk/RLS/stale/schema negative paths; identical Calendar/Motivation/Trends denominators; bounded export; and an H-071 selected-week regression.
 
 ## Data Placement And Sync Contract
 
@@ -600,6 +646,7 @@ This parent changes no data. It defines required decisions for child briefs:
   - raw persisted definition machine values and stable IDs, including unsupported values that must remain available for private export/support diagnosis without being normalized into known semantics;
   - daily/period check-ins;
   - absence review acknowledgement when it controls whether a missed date appears again across sessions/devices;
+  - planned nullable absence-review `day_status` when it classifies the evidence quality for that whole local date;
   - stored `check_in_date`, `review_date`, reset `effective_date`, and definition `start_date` keys after successful validation;
   - persisted rest/slip/manual/backfill/history states if implemented;
   - any user-visible historical truth used across devices.
@@ -615,6 +662,7 @@ This parent changes no data. It defines required decisions for child briefs:
   - current streak;
   - best streak;
   - consistency percentage;
+  - included versus potential evaluation units, nullable known-data performance, coverage percentage, and not-tracked count;
   - weekly/monthly target-met state;
   - displayed total time from saved manual time plus timer time;
   - Calendar day and week count labels for habits, micro units, and swim sessions.
@@ -628,6 +676,8 @@ This parent changes no data. It defines required decisions for child briefs:
   - timezone changes affect future request interpretation only and never rewrite stored historical date keys.
   - date arithmetic on an already normalized `YYYY-MM-DD` key may remain UTC-based; only conversion from an instant to a local calendar key is timezone-aware.
   - protected PATCH/check-in/reset writes for an unsupported H-080 parent definition must return the same typed conflict and perform zero writes; linked Micro completion blocks new Habit credit without rolling back Micro truth, and undo may retract only its exact source-scoped prior credit. Reload cannot reinterpret that row as supported.
+  - Active Child AB set/clear writes are idempotent against the stable owner/scope/date row; bulk is one atomic operation over the exact server-derived visible candidate set, never an N+1 loop over arbitrary client dates.
+  - Any later supported check-in on the local date, including API/manual/timer/Rest/Slip and linked Micro credit, wins and clears `day_status` transactionally; all readers independently prefer check-in evidence. Deleting that check-in does not resurrect the marker.
 - Retention and sensitivity:
   - habit names, quit/slip data, notes, and health-adjacent behavior are private user data;
   - do not leak values to public pages, logs, or analytics payloads.
@@ -635,6 +685,7 @@ This parent changes no data. It defines required decisions for child briefs:
 - Cache/invalidation:
   - changed mutation paths must refresh the Habits snapshot deterministically and avoid stale card/history totals.
   - review acknowledgement mutations must invalidate or refresh any review prompt counts derived from the same missed dates.
+  - Child AB status set/clear and later check-in override must refresh/revalidate Habits, Calendar, Motivation, and Trends projections before success feedback; a failed refresh exposes a recoverable unavailable state, never a fabricated zero/normal metric.
 
 ## Identity And Rename Contract
 
@@ -642,6 +693,7 @@ This parent changes no data. It defines required decisions for child briefs:
   - habit rows are identified by stable habit IDs across definitions, check-ins, timers, history, notes, and future exports.
   - unsupported H-080 definitions keep the same stable habit ID and raw private export row; classification never creates a replacement identity or rewrites history.
   - check-ins, absence-review acknowledgements, and reset events retain their own stable row IDs; a date key or timezone is never an entity ID.
+  - Child AB reuses the acknowledgement stable ID and `(user_id, review_scope, review_date)` idempotency key; it does not create one status entity per habit.
 - Human-readable identifiers:
   - habit title is user-editable and not a stable identity key.
   - mode/type/cadence labels are display labels derived from typed contracts, not identity.
@@ -649,38 +701,44 @@ This parent changes no data. It defines required decisions for child briefs:
   - editing a habit keeps existing history attached unless a future child introduces explicit versioning.
   - materially repurposing a habit, for example changing `Quit sugar` into `Read pages`, should be treated as a product decision before history is reused.
   - timezone is mutable request context/provenance; travel or a changed device timezone must not mutate existing historical dates or stable IDs.
+  - acknowledgement `review_scope` and `review_date` are write-once for this identity; nullable `day_status` is intentionally reversible. Undo clears the field but keeps workflow `status = reviewed` and the row identity.
 - Compatibility contract:
   - child briefs that add status/source fields must define fallback behavior for existing check-ins.
   - unknown check-in/source/reset/linkage values already map to unsupported/not-counted behavior and must stay fail-closed.
   - unknown definition type/mode/status was the H-080 gap closed by Child AA through implementation, approved screenshots, validation, PR `#1251`, merge commit `5d12445b`, and this closeout evidence.
   - H-081 separately retains category/operator/unit/cadence/schedule/target legacy/default compatibility; Child AA did not repurpose those fields or claim them resolved.
+  - Existing acknowledgement rows with `day_status = null` retain today's workflow-only meaning and are never backfilled or reinterpreted as `not_tracked`.
+  - Unknown future workflow or day-status values fail closed into a generic bounded review/unavailable state; they never close a prompt, exclude or include a denominator, become Missed/Rest/Success, or leak as raw UI/analytics copy.
 - Observability and repair:
   - child briefs touching persistence must document how support can diagnose a user-visible mismatch between check-in rows, timer state, and displayed history.
 
 ## Forward Compatibility Contract
 
 - Extensibility surfaces:
-  - habit modes, habit types, cadence periods, cadence day policies, status labels, timer sources, manual sources, rest/slip reasons, review acknowledgement states, Calendar count denominators, timezone/date inputs, history event types, row actions, Help/Guide labels, analytics payload values, and future export fields.
+  - habit modes, habit types, cadence periods, cadence day policies, status labels, timer sources, manual sources, rest/slip reasons, review workflow statuses, review day statuses, Calendar count/coverage denominators, timezone/date inputs, history event types, row actions, Help/Guide labels, analytics payload values, and future export fields.
 - Source of truth:
   - future visible labels should derive from typed contracts/view-model helpers rather than repeated route-local strings.
   - future history should derive from server-canonical check-ins/events plus documented local-only timer state.
   - machine IDs (`habit_mode`, `habit_type`, status/event values, stable row IDs) stay separate from renameable user-facing labels.
   - raw unsupported definition values remain server-canonical/private portability data; the supported/unsupported classification is derived and must never rewrite the raw row.
+  - review workflow status and day status remain separate machine contracts; one shared day-status parser/classifier maps unsupported workflow/day inputs to the fail-closed state, and the shared day-state display mapping keeps stable machine values out of normal UI.
 - Additive behavior:
   - new rows using already supported definition contracts inherit card layout, date/week boundaries, status chips, and details behavior automatically.
   - new valid IANA zones inherit the shared instant-to-local-date behavior automatically without a hardcoded zone list.
   - new display labels for an existing stable machine value flow through the shared view-model mapping and must not rewrite IDs/history.
   - an existing stable value such as stored `build` can keep a renameable visible label such as `Do`; label-only changes do not authorize new completion semantics.
 - Explicit mapping requirements:
-  - new habit modes/types/cadences/statuses, destructive actions, event types, timer source types, rest/slip reason taxonomies, review statuses, Calendar count source changes, timezone-source priority changes, backfill semantics, reminders, exports, analytics values, or native integrations require explicit DB constraint/generated type/domain/view-model/consumer mapping, tests, and Help/Guide/support review before release.
+  - new habit modes/types/cadences/statuses, destructive actions, event types, timer source types, rest/slip reason taxonomies, review workflow/day statuses, Calendar count or coverage sources, timezone-source priority changes, backfill semantics, reminders, exports, analytics values, or native integrations require explicit DB constraint/generated type/domain/view-model/consumer mapping, tests, and Help/Guide/support review before release.
 - Unknown or deprecated values:
   - the target contract is fail-closed: show unsupported/review or block the release; do not count an unknown value as active, due, done, target-met, or streak-protecting.
   - completed H-080 transition: Child AA replaced unknown definition type/mode/status coercion with the shared fail-closed boundary for exactly those three fields; unknown check-in/source/reset values continue to fail closed.
   - current H-081 residual: other definition fields mix legacy/default normalization with future-value risk and require a later classification audit; Child AA preserved the existing Calendar cadence gate and recorded this deferral.
   - analytics/logs must never receive raw unknown definition values or private titles; private export preserves the raw row 1:1.
+  - unknown review/day-status values are preserved only in owner-private export/bounded support evidence, while normal reads fail closed and never infer reviewed, not tracked, missed, or success semantics.
 - Test/evidence:
   - child briefs must include at least one future/unknown value fixture or explicit N/A rationale when they touch status/type/action/date mapping.
   - Child AA includes separate unknown type, mode, status, and mixed fixtures plus known-value regression fixtures across all H-080 consumers and write paths.
+  - Child AB must include a future unknown workflow-status fixture and a future unknown day-status fixture across review, summaries, Calendar/Motivation/Trends, export, analytics, and mutation rejection.
 
 ## Help / Guide Impact
 
@@ -704,6 +762,8 @@ Child X updated `docs/user-flow-map.md`, `docs/api-contracts.md`, and `docs/runb
 
 Child AA updated `docs/user-flow-map.md`, `docs/api-contracts.md`, and `docs/runbooks/auth-account-support.md` for the read-only `Needs review` state, typed mutation rejection, private export preservation, and safe support diagnosis. In-app Help/Guide remained `N/A` after a fresh assertion audit confirmed there is no relevant Habits guide.
 
+Active Child AB updates `docs/user-flow-map.md`, `docs/api-contracts.md`, `docs/runbooks/auth-account-support.md`, and `docs/runbooks/gdpr-data-rights.md` for visible one-day/all-visible/Undo labels, selected-week H-071 limitation, known-data/coverage/streak meaning, check-in override, private export, and failure diagnosis. In-app Help/Guide remains `N/A` only after the implementation sweep reconfirms that no relevant Habits guide exists.
+
 ## Route / Label / Support Surface Sweep
 
 Future child briefs must run the route/label/support sweep before broad gates when changing any habit label, action, route, recovery path, Help/Guide assertion, or operator-visible support surface.
@@ -726,6 +786,9 @@ Minimum search terms:
 - `completionPercent`
 - `absence review`
 - `reviewed`
+- `not_tracked|day_status|Not tracked|Coverage|Included days|No tracked data`
+- `habitDayStatuses`
+- `Mark this day not tracked|Mark visible days not tracked|Undo|Include in stats`
 - `catch-up`
 - `habit_catch_up`
 - `checkInDate`
@@ -761,9 +824,10 @@ Minimum surfaces:
 - Record the 2026-08-31 re-audit on clean `main@e8e366ce`, including H-079 definition-date guard bypass, H-080 unknown-definition coercion, corrected H-046 runtime status, and narrowed H-075 remainder.
 - Record the owner-authorized Child X lifecycle from plan-only creation through completed PR `#1248` for H-070/H-079.
 - Record the 2026-09-01 post-closeout audit on clean synced `main@9d315c53`, correct H-072 Home-only hash scope, narrow H-075 to one emitted legacy ID plus historical names, add H-081 for residual definition fallbacks, and rank the open candidates.
+- Record the 2026-09-03 H-082 audit on clean synced `main@4d874404`, creation of exactly one bounded Child AB, and the owner's later explicit execution of that child for a reversible whole-day `not_tracked` status.
 - Record the owner-supplied Calendar screenshot audit concern for month-cell habit counts, micro-unit counts, and week-total labels.
 - Record external habit-app audit insights and sources.
-- Preserve the proposed child grouping, record Child X as the sole 2026-08-31 recommendation, and record Child AA's full lifecycle from 2026-09-01 plan-only creation through PR `#1251` / `5d12445b` completion and 2026-09-03 repo-managed closeout for H-080 while no additional Habits child is active.
+- Preserve the proposed child grouping, record Child X and Child AA lifecycle truth, and keep Child AB as the only selected active child after explicit owner execution.
 - Define a systemic coverage matrix and invariants that future child briefs must close, defer, or mark N/A explicitly.
 - Define Return Contract and audit gate before any child implementation.
 - Link this parent from the AW-006 canonical queue and design inventory.
@@ -774,12 +838,14 @@ Minimum surfaces:
 - Database migrations.
 - UI changes.
 - Screenshot capture.
-- Creating any additional child brief without fresh audit and explicit owner scope.
-- Selecting or implementing any additional Habits child after completed Child AA without a fresh audit and separate explicit owner instruction.
+- Creating any additional child beyond the owner-scoped Child AB without a fresh audit and explicit owner scope.
+- Selecting or implementing any further Habits child without a separate explicit execute/build/implement/kjør instruction.
 - Implementing runtime behavior inside this parent document; execution belongs only to the explicitly selected child brief.
 - Updating Help/Guide content.
 - Changing Habits data model, API routes, timer behavior, check-in behavior, cadence rules, analytics, Home/My Routines behavior, or admin notes rendering.
 - Resolving H-081 category/operator/unit/cadence/schedule/target legacy/default behavior or claiming Child AA closes the complete definition contract.
+- Expanding Child AB discovery, queue, or bulk action into older weeks/all history; H-071 remains a separate product/architecture decision.
+- Implementing runtime behavior inside this parent document; Child AB owns `not_tracked`, migration, API/domain/consumer/export/test/support behavior, and screenshots.
 - Activating any new child after Child X closeout without fresh audit and explicit owner selection.
 - Committing, pushing, opening PR, or merge flow unless separately requested.
 
@@ -791,7 +857,7 @@ Minimum surfaces:
 4. Proposed child briefs and recommended first child are listed.
 5. Return Contract makes parent update mandatory before any child closeout.
 6. AW-006 canonical queue links this parent and reflects the current selected-child lifecycle without marking unshipped runtime behavior done.
-7. Design inventory links this parent as planned intake, records Child AA's shipped lifecycle, and does not claim any unshipped Habits scope is complete.
+7. Design inventory links this parent as planned intake, records Child AA's shipped lifecycle and Child AB's active status, and does not claim any unshipped Habits scope is complete.
 8. The 2026-06-24 systemic coverage matrix maps Habits, Today/Home, Calendar, API/data, docs/support, and tests for the new findings.
 9. Current invariants define review acknowledgement, count-first weekly progress, Calendar count denominators, weekly any-day behavior, future-date rejection, local date agreement, local-only limits, and object-level proof.
 10. The 2026-08-31 re-audit records H-079/H-080, corrects H-046/H-066/H-075 lifecycle truth, and keeps H-071 outside Child X.
@@ -800,6 +866,8 @@ Minimum surfaces:
 13. `npm run lint:briefs` and `npm run lint:briefs:all` pass for the changed brief set.
 14. The fresh audit on clean synced `main@9d315c53` compares every open candidate, corrects H-072/H-075 evidence, adds H-081, and recommends exactly Child AA/H-080.
 15. The owner-authorized Child AA brief is completed at the recorded `done` path through PR `#1251` / `5d12445b`, records measurable stored/input fail-closed read/write/Micro-credit/consumer/export/privacy evidence, explicitly defers H-081, includes approved screenshot and gate evidence, and returns active/planned/selected/recommended child state to `none`.
+16. H-082 records the lack of a reversible whole-day unknown state, and exactly one active Child AB defines separate workflow/day statuses, single/all-visible/Undo actions, check-in precedence, zero false outcome contributions, known-data performance, coverage, streak/Calendar/Motivation/Trends/export behavior, H-071 limits, and future unknown-status handling.
+17. Child AB is `in-progress`, parent `selected_child` points only to it, and runtime/schema/UI/test work is represented as active without implying screenshot approval, PR, merge, or H-082 resolution.
 
 ## Validation
 
@@ -897,3 +965,6 @@ Child briefs must define their own validation lane based on whether they touch d
 - `2026-09-01 | planned-child-validated | the four-file docs-only Child AA planning diff passed git diff --check, changed-brief lint, all-brief lint including the new child, and verify:docs-only; planned_child remains Child AA, selected_child remains none, and no branch/runtime work/screenshot/commit/push/PR started | next: wait for explicit execute/build/implement/kjør before moving Child AA to in-progress`
 - `2026-09-01 | in-progress | owner explicitly said "Kjør Child AA"; fetched origin, confirmed HEAD/origin/main at 9d315c53, created codex/aw-006-habits-type-mode-status-fail-closed, moved Child AA to in-progress, set planned_child none and selected_child to Child AA, and kept H-081/H-071-H-075 outside scope | next: implement H-080 and stop at screenshot approval before pre-PR gates`
 - `2026-09-03 | done | PR #1251 shipped Child AA as squash commit 5d12445b; H-080 is resolved, the completed brief is at docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md, and recommended_child/planned_child/selected_child are reset to none while H-081 and H-071-H-075 remain open for a fresh audit and explicit owner selection | next: merge the repo-managed docs-only closeout, sync/prune main, rerun post-merge preflight, and complete the mandatory chat-handoff assessment before any new implementation slice`
+- `2026-09-03 | planned-child-created | on clean synced main@4d874404, owner requested plan-only H-082 reconciliation; added H-082 and created docs/task-briefs/planned/2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10.md as the only planned Child AB, with separate reviewed/day-status contracts, single/all-visible/undo actions, zero synthetic check-ins/outcome credit, known-data performance plus coverage, neutral streak boundary, Calendar/Motivation/Trends/export truth, later-check-in precedence, and explicit H-071 older-week/all-history exclusion; selected_child remains none and no runtime/schema/UI/test/branch/commit/push/PR work started | next: validate the four-file docs-only planning diff, then wait for explicit execute/build/implement/kjør before moving Child AB to in-progress`
+- `2026-09-03 | planned-child-validated | the final four-file docs-only H-082/Child AB planning diff passed git diff --check, changed-brief lint, all-brief lint including Child AB, quality/docs-only verification, and semantic review of status/metric/override/export/H-071 contracts; planned_child remains Child AB, selected_child remains none, and no runtime/schema/UI/test/branch/commit/push/PR work started | next: wait for explicit execute/build/implement/kjør before moving Child AB to in-progress`
+- `2026-09-03 | in-progress | owner explicitly said Kjør Child AB; created codex/aw-006-habits-absence-review-not-tracked-status from clean synced main@4d874404, moved the child to in-progress, set planned_child none, and selected only H-082 while H-071/H-074/H-081 and all other findings remain separate | next: implement scoped runtime/schema/tests/docs and stop at screenshot approval before pre-PR gates`
