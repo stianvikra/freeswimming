@@ -13,6 +13,7 @@ import {
   buildHabitMotivationResetView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
+  classifyHabitDefinition,
   getHabitMotivationRangeStartDate,
   HABIT_MOTIVATION_RANGE_VALUES,
   type HabitAbsenceReviewAcknowledgementRow,
@@ -25,6 +26,7 @@ import {
   type HabitMotivationRangeSummaries,
   type HabitMotivationResetView,
   type HabitSnapshot,
+  type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import type { Database } from "@/types/database";
 
@@ -279,6 +281,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
     selectedDate,
     activeHabits: [],
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary,
     weekSummary: buildHabitWeekSummary([], [], selectedDate),
     motivationSummary,
@@ -318,6 +321,7 @@ export async function loadHabitSnapshot(
       selectedDate,
       activeHabits: [],
       archivedHabits: [],
+      unsupportedHabits: [],
       daySummary,
       weekSummary: buildHabitWeekSummary([], [], selectedDate),
       motivationSummary,
@@ -326,12 +330,23 @@ export async function loadHabitSnapshot(
   }
 
   const habitRows = (habitResult.data ?? []) as HabitDefinitionRow[];
+  const supportedHabitRows: SupportedHabitDefinitionRow[] = [];
+  const unsupportedHabits: HabitSnapshot["unsupportedHabits"] = [];
+  for (const row of habitRows) {
+    const definition = classifyHabitDefinition(row);
+    if (definition.kind === "supported") {
+      supportedHabitRows.push(definition.row);
+    } else {
+      unsupportedHabits.push(definition.descriptor);
+    }
+  }
+  const supportedHabitIds = new Set(supportedHabitRows.map((row) => row.id));
   const microSessionLinksByHabitId = await loadHabitMicroSessionLinksByHabitId(
     supabase,
     userId,
-    habitRows.map((row) => row.id)
+    supportedHabitRows.map((row) => row.id)
   );
-  const habits = habitRows.map((row) =>
+  const habits = supportedHabitRows.map((row) =>
     buildHabitDefinitionView(row, {
       microSessionLink: microSessionLinksByHabitId.get(row.id) ?? null,
     })
@@ -360,6 +375,7 @@ export async function loadHabitSnapshot(
       selectedDate,
       activeHabits,
       archivedHabits,
+      unsupportedHabits,
       daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
       weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
       motivationSummary: buildHabitMotivationSummary(habits, [], selectedDate),
@@ -367,7 +383,9 @@ export async function loadHabitSnapshot(
     };
   }
 
-  const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView);
+  const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[])
+    .filter((row) => supportedHabitIds.has(row.habit_id))
+    .map(buildHabitCheckInView);
   const resetResult = await supabase
     .from("habit_motivation_resets")
     .select(HABIT_MOTIVATION_RESET_SELECT)
@@ -376,7 +394,9 @@ export async function loadHabitSnapshot(
   const resetEventsReady = !isHabitsSchemaMissing(resetResult.error);
   const resetEvents =
     resetEventsReady && !resetResult.error
-      ? ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(buildHabitMotivationResetView)
+      ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
+          .filter((row) => supportedHabitIds.has(row.habit_id))
+          .map(buildHabitMotivationResetView)
       : [];
 
   if (resetResult.error && resetEventsReady) {
@@ -430,6 +450,7 @@ export async function loadHabitSnapshot(
     selectedDate,
     activeHabits,
     archivedHabits,
+    unsupportedHabits,
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
     absenceReviewAcknowledgedDates,

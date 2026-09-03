@@ -58,6 +58,7 @@ function buildHabitSnapshot(): HabitSnapshot {
       },
     ] as HabitSnapshot["activeHabits"],
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: {
       date: "2026-05-10",
       scheduledHabitCount: 2,
@@ -190,5 +191,43 @@ describe("TodayTabsPanel", () => {
       "aria-selected",
       "true"
     );
+  });
+
+  it("renders unsupported Habits as review without a percentage or edit action", () => {
+    const habitSnapshot = buildHabitSnapshot();
+    habitSnapshot.activeHabits = [];
+    habitSnapshot.daySummary = {
+      ...habitSnapshot.daySummary,
+      scheduledHabitCount: 0,
+      perfectDayItemCount: 0,
+      satisfiedPerfectDayItemCount: 0,
+      completionPercent: 0,
+      isPerfectDay: false,
+    };
+    habitSnapshot.unsupportedHabits = [
+      {
+        id: "unsupported-1",
+        title: "Future Habit",
+        unsupportedFields: ["unknown_habit_mode"],
+      },
+    ];
+
+    render(
+      <TodayTabsPanel
+        drylandLibrary={buildDrylandLibrary()}
+        habitSnapshot={habitSnapshot}
+        nowIso="2026-05-10T09:00:00.000Z"
+      />
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+    fireEvent.click(within(panel).getByRole("tab", { name: "Habits" }));
+
+    expect(panel).toHaveAttribute("data-routine-state", "review");
+    expect(within(panel).getByRole("status")).toHaveTextContent("1 habit needs review");
+    expect(within(panel).getByText(/Saved Habit history is preserved/i)).toBeVisible();
+    expect(within(panel).queryByText(/0%/)).toBeNull();
+    expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
+    expect(within(panel).queryByRole("link", { name: "Edit" })).toBeNull();
   });
 });

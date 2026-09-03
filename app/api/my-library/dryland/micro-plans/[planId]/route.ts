@@ -14,6 +14,8 @@ import {
   normalizeDrylandMicroSourceIds,
   normalizeDrylandMicroReleaseMode,
   normalizeDrylandMicroReleaseTime,
+  type DrylandMicroHabitCreditResult,
+  type DrylandMicroHabitLinkRecord,
   type DrylandMicroPlanApiResponse,
   type DrylandMicroPlanPatchRequestBody,
   type DrylandMicroPlanStatus,
@@ -487,6 +489,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!existingLink) {
       return applySupabaseCookies(
         noStoreJson({ ok: false, error: "Linked habit not found." }, { status: 404 })
+      );
+    }
+
+    if (existingLink.habitDefinitionSupport === "unsupported") {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            code: "UNSUPPORTED_HABIT_DEFINITION",
+            error: "The linked Habit needs review before counting can be changed.",
+          },
+          { status: 409 }
+        )
       );
     }
 
@@ -1077,79 +1092,98 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const updatedPlanRow = updateResult.data as DrylandMicroPlanRow;
-  if (shouldResumePausedHabitLinkForCredit) {
-    let existingLink;
-    try {
-      existingLink = await loadDrylandMicroHabitLinkRecord(supabase, user.id, planId, {
-        required: true,
-      });
-    } catch (error) {
-      return applySupabaseCookies(
-        noStoreJson(
-          {
-            ok: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Could not resume the linked Habit right now.",
-          },
-          { status: 503 }
-        )
-      );
-    }
-    if (existingLink?.status === "paused") {
-      const linkUpdateResult = await supabase
-        .from("micro_session_habit_links")
-        .update({
-          status: "active",
-          resumed_at: mutationNow.toISOString(),
-          ended_at: null,
-        })
-        .eq("user_id", user.id)
-        .eq("id", existingLink.id);
-
-      if (linkUpdateResult.error) {
-        console.error("[DrylandMicroPlanApi] Could not resume paused link for credit", {
-          planId,
-          linkId: existingLink.id,
-          error: linkUpdateResult.error,
-        });
-        return applySupabaseCookies(
-          noStoreJson(
-            { ok: false, error: "Could not resume the linked Habit right now." },
-            { status: 500 }
-          )
-        );
-      }
-    }
-  }
-
   const shouldLoadHabitLink =
     shouldAttemptHabitCredit || shouldRemoveHabitCredit || body.selectedDate !== undefined;
-  const updatedHabitLink = shouldLoadHabitLink
-    ? await loadDrylandMicroHabitLinkRecord(supabase, user.id, planId)
-    : null;
-  const habitCredit =
-    shouldAttemptHabitCredit && creditBlockId && updatedHabitLink
-      ? await recordMicroSessionHabitCredit(supabase, {
-          userId: user.id,
-          planId,
-          blockId: creditBlockId,
-          link: updatedHabitLink,
-          selectedDate: currentActionDate,
-          todayDate: localDayContext.todayDate,
-          timezone: localDayContext.timezone,
-          completedAt: mutationNow.toISOString(),
-        })
-      : shouldRemoveHabitCredit && updatedHabitLink
+  let updatedHabitLink: DrylandMicroHabitLinkRecord | null = null;
+  let refreshedHabitLink: DrylandMicroHabitLinkRecord | null = null;
+  let habitCredit: DrylandMicroHabitCreditResult | undefined;
+
+  try {
+    if (shouldResumePausedHabitLinkForCredit) {
+      updatedHabitLink = await loadDrylandMicroHabitLinkRecord(supabase, user.id, planId, {
+        required: true,
+      });
+      if (
+        updatedHabitLink?.status === "paused" &&
+        updatedHabitLink.habitDefinitionSupport === "supported"
+      ) {
+        const linkUpdateResult = await supabase
+          .from("micro_session_habit_links")
+          .update({
+            status: "active",
+            resumed_at: mutationNow.toISOString(),
+            ended_at: null,
+          })
+          .eq("user_id", user.id)
+          .eq("id", updatedHabitLink.id);
+
+        if (linkUpdateResult.error) {
+          throw new Error("Could not resume the linked Habit after the Micro Session was saved.");
+        }
+
+        updatedHabitLink = {
+          ...updatedHabitLink,
+          status: "active",
+          resumedAt: mutationNow.toISOString(),
+          endedAt: null,
+          canCount:
+            updatedHabitLink.habitStatus === "active" && updatedHabitLink.habitMode === "build",
+        };
+      }
+    }
+
+    if (shouldLoadHabitLink) {
+      refreshedHabitLink = await loadDrylandMicroHabitLinkRecord(supabase, user.id, planId);
+      if (refreshedHabitLink) {
+        updatedHabitLink = refreshedHabitLink;
+      }
+    }
+
+    if (shouldAttemptHabitCredit) {
+      habitCredit =
+        creditBlockId && refreshedHabitLink
+          ? await recordMicroSessionHabitCredit(supabase, {
+              userId: user.id,
+              planId,
+              blockId: creditBlockId,
+              link: refreshedHabitLink,
+              selectedDate: currentActionDate,
+              todayDate: localDayContext.todayDate,
+              timezone: localDayContext.timezone,
+              completedAt: mutationNow.toISOString(),
+            })
+          : {
+              status: "blocked",
+              message: "Micro Session saved, but linked Habit credit could not be checked.",
+            };
+    } else if (shouldRemoveHabitCredit) {
+      habitCredit = refreshedHabitLink
         ? await removeMicroSessionHabitCredit(supabase, {
             userId: user.id,
             planId,
-            link: updatedHabitLink,
+            link: refreshedHabitLink,
             selectedDate: currentActionDate,
             todayDate: localDayContext.todayDate,
           })
-        : undefined;
+        : {
+            status: "blocked",
+            message: "Micro Session updated, but linked Habit credit could not be checked.",
+          };
+    }
+  } catch (error) {
+    console.error("[DrylandMicroPlanApi] Linked Habit follow-up failed after Micro save", {
+      planId,
+      error,
+    });
+    if (shouldAttemptHabitCredit || shouldRemoveHabitCredit) {
+      habitCredit = {
+        status: "blocked",
+        message: shouldRemoveHabitCredit
+          ? "Micro Session updated, but linked Habit credit could not be changed."
+          : "Micro Session saved, but linked Habit credit could not be changed.",
+      };
+    }
+  }
 
   return applySupabaseCookies(
     noStoreJson({

@@ -5,7 +5,11 @@ import {
   buildTodayRoutineQuickActions,
 } from "@/lib/my-library/today";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
-import type { HabitDefinitionView, HabitSnapshot } from "@/lib/habits/shared";
+import type {
+  HabitDefinitionView,
+  HabitSnapshot,
+  HabitUnsupportedDefinitionView,
+} from "@/lib/habits/shared";
 
 function buildMicroBlock(
   overrides?: Partial<DrylandMicroBlockSnapshot>
@@ -123,6 +127,7 @@ function buildHabitSnapshot(options?: {
   perfectDayItemCount?: number;
   satisfiedCount?: number;
   schemaReady?: boolean;
+  unsupportedHabits?: HabitUnsupportedDefinitionView[];
 }): HabitSnapshot {
   const activeCount = options?.activeCount ?? 3;
   const perfectDayItemCount = options?.perfectDayItemCount ?? activeCount;
@@ -135,6 +140,7 @@ function buildHabitSnapshot(options?: {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
+    unsupportedHabits: options?.unsupportedHabits ?? [],
     daySummary: {
       date: "2026-05-10",
       scheduledHabitCount: activeCount,
@@ -299,5 +305,69 @@ describe("my library today state", () => {
     expect(state.title).toBe("Habits");
     expect(state.actionLabel).toBe("Open");
     expect(state.progressPercent).toBe(100);
+  });
+
+  it("uses review instead of setup when only unsupported Habits exist", () => {
+    const state = buildTodayHabitsState(
+      buildHabitSnapshot({
+        activeCount: 0,
+        perfectDayItemCount: 0,
+        satisfiedCount: 0,
+        unsupportedHabits: [
+          {
+            id: "unsupported-1",
+            title: "Future Habit",
+            unsupportedFields: ["unknown_habit_type"],
+          },
+        ],
+      })
+    );
+
+    expect(state).toMatchObject({
+      state: "review",
+      progressLabel: "1 habit needs review",
+      progressPercent: null,
+      href: "/my-library/habits",
+      editHref: null,
+    });
+    expect(state.detail).toContain("history is preserved");
+  });
+
+  it("keeps supported progress visible without a complete tone for mixed Habits", () => {
+    const snapshot = buildHabitSnapshot({
+      activeCount: 2,
+      perfectDayItemCount: 2,
+      satisfiedCount: 2,
+      unsupportedHabits: [
+        {
+          id: "unsupported-1",
+          title: "Future Habit",
+          unsupportedFields: ["unknown_definition_status"],
+        },
+      ],
+    });
+    const state = buildTodayHabitsState(snapshot);
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: null,
+        recentSessions: [],
+      },
+      snapshot,
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(state).toMatchObject({
+      state: "review",
+      progressLabel: "1 habit needs review · 2/2 supported",
+      progressPercent: null,
+    });
+    expect(actions[1]).toMatchObject({
+      state: "review",
+      subtitle: "1 habit needs review · 2/2 supported",
+      href: "/my-library/habits?view=active#today-habits",
+    });
+    expect(actions[1]?.subtitle).not.toBe("Done today");
   });
 });

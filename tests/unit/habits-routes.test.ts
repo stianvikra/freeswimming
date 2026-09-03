@@ -49,6 +49,7 @@ function buildSnapshot() {
     selectedDate: "2026-05-10",
     activeHabits: [],
     archivedHabits: [],
+    unsupportedHabits: [],
     daySummary: {
       date: "2026-05-10",
       scheduledHabitCount: 0,
@@ -72,6 +73,36 @@ function buildSnapshot() {
 
 const HABIT_ID = "11111111-1111-4111-8111-111111111111";
 const HABITS_API_URL = "http://127.0.0.1:3000/api/my-library/habits";
+
+function buildHabitDefinitionRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: HABIT_ID,
+    user_id: "user-1",
+    title: "Read",
+    notes: null,
+    habit_mode: "build",
+    habit_type: "binary",
+    category: "learning",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-05-01",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: true,
+    status: "active",
+    sort_order: 1,
+    created_at: "2026-05-01T08:00:00.000Z",
+    updated_at: "2026-05-01T08:00:00.000Z",
+    ...overrides,
+  };
+}
 
 const HABIT_MUTATION_ROUTES = [
   ["create", "POST", "", { title: "Read" }],
@@ -135,7 +166,15 @@ function mockHabitDefinitionCreateClient() {
 
 function mockResetStatsClient(startDate: string) {
   const habitMaybeSingle = vi.fn().mockResolvedValue({
-    data: { id: HABIT_ID, habit_mode: "timed", start_date: startDate, status: "active" },
+    data: buildHabitDefinitionRow({
+      habit_mode: "timed",
+      habit_type: "duration",
+      start_date: startDate,
+      timer_enabled: true,
+      timer_target_seconds: 600,
+      target_value_numeric: 10,
+      target_unit: "minutes",
+    }),
     error: null,
   });
   const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -457,6 +496,105 @@ describe("habits routes", () => {
   });
 
   it.each([
+    ["habitType", "future_type"],
+    ["habitType", null],
+    ["habitMode", "future_mode"],
+    ["habitMode", null],
+  ])("rejects explicit unsupported create input for %s=%s with a typed 400", async (key, value) => {
+    const { from, insert } = mockHabitDefinitionCreateClient();
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+      title: "Read",
+      [key]: value,
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "UNSUPPORTED_HABIT_DEFINITION_VALUE",
+    });
+    expect(insert).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+    expect(getRequestLocalDayContextMock).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("counts unsupported active rows toward the persisted create cap", async () => {
+    const existingRows = [
+      ...Array.from({ length: 11 }, (_, index) =>
+        buildHabitDefinitionRow({ id: `supported-${index}`, sort_order: index + 1 })
+      ),
+      buildHabitDefinitionRow({
+        id: "unsupported-row",
+        habit_type: "future_type",
+        sort_order: 99,
+      }),
+    ];
+    const existingEqStatus = vi.fn().mockResolvedValue({ data: existingRows, error: null });
+    const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
+    const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
+    const insert = vi.fn();
+    mockAuthenticatedRouteClient(vi.fn(() => ({ select: existingSelect, insert })));
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+      title: "Twelfth supported habit",
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(400);
+    expect(existingEqStatus).toHaveBeenCalledWith("status", "active");
+    expect(insert).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves active sort order below the cap without exposing unsupported values", async () => {
+    const rawFutureValue = "future_type";
+    const existingRows = [
+      ...Array.from({ length: 10 }, (_, index) =>
+        buildHabitDefinitionRow({ id: `supported-${index}`, sort_order: index + 1 })
+      ),
+      buildHabitDefinitionRow({
+        id: "unsupported-row",
+        habit_type: rawFutureValue,
+        sort_order: 99,
+      }),
+    ];
+    const existingEqStatus = vi.fn().mockResolvedValue({ data: existingRows, error: null });
+    const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
+    const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
+    const insertSingle = vi.fn().mockResolvedValue({
+      data: buildHabitDefinitionRow({ id: "created-row", sort_order: 100 }),
+      error: null,
+    });
+    const insertSelect = vi.fn(() => ({ single: insertSingle }));
+    const insert = vi.fn(() => ({ select: insertSelect }));
+    mockAuthenticatedRouteClient(vi.fn(() => ({ select: existingSelect, insert })));
+    loadHabitSnapshotMock.mockResolvedValueOnce({
+      ...buildSnapshot(),
+      activeHabits: Array.from({ length: 11 }, (_, index) => ({ id: `active-${index}` })),
+    });
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+      title: "Eleventh supported habit",
+      renderedTodayDate: "2026-05-10",
+    });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 100 }));
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_created",
+        payload: expect.objectContaining({ activeHabitCountBefore: 10 }),
+      })
+    );
+    expect(JSON.stringify(payload)).not.toContain(rawFutureValue);
+    expect(JSON.stringify(trackAnalyticsEventMock.mock.calls)).not.toContain(rawFutureValue);
+  });
+
+  it.each([
     {
       name: "rejects matching future start and selected dates before habit creation",
       body: { title: "Future habit", startDate: "2026-05-11", selectedDate: "2026-05-11" },
@@ -694,19 +832,26 @@ describe("habits routes", () => {
   });
 
   it("updates an owner-scoped habit definition without touching check-ins", async () => {
+    const currentMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildHabitDefinitionRow(),
+      error: null,
+    });
+    const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
+    const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
+    const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
     const updateMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "build",
+        habit_type: "count",
         status: "active",
-      },
+      }),
       error: null,
     });
     const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
     const updateEqId = vi.fn(() => ({ select: updateSelect }));
     const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
     const update = vi.fn(() => ({ eq: updateEqUser }));
-    const from = vi.fn(() => ({ update }));
+    const from = vi.fn().mockReturnValueOnce({ select: currentSelect }).mockReturnValue({ update });
 
     createRouteHandlerSupabaseClientMock.mockResolvedValue({
       supabase: {
@@ -822,29 +967,107 @@ describe("habits routes", () => {
     expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["habitType", "future_type"],
+    ["habitType", null],
+    ["habitMode", "future_mode"],
+    ["habitMode", null],
+  ])(
+    "rejects explicit unsupported update input for %s=%s before reads or writes",
+    async (key, value) => {
+      const from = mockAuthenticatedRouteClient();
+
+      const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+        [key]: value,
+        renderedTodayDate: "2026-05-10",
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        ok: false,
+        code: "UNSUPPORTED_HABIT_DEFINITION_VALUE",
+      });
+      expect(from).not.toHaveBeenCalled();
+      expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    { name: "type-only", overrides: { habit_type: "future_type" } },
+    { name: "mode-only", overrides: { habit_mode: "future_mode" } },
+    { name: "status-only", overrides: { status: "future_status" } },
+    {
+      name: "mixed",
+      overrides: {
+        habit_type: "future_type",
+        habit_mode: "future_mode",
+        status: "future_status",
+      },
+    },
+  ])(
+    "returns zero-write 409s for direct writes against a $name unsupported definition",
+    async ({ overrides }) => {
+      for (const kind of ["update", "check-in", "reset-stats"] as const) {
+        const maybeSingle = vi.fn().mockResolvedValue({
+          data: buildHabitDefinitionRow(overrides),
+          error: null,
+        });
+        const eqId = vi.fn(() => ({ maybeSingle }));
+        const eqUser = vi.fn(() => ({ eq: eqId }));
+        const select = vi.fn(() => ({ eq: eqUser }));
+        const update = vi.fn();
+        const insert = vi.fn();
+        const upsert = vi.fn();
+        const deleteRows = vi.fn();
+        mockAuthenticatedRouteClient(
+          vi.fn(() => ({ select, update, insert, upsert, delete: deleteRows }))
+        );
+
+        const response = await callHabitMutationJson(getHabitMutationRoute(kind), {
+          renderedTodayDate: "2026-05-10",
+        });
+
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toMatchObject({
+          ok: false,
+          code: "UNSUPPORTED_HABIT_DEFINITION",
+        });
+        expect(update).not.toHaveBeenCalled();
+        expect(insert).not.toHaveBeenCalled();
+        expect(upsert).not.toHaveBeenCalled();
+        expect(deleteRows).not.toHaveBeenCalled();
+        expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+        expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+      }
+    }
+  );
+
   it("restores archived habits without touching check-ins", async () => {
     const currentMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         status: "archived",
-      },
+      }),
       error: null,
     });
     const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
     const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
     const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
-    const activeEqStatus = vi.fn().mockResolvedValue({ count: 3, error: null });
+    const activeEqStatus = vi.fn().mockResolvedValue({
+      data: null,
+      count: 3,
+      error: null,
+    });
     const activeEqUser = vi.fn(() => ({ eq: activeEqStatus }));
     const activeSelect = vi.fn(() => ({ eq: activeEqUser }));
     const updateMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "build",
         status: "active",
         cadence_period: "daily",
         cadence_day_policy: "fixed",
         cadence_target_count: 1,
-      },
+      }),
       error: null,
     });
     const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
@@ -959,16 +1182,19 @@ describe("habits routes", () => {
 
   it("blocks restore when the active habit limit is already reached", async () => {
     const currentMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         status: "archived",
-      },
+      }),
       error: null,
     });
     const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
     const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
     const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
-    const activeEqStatus = vi.fn().mockResolvedValue({ count: 12, error: null });
+    const activeEqStatus = vi.fn().mockResolvedValue({
+      data: null,
+      count: 12,
+      error: null,
+    });
     const activeEqUser = vi.fn(() => ({ eq: activeEqStatus }));
     const activeSelect = vi.fn(() => ({ eq: activeEqUser }));
     const update = vi.fn();
@@ -1015,6 +1241,13 @@ describe("habits routes", () => {
 
   it("returns a stable failure-mode response when habit update storage fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const currentMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildHabitDefinitionRow(),
+      error: null,
+    });
+    const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
+    const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
+    const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
     const updateMaybeSingle = vi.fn().mockResolvedValue({
       data: null,
       error: { message: "write failed" },
@@ -1023,7 +1256,7 @@ describe("habits routes", () => {
     const updateEqId = vi.fn(() => ({ select: updateSelect }));
     const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
     const update = vi.fn(() => ({ eq: updateEqUser }));
-    const from = vi.fn(() => ({ update }));
+    const from = vi.fn().mockReturnValueOnce({ select: currentSelect }).mockReturnValue({ update });
 
     createRouteHandlerSupabaseClientMock.mockResolvedValue({
       supabase: {
@@ -1064,12 +1297,12 @@ describe("habits routes", () => {
 
   it("creates owner-scoped reset-stats events without deleting check-ins", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
         status: "active",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1190,12 +1423,12 @@ describe("habits routes", () => {
   it("returns a stable failure-mode response when reset-stats storage fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
         status: "active",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1255,7 +1488,7 @@ describe("habits routes", () => {
 
   it("accepts and stores a check-in on an opposite positive local-date boundary", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: { id: "11111111-1111-4111-8111-111111111111" },
+      data: buildHabitDefinitionRow(),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1321,11 +1554,10 @@ describe("habits routes", () => {
 
   it("keeps the selected snapshot date after a catch-up check-in writes a past day", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "build",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1388,11 +1620,11 @@ describe("habits routes", () => {
 
   it("upserts timed check-ins with separate timer and manual sources", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1462,11 +1694,11 @@ describe("habits routes", () => {
 
   it("undoes timed completion sources while preserving manual minutes", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1548,11 +1780,11 @@ describe("habits routes", () => {
 
   it("deletes timer-only rows when undoing a timed completion", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1617,11 +1849,11 @@ describe("habits routes", () => {
 
   it("rejects mixed timed source and legacy numeric payloads before writes", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "timed",
+        habit_type: "duration",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1666,11 +1898,10 @@ describe("habits routes", () => {
 
   it("rejects timed source values for non-timed habits before writes", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "build",
         start_date: "2026-05-01",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1714,7 +1945,7 @@ describe("habits routes", () => {
 
   it("logs rest days as skipped owner-scoped check-ins without completion time", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: { id: "11111111-1111-4111-8111-111111111111", habit_mode: "build" },
+      data: buildHabitDefinitionRow({ habit_mode: "build" }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -1784,11 +2015,11 @@ describe("habits routes", () => {
 
   it("logs quit habit lapses and updates the fast days-since anchor", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-4111-8111-111111111111",
+      data: buildHabitDefinitionRow({
         habit_mode: "quit",
+        habit_type: "avoidance",
         start_date: "2026-05-07",
-      },
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));

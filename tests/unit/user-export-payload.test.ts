@@ -759,4 +759,94 @@ describe("buildUserExportPayload", () => {
     expect(payload.providerActivityEvidence).toEqual([]);
     expect(payload.providerImportRuns).toEqual([]);
   });
+
+  it("preserves future Habit definition values and child history in the private export", () => {
+    type ExportInput = Parameters<typeof buildUserExportPayload>[0];
+    type ExportHabitDefinition = ExportInput["habitDefinitions"][number];
+    type ExportHabitCheckIn = ExportInput["habitCheckIns"][number];
+
+    const futureDefinitions = [
+      ["habit-future-type", "future_type", "build", "active"],
+      ["habit-future-mode", "binary", "future_mode", "active"],
+      ["habit-future-status", "binary", "build", "future_status"],
+      ["habit-future-mixed", "future_type_mixed", "future_mode_mixed", "future_status_mixed"],
+    ] as const;
+    const definitions = futureDefinitions.map(
+      ([id, habit_type, habit_mode, status], index) =>
+        ({
+          id,
+          title: `Private habit ${id}`,
+          notes: `Private note ${id}`,
+          habit_type,
+          habit_mode,
+          status,
+          sort_order: index + 1,
+        }) as unknown as ExportHabitDefinition
+    );
+    const checkIns = definitions.map(
+      (definition, index) =>
+        ({
+          id: `check-${index + 1}`,
+          habit_id: definition.id,
+          note: `Private history ${index + 1}`,
+          source_kind: index === 3 ? "micro_session" : "manual",
+          source_dryland_micro_plan_id: index === 3 ? "micro-plan-1" : null,
+        }) as unknown as ExportHabitCheckIn
+    );
+
+    const payload = buildUserExportPayload({
+      userId: "user-private-export",
+      userEmail: "owner@example.com",
+      generatedAt: "2026-09-01T08:00:00.000Z",
+      profile: null,
+      athleteProfile: null,
+      trainingMetrics: [],
+      trainingPreferences: null,
+      personalRecords: [],
+      entitlements: [],
+      courseProgress: [],
+      guideProgress: [],
+      guideSessionProgress: [],
+      goals: [],
+      trainingFocuses: [],
+      trainingNotes: [],
+      downloadLinks: [],
+      drylandSessions: [],
+      habitDefinitions: definitions,
+      habitCheckIns: checkIns,
+      workouts: [],
+      trainingActivityEvents: [],
+      providerConnections: [],
+      providerActivityEvidence: [],
+      providerImportRuns: [],
+    });
+
+    expect(payload.schemaVersion).toBe("2026-06-23-training-activity-export");
+    expect(
+      payload.habitDefinitions.map(({ id, habitType, habitMode, status }) => ({
+        id,
+        habitType,
+        habitMode,
+        status,
+      }))
+    ).toEqual(
+      futureDefinitions.map(([id, habitType, habitMode, status]) => ({
+        id,
+        habitType,
+        habitMode,
+        status,
+      }))
+    );
+    expect(payload.habitCheckIns).toEqual(
+      checkIns.map((row) =>
+        expect.objectContaining({
+          id: row.id,
+          habitId: row.habit_id,
+          note: row.note,
+          sourceKind: row.source_kind,
+          sourceDrylandMicroPlanId: row.source_dryland_micro_plan_id,
+        })
+      )
+    );
+  });
 });

@@ -674,6 +674,26 @@ function getHabitsStatusLabel(snapshot: HabitSnapshot, dayLabel = "Today") {
   return fragments.join(" · ");
 }
 
+function pluralizeHabitReviewCount(count: number) {
+  return `${count} ${count === 1 ? "habit needs" : "habits need"} review`;
+}
+
+function getUnsupportedHabitFieldLabel(field: string) {
+  switch (field) {
+    case "habit_type":
+    case "unknown_habit_type":
+      return "Habit type";
+    case "habit_mode":
+    case "unknown_habit_mode":
+      return "Tracking mode";
+    case "status":
+    case "unknown_definition_status":
+      return "Status";
+    default:
+      return "Habit setup";
+  }
+}
+
 function getBuildTargetChoiceLabel(type: HabitType) {
   switch (type) {
     case "count":
@@ -1964,13 +1984,27 @@ export default function HabitPerfectDayHub({
   );
 
   const activeCount = snapshot.activeHabits.length;
+  const unsupportedHabits = snapshot.unsupportedHabits ?? [];
+  const unsupportedCount = unsupportedHabits.length;
+  const hasUnsupportedHabits = unsupportedCount > 0;
+  const habitReviewCountLabel = pluralizeHabitReviewCount(unsupportedCount);
   const preferredCountLabel =
     activeCount === 0
-      ? "No habits yet"
+      ? hasUnsupportedHabits
+        ? "No supported habits"
+        : "No habits yet"
       : activeCount < 3
         ? `${activeCount} active · add a few more when ready`
         : `${activeCount} active`;
-  const habitsStatusLabel = getHabitsStatusLabel(snapshot, isSelectedToday ? "Today" : "This day");
+  const supportedHabitsStatusLabel = getHabitsStatusLabel(
+    snapshot,
+    isSelectedToday ? "Today" : "This day"
+  );
+  const habitsStatusLabel = hasUnsupportedHabits
+    ? snapshot.daySummary.items.length > 0
+      ? `${supportedHabitsStatusLabel} · ${habitReviewCountLabel}`
+      : `Needs review · ${habitReviewCountLabel}`
+    : supportedHabitsStatusLabel;
 
   const draftHabitType = getResolvedDraftHabitType(draft);
   const draftUnitOptions = useMemo(() => getUnitOptions(draftHabitType), [draftHabitType]);
@@ -4155,54 +4189,74 @@ export default function HabitPerfectDayHub({
               My Perfect Day
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-900">
-              {snapshot.daySummary.isPerfectDay ? "Perfect day logged" : selectedDateLabel}
+              {hasUnsupportedHabits
+                ? "Needs review"
+                : snapshot.daySummary.isPerfectDay
+                  ? "Perfect day logged"
+                  : selectedDateLabel}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               {habitsStatusLabel} · {preferredCountLabel}
             </p>
           </div>
-          <div
-            role="progressbar"
-            aria-label="My Perfect Day completion"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={snapshot.daySummary.completionPercent}
-            className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-center"
-          >
-            <span className="text-2xl font-bold text-blue-800">
-              {snapshot.daySummary.completionPercent}%
-            </span>
-          </div>
+          {hasUnsupportedHabits ? (
+            <div
+              role="status"
+              aria-label="Habits need review"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-2 text-center text-sm font-bold text-amber-800"
+            >
+              Needs review
+            </div>
+          ) : (
+            <div
+              role="progressbar"
+              aria-label="My Perfect Day completion"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={snapshot.daySummary.completionPercent}
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-center"
+            >
+              <span className="text-2xl font-bold text-blue-800">
+                {snapshot.daySummary.completionPercent}%
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className={habitNestedMutedCardClass}>
-            <p className={habitLabelClass}>Daily habits</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {habitWeekCountSummary.daily.completed}/{habitWeekCountSummary.daily.total}
-            </p>
+        {hasUnsupportedHabits && activeCount === 0 ? null : (
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className={habitNestedMutedCardClass}>
+              <p className={habitLabelClass}>Daily habits</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {habitWeekCountSummary.daily.completed}/{habitWeekCountSummary.daily.total}
+              </p>
+            </div>
+            <div className={habitNestedMutedCardClass}>
+              <p className={habitLabelClass}>Weekly habits</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {habitWeekCountSummary.weekly.completed}/{habitWeekCountSummary.weekly.total}
+              </p>
+            </div>
+            <div className={habitNestedMutedCardClass}>
+              <p className={habitLabelClass}>7-day minutes</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {snapshot.weekSummary.totalDurationMinutes}
+              </p>
+            </div>
           </div>
-          <div className={habitNestedMutedCardClass}>
-            <p className={habitLabelClass}>Weekly habits</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {habitWeekCountSummary.weekly.completed}/{habitWeekCountSummary.weekly.total}
-            </p>
-          </div>
-          <div className={habitNestedMutedCardClass}>
-            <p className={habitLabelClass}>7-day minutes</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {snapshot.weekSummary.totalDurationMinutes}
-            </p>
-          </div>
-        </div>
-
-        {renderWeeklyOverviewCard(
-          "habits-week-overview-summary",
-          "habits-calendar-controls-summary"
         )}
+
+        {hasUnsupportedHabits && activeCount === 0
+          ? null
+          : renderWeeklyOverviewCard(
+              "habits-week-overview-summary",
+              "habits-calendar-controls-summary"
+            )}
       </section>
 
-      {renderMotivationSection("order-3 sm:order-2")}
+      {hasUnsupportedHabits && snapshot.activeHabits.length + snapshot.archivedHabits.length === 0
+        ? null
+        : renderMotivationSection("order-3 sm:order-2")}
 
       <section
         id="today-habits"
@@ -4444,7 +4498,7 @@ export default function HabitPerfectDayHub({
           ) : null}
         </section>
 
-        {snapshot.daySummary.items.length === 0 ? (
+        {snapshot.daySummary.items.length === 0 && !hasUnsupportedHabits ? (
           <HabitFeedback
             tone="empty"
             title="No active habits"
@@ -4455,7 +4509,7 @@ export default function HabitPerfectDayHub({
               ? "Use Add habit to start tracking today."
               : "No editable habits were available for this date."}
           </HabitFeedback>
-        ) : (
+        ) : snapshot.daySummary.items.length > 0 ? (
           <div className={`mt-4 space-y-3 ${isAddHabitOpen ? "max-sm:hidden" : ""}`}>
             {snapshot.daySummary.items.map((item, index) => {
               const habit = item.habit;
@@ -5424,7 +5478,60 @@ export default function HabitPerfectDayHub({
               );
             })}
           </div>
-        )}
+        ) : null}
+
+        {hasUnsupportedHabits ? (
+          <section
+            aria-labelledby="habits-needs-review-heading"
+            className="mt-4 space-y-3"
+            data-testid="habits-needs-review"
+          >
+            <HabitFeedback
+              tone="warning"
+              title="Needs review"
+              announcement="polite"
+              testId="habits-needs-review-summary"
+            >
+              {habitReviewCountLabel}. Known Habit progress stays separate, and saved history is
+              preserved.
+            </HabitFeedback>
+            <h3 id="habits-needs-review-heading" className="sr-only">
+              Habits that need review
+            </h3>
+            <div className="space-y-3">
+              {unsupportedHabits.map((habit) => {
+                const fieldLabels = [
+                  ...new Set(habit.unsupportedFields.map(getUnsupportedHabitFieldLabel)),
+                ];
+                const descriptionId = `habit-needs-review-description-${habit.id}`;
+
+                return (
+                  <article
+                    key={habit.id}
+                    aria-describedby={descriptionId}
+                    data-testid={`habit-needs-review-card-${habit.id}`}
+                    className="fs-library-card border-amber-200 bg-amber-50/50 p-4"
+                  >
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h4 className="min-w-0 text-[17px] leading-6 font-semibold break-words text-slate-900">
+                        {habit.title}
+                      </h4>
+                      <span className={habitWarningChipClass}>Needs review</span>
+                    </div>
+                    <p id={descriptionId} className="mt-2 text-sm leading-6 text-slate-600">
+                      This Habit uses setup details this version cannot safely count. Your saved
+                      Habit and history are preserved. Keep it unchanged and contact support if you
+                      need help.
+                    </p>
+                    <p className="mt-2 text-xs font-semibold text-amber-800">
+                      Review needed: {fieldLabels.join(", ")}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {renderSelectedAbsenceReviewPanel()}
       </section>

@@ -37,7 +37,7 @@ Define the operational workflow for privacy rights handling in freeswimming.org:
 2. Verification:
    - confirm requester identity before processing manual access/rectification requests.
 3. Fulfillment:
-   - `export`: direct user to authenticated export flow or provide verified export bundle; saved dryland sessions are included, historical dryland Focus cue values appear only as read-only `legacyFocusText`, generic training activity rows appear as private foundation/review data, and provider evidence appears only as redacted connection/run/activity summaries.
+   - `export`: direct user to authenticated export flow or provide verified export bundle; saved dryland sessions are included, historical dryland Focus cue values appear only as read-only `legacyFocusText`, raw Habit definitions and check-in history remain 1:1 owner-private evidence even when a type/mode/status is not yet supported by the current app, generic training activity rows appear as private foundation/review data, and provider evidence appears only as redacted connection/run/activity summaries.
    - `delete`: direct user to authenticated delete flow or perform verified backend-assisted deletion; owner-scoped training activity and provider evidence rows cascade with the account user, and V1 has no provider token bucket or raw FIT/GPX/TCX file path to purge.
    - `rectification/objection`: apply data correction or processing limitation according to request and legal basis.
 4. Stripe/payment retention note:
@@ -67,6 +67,10 @@ For each privacy request, record:
 - result (`fulfilled`, `rejected`, `partial`) and reason.
 
 Avoid storing unnecessary personal data in operational notes.
+
+For unsupported Habit definitions, the authenticated export is the only normal workflow that preserves and discloses the raw unknown type/mode/status value. Product UI may show the owner's private title and a generic `Needs review` state, while analytics, routine application logs, screenshots, and support tickets must use only stable IDs where authorized, bounded field names, and the generic machine code. Do not paste raw values, Habit titles, notes, or check-in content into operational evidence.
+
+Fail-closed interpretation does not change retention, rectification, objection, or deletion behavior. It does not normalize or rewrite the stored definition/history, create a replacement Habit ID, or add a new export format; deletion continues through the existing authenticated account-deletion workflow.
 
 ## Escalation
 

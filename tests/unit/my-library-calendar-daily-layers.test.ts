@@ -154,7 +154,7 @@ describe("my library calendar daily layers", () => {
           buildCheckIn({ habitId: "weekly-any", checkInDate: "2026-06-09" }),
           buildCheckIn({ habitId: "monthly-any", checkInDate: "2026-06-02" }),
         ],
-        resetEvents: [buildReset()],
+        resetEvents: [buildReset({ habitId: "daily" })],
         unsupported: { count: 0, labels: [] },
       },
       microSessions: { status: "ready", plans: [] },
@@ -217,6 +217,21 @@ describe("my library calendar daily layers", () => {
         title: "Quarterly habit",
         cadence_period: "quarterly",
       }),
+      buildHabitRow({
+        id: "unknown-type",
+        title: "Future type habit",
+        habit_type: "future_type",
+      }),
+      buildHabitRow({
+        id: "unknown-mode",
+        title: "Future mode habit",
+        habit_mode: "future_mode",
+      }),
+      buildHabitRow({
+        id: "unknown-status",
+        title: "Future status habit",
+        status: "future_status",
+      }),
     ]);
     const layers = buildMyLibraryCalendarDailyLayers({
       dateKeys: ["2026-06-12"],
@@ -232,7 +247,10 @@ describe("my library calendar daily layers", () => {
     });
 
     expect(partitioned.supportedRows.map((row) => row.id)).toEqual(["supported"]);
-    expect(partitioned.unsupported).toMatchObject({ count: 1, labels: ["Quarterly habit"] });
+    expect(partitioned.unsupported).toMatchObject({
+      count: 4,
+      labels: ["Quarterly habit", "Future type habit", "Future mode habit"],
+    });
     expect(layers["2026-06-12"]?.find((layer) => layer.source === "habits")).toMatchObject({
       status: "future",
       compactLabel: "Habits future",
@@ -258,6 +276,52 @@ describe("my library calendar daily layers", () => {
       status: "review",
       compactLabel: "Habits review needed",
     });
+  });
+
+  it("keeps supported progress visible while making mixed Habit truth a review state", () => {
+    const layers = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [buildHabit()],
+        checkIns: [
+          buildCheckIn(),
+          buildCheckIn({
+            id: "unsupported-rest",
+            habitId: "unsupported-habit",
+            status: "skipped",
+            valueBoolean: null,
+            completedAt: null,
+          }),
+        ],
+        resetEvents: [buildReset({ id: "unsupported-reset", habitId: "unsupported-habit" })],
+        unsupported: { count: 1, labels: ["Future habit"] },
+      },
+      microSessions: { status: "ready", plans: [] },
+    });
+
+    const habitLayer = layers["2026-06-10"]?.find((layer) => layer.source === "habits");
+
+    expect(habitLayer).toMatchObject({
+      status: "review",
+      tone: "warning",
+      compactLabel: "1/1 habits · review",
+    });
+    expect(habitLayer?.summary).toContain("1/1 daily habits on track for this day.");
+    expect(habitLayer?.summary).toContain(
+      "Some Habits need review before Calendar can count them."
+    );
+    expect(habitLayer?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "habit_daily", value: "1/1" }),
+        expect.objectContaining({ id: "habit_review", label: "Needs review", value: "1 habit" }),
+      ])
+    );
+    expect(habitLayer?.metrics.find((metric) => metric.id === "habit_rest")).toMatchObject({
+      value: "0 days",
+    });
+    expect(habitLayer?.metrics.find((metric) => metric.id === "habit_resets")).toBeUndefined();
   });
 
   it("counts completed and skipped Micro Session blocks by date and reviews unknown statuses", () => {

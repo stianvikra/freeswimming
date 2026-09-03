@@ -72,8 +72,8 @@ function mockAuthenticatedClient(from: (table: string) => unknown) {
   });
 }
 
-function buildQuery(data: unknown) {
-  const result = Promise.resolve({ data, error: null });
+function buildQueryResult(resultValue: { data: unknown; error: unknown }) {
+  const result = Promise.resolve(resultValue);
   const query: Record<string, unknown> = {
     maybeSingle: vi.fn(() => result),
     single: vi.fn(() => result),
@@ -83,6 +83,10 @@ function buildQuery(data: unknown) {
     query[method] = vi.fn(() => query);
   }
   return query;
+}
+
+function buildQuery(data: unknown) {
+  return buildQueryResult({ data, error: null });
 }
 
 function buildTableFixture(reads: unknown[], inserted?: unknown, updated?: unknown) {
@@ -229,11 +233,12 @@ function mockPatchTables(
   linkReads: Array<MicroSessionHabitLinkRow | null> = [buildHabitLinkRow()],
   habitRead: unknown = [],
   insertedHabit?: HabitDefinitionRow,
-  insertedLink?: MicroSessionHabitLinkRow
+  insertedLink?: MicroSessionHabitLinkRow,
+  habitReads?: unknown[]
 ) {
   const plans = buildTableFixture([plan], undefined, updatedPlan);
   const links = buildTableFixture(linkReads, insertedLink);
-  const habits = buildTableFixture([habitRead], insertedHabit);
+  const habits = buildTableFixture(habitReads ?? [habitRead], insertedHabit);
   const tables = {
     dryland_micro_plans: plans.table,
     micro_session_habit_links: links.table,
@@ -241,7 +246,12 @@ function mockPatchTables(
   };
   const from = vi.fn((table: string) => tables[table as keyof typeof tables] ?? {});
   mockAuthenticatedClient(from);
-  return { habitInsert: habits.insert, linkInsert: links.insert };
+  return {
+    planUpdate: plans.update,
+    habitInsert: habits.insert,
+    linkInsert: links.insert,
+    linkUpdate: links.update,
+  };
 }
 
 function buildPlanWithBlockStatus(
@@ -255,6 +265,45 @@ function buildPlanWithBlockStatus(
     status: status === "completed" ? "completed" : "active",
     blocks: [{ ...block, status, completedAt: status === "completed" ? completedAt : null }],
   });
+}
+
+const COMPLETE_BLOCK_PATCH = {
+  blockId: "block-1-exercise-1",
+  blockStatus: "completed",
+  selectedDate: "2026-06-10",
+  timezone: "UTC",
+} as const;
+
+function mockSavedCompletionTables(
+  linkTable: Record<string, unknown>,
+  habitTable: Record<string, unknown> = {}
+) {
+  const plans = buildTableFixture(
+    [buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {})],
+    undefined,
+    buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {})
+  );
+  const from = vi.fn((table: string) => {
+    if (table === "dryland_micro_plans") return plans.table;
+    if (table === "micro_session_habit_links") return linkTable;
+    if (table === "habit_definitions") return habitTable;
+    return {};
+  });
+  mockAuthenticatedClient(from);
+  return plans;
+}
+
+async function expectBlockedCompletion(body: Record<string, unknown> = {}) {
+  const response = await patchMicroPlan({ ...COMPLETE_BLOCK_PATCH, ...body });
+  const payload = await response.json();
+  expect(response.status).toBe(200);
+  expect(payload).toMatchObject({
+    ok: true,
+    plan: { status: "completed" },
+    habitCredit: { status: "blocked" },
+  });
+  expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  return payload;
 }
 
 async function expectLinkedCurrentActionPatch(
@@ -324,6 +373,7 @@ describe("dryland micro plan routes", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("fails closed for unauthenticated micro plan create", async () => {
@@ -601,6 +651,236 @@ describe("dryland micro plan routes", () => {
 
   it("uses server local today for linked Habit credit removal when the client date is ahead", async () => {
     await expectLinkedCurrentActionPatch("remove", "2026-06-11", "UTC", "2026-06-10");
+  });
+
+  it("keeps Micro completion successful while unsupported linked Habit credit is blocked", async () => {
+    const unsupportedHabit = buildHabitRow({
+      habit_type: "future_type" as HabitDefinitionRow["habit_type"],
+    });
+    recordMicroSessionHabitCreditMock.mockResolvedValueOnce({
+      status: "blocked",
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+      message: "Micro Session saved, but the linked Habit needs review and did not count.",
+    });
+    mockPatchTables(
+      buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {}),
+      buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {}),
+      undefined,
+      unsupportedHabit
+    );
+
+    const payload = await expectBlockedCompletion();
+
+    expect(payload.habitCredit).toMatchObject({ code: "UNSUPPORTED_HABIT_DEFINITION" });
+    expect(recordMicroSessionHabitCreditMock).toHaveBeenCalledOnce();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(payload)).not.toContain("future_type");
+  });
+
+  it.each([
+    { name: "normal credit link load", completePausedHabitLink: false },
+    { name: "required paused-link load", completePausedHabitLink: true },
+  ])("keeps the saved Micro completion successful when $name fails", async (testCase) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const linkSelect = vi.fn(() =>
+      buildQueryResult({ data: null, error: { message: "link load failed" } })
+    );
+    const plans = mockSavedCompletionTables({ select: linkSelect });
+
+    await expectBlockedCompletion(
+      testCase.completePausedHabitLink ? { completePausedHabitLink: true } : {}
+    );
+    expect(plans.update).toHaveBeenCalledOnce();
+    expect(recordMicroSessionHabitCreditMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it("keeps the saved Micro completion successful when paused-link resume fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const pausedLink = buildHabitLinkRow({
+      status: "paused",
+      paused_at: "2026-06-10T08:00:00.000Z",
+    });
+    const linkSelect = vi.fn(() => buildQuery(pausedLink));
+    const linkUpdate = vi.fn(() =>
+      buildQueryResult({ data: null, error: { message: "resume failed" } })
+    );
+    const habitSelect = vi.fn(() => buildQuery(buildHabitRow()));
+    const plans = mockSavedCompletionTables(
+      { select: linkSelect, update: linkUpdate },
+      { select: habitSelect }
+    );
+
+    await expectBlockedCompletion({
+      completePausedHabitLink: true,
+    });
+    expect(plans.update).toHaveBeenCalledOnce();
+    expect(linkUpdate).toHaveBeenCalledOnce();
+    expect(recordMicroSessionHabitCreditMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it("keeps a successfully resumed link active when its post-save refresh fails", async () => {
+    const pausedLink = buildHabitLinkRow({
+      status: "paused",
+      paused_at: "2026-06-10T08:00:00.000Z",
+    });
+    const linkSelect = vi
+      .fn()
+      .mockImplementationOnce(() => buildQuery(pausedLink))
+      .mockImplementationOnce(() =>
+        buildQueryResult({
+          data: null,
+          error: { code: "42P01", message: "link refresh unavailable" },
+        })
+      );
+    const linkUpdate = vi.fn(() => buildQuery(null));
+    const habitSelect = vi.fn(() => buildQuery(buildHabitRow()));
+    mockSavedCompletionTables({ select: linkSelect, update: linkUpdate }, { select: habitSelect });
+
+    const payload = await expectBlockedCompletion({
+      completePausedHabitLink: true,
+    });
+
+    expect(payload.plan.habitLink).toMatchObject({
+      status: "active",
+      resumedAt: "2026-06-10T09:00:00.000Z",
+      endedAt: null,
+      canCount: true,
+    });
+    expect(linkUpdate).toHaveBeenCalledWith({
+      status: "active",
+      resumed_at: "2026-06-10T09:00:00.000Z",
+      ended_at: null,
+    });
+    expect(recordMicroSessionHabitCreditMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      name: "current-week pause",
+      plan: buildMicroPlanRow({ week_ends_at: "2099-06-15T00:00:00.000Z" }),
+      link: buildHabitLinkRow({ status: "active" }),
+      habitLinkStatus: "paused",
+    },
+    {
+      name: "stale-week renewal",
+      plan: buildMicroPlanRow({ week_ends_at: "2026-05-11T00:00:00.000Z" }),
+      link: buildHabitLinkRow({ status: "paused" }),
+      habitLinkStatus: "active",
+    },
+  ] as const)("blocks $name for an unsupported linked Habit before writes", async (testCase) => {
+    const rawFutureValue = "future_mode";
+    const { planUpdate, linkUpdate } = mockPatchTables(
+      testCase.plan,
+      undefined,
+      [testCase.link],
+      buildHabitRow({ habit_mode: rawFutureValue as HabitDefinitionRow["habit_mode"] })
+    );
+
+    const response = await patchMicroPlan({ habitLinkStatus: testCase.habitLinkStatus });
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload).toMatchObject({
+      ok: false,
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+    });
+    expect(planUpdate).not.toHaveBeenCalled();
+    expect(linkUpdate).not.toHaveBeenCalled();
+    expect(recordMicroSessionHabitCreditMock).not.toHaveBeenCalled();
+    expect(removeMicroSessionHabitCreditMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(payload)).not.toContain(rawFutureValue);
+  });
+
+  it("does not reactivate a paused unsupported Habit when completing the Micro Session", async () => {
+    const pausedLink = buildHabitLinkRow({
+      status: "paused",
+      paused_at: "2026-06-10T08:00:00.000Z",
+    });
+    const unsupportedHabit = buildHabitRow({
+      habit_mode: "future_mode" as HabitDefinitionRow["habit_mode"],
+    });
+    recordMicroSessionHabitCreditMock.mockResolvedValueOnce({
+      status: "blocked",
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+      message: "Micro Session saved, but the linked Habit needs review and did not count.",
+    });
+    const { linkUpdate } = mockPatchTables(
+      buildPlanWithBlockStatus("queued", "2026-06-09T09:00:00.000Z", {}),
+      buildPlanWithBlockStatus("completed", "2026-06-10T09:00:00.000Z", {}),
+      [pausedLink, pausedLink],
+      unsupportedHabit,
+      undefined,
+      undefined,
+      [unsupportedHabit, unsupportedHabit]
+    );
+
+    const response = await patchMicroPlan({
+      blockId: "block-1-exercise-1",
+      blockStatus: "completed",
+      selectedDate: "2026-06-10",
+      timezone: "UTC",
+      completePausedHabitLink: true,
+    });
+    const payload = (await response.json()) as {
+      ok: boolean;
+      habitCredit: { status: string; code?: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.habitCredit).toMatchObject({
+      status: "blocked",
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+    });
+    expect(linkUpdate).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps Micro undo successful while retracting unsupported linked Habit credit", async () => {
+    const unsupportedHabit = buildHabitRow({
+      status: "future_status" as HabitDefinitionRow["status"],
+    });
+    removeMicroSessionHabitCreditMock.mockResolvedValueOnce({
+      status: "removed",
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+      message: "Habit credit removed for this week. The linked Habit still needs review.",
+    });
+    mockPatchTables(
+      buildPlanWithBlockStatus("completed", "2026-06-09T09:00:00.000Z", {}),
+      buildPlanWithBlockStatus("queued", "2026-06-10T09:00:00.000Z", {}),
+      undefined,
+      unsupportedHabit
+    );
+
+    const response = await patchMicroPlan({
+      blockId: "block-1-exercise-1",
+      blockStatus: "queued",
+      selectedDate: "2026-06-10",
+      timezone: "UTC",
+    });
+    const payload = (await response.json()) as {
+      ok: boolean;
+      plan: { status: string };
+      habitCredit: { status: string; code?: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      plan: { status: "active" },
+      habitCredit: {
+        status: "removed",
+        code: "UNSUPPORTED_HABIT_DEFINITION",
+      },
+    });
+    expect(removeMicroSessionHabitCreditMock).toHaveBeenCalledOnce();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(payload)).not.toContain("future_status");
   });
 
   it("rejects stale micro unit updates instead of counting an earlier week", async () => {
@@ -948,6 +1228,46 @@ describe("dryland micro plan routes", () => {
       })
     );
     expectHabitCredit(recordMicroSessionHabitCreditMock, "2026-06-11", "Europe/Oslo");
+  });
+
+  it("counts unsupported active definitions toward the recurring Habit persisted limit", async () => {
+    const rawFutureValue = "future_type";
+    const unsupportedRows = Array.from({ length: 12 }, (_, index) =>
+      buildHabitRow({
+        id: `33333333-3333-4333-8333-${String(index + 1).padStart(12, "0")}`,
+        habit_type: rawFutureValue as HabitDefinitionRow["habit_type"],
+        sort_order: index + 1,
+      })
+    );
+    const insertedHabit = buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Supported weekly habit",
+      cadence_period: "weekly",
+      cadence_day_policy: "any",
+    });
+    const insertedLink = buildHabitLinkRow({ habit_id: insertedHabit.id });
+    const { habitInsert } = mockPatchTables(
+      undefined,
+      undefined,
+      [null],
+      unsupportedRows,
+      insertedHabit,
+      insertedLink
+    );
+
+    const response = await patchMicroPlan({
+      createRecurringHabit: true,
+      habitTitle: "Supported weekly habit",
+      habitStartDate: "2026-06-08",
+      selectedDate: "2026-06-10",
+      timezone: "UTC",
+    });
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(habitInsert).not.toHaveBeenCalled();
+    expect(JSON.stringify(payload)).not.toContain(rawFutureValue);
+    expect(JSON.stringify(trackAnalyticsEventMock.mock.calls)).not.toContain(rawFutureValue);
   });
 
   it("rejects a matching future linked Habit start and selected date before insert", async () => {

@@ -107,6 +107,7 @@ export type DrylandMicroHabitLinkRecord = {
   id: string;
   habitId: string;
   status: DrylandMicroHabitLinkStatus | "unsupported";
+  habitDefinitionSupport: "supported" | "unsupported" | "unavailable";
   startsOn: string;
   pausedAt: string | null;
   resumedAt: string | null;
@@ -120,6 +121,7 @@ export type DrylandMicroHabitLinkRecord = {
 
 export type DrylandMicroHabitCreditResult = {
   status: DrylandMicroHabitCreditStatus;
+  code?: "UNSUPPORTED_HABIT_DEFINITION";
   message: string;
 };
 
@@ -162,7 +164,7 @@ export type DrylandMicroPlanApiSuccess = {
 
 export type DrylandMicroPlanApiError = {
   ok: false;
-  code?: "INVALID_TIMEZONE" | "INVALID_DATE";
+  code?: "INVALID_TIMEZONE" | "INVALID_DATE" | "UNSUPPORTED_HABIT_DEFINITION";
   error: string;
 };
 

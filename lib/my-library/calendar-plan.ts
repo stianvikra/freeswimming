@@ -287,6 +287,7 @@ async function loadCalendarDailyLayers(
     const { supportedRows, unsupported } = partitionCalendarHabitRows(
       (habitResult.data ?? []) as HabitDefinitionRow[]
     );
+    const supportedHabitIds = new Set(supportedRows.map((row) => row.id));
     const habits = supportedRows
       .map(buildHabitDefinitionView)
       .filter((habit) => habit.status === "active");
@@ -322,13 +323,15 @@ async function loadCalendarDailyLayers(
       habitLayerState = {
         status: "ready",
         habits,
-        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView),
+        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
+          .filter((row) => supportedHabitIds.has(row.habit_id))
+          .map(buildHabitCheckInView),
         resetEvents:
           resetResult.error || isHabitsSchemaMissing(resetResult.error)
             ? []
-            : ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(
-                buildHabitMotivationResetView
-              ),
+            : ((resetResult.data ?? []) as HabitMotivationResetRow[])
+                .filter((row) => supportedHabitIds.has(row.habit_id))
+                .map(buildHabitMotivationResetView),
         unsupported,
       };
     }

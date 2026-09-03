@@ -64,6 +64,8 @@ function getStatusLabel(status: string) {
       return "Included";
     case "no_data":
       return "No entries";
+    case "review":
+      return "Needs review";
     case "syncing":
       return "Syncing";
     case "error":
@@ -81,6 +83,8 @@ function getStatusClass(status: string) {
       return "bg-emerald-50 text-emerald-800 ring-emerald-200";
     case "no_data":
       return "bg-white/85 text-[color:var(--fs-color-muted)] ring-[color:var(--fs-border-soft)]";
+    case "review":
+      return "bg-amber-50 text-amber-900 ring-amber-200";
     case "syncing":
       return "bg-blue-50 text-blue-800 ring-blue-200";
     case "error":
@@ -255,6 +259,16 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): PrimaryIn
     };
   }
 
+  const reviewSource = model.sourceComparisons.find((source) => source.status === "review");
+  if (reviewSource) {
+    return {
+      tone: "warning",
+      value: "Needs review",
+      title: `${reviewSource.label} data needs review`,
+      body: reviewSource.summary,
+    };
+  }
+
   const highlights = getMetricHighlights(model);
   const positive = highlights.find((highlight) => highlight.metric.tone === "positive");
   const negative = highlights.find((highlight) => highlight.metric.tone === "negative");
@@ -339,6 +353,7 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
   const negative = highlights.find((highlight) => highlight.metric.tone === "negative");
   const sourceCount = getSourceCountLabel(model);
   const singleSource = model.sourceComparisons.length === 1 ? model.sourceComparisons[0] : null;
+  const singleSourceNeedsReview = singleSource?.status === "review";
   const comparisonPhrase = getComparisonPeriodPhrase(model);
 
   return [
@@ -367,14 +382,16 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
       tone:
         sourceCount.included === sourceCount.total ? ("positive" as const) : ("warning" as const),
       label: singleSource ? "Comparison data" : "Sources compared",
-      value:
-        singleSource && sourceCount.included === sourceCount.total
+      value: singleSourceNeedsReview
+        ? "Needs review"
+        : singleSource && sourceCount.included === sourceCount.total
           ? "Ready"
           : singleSource
             ? "Needs data"
             : `${sourceCount.included} of ${sourceCount.total}`,
-      body:
-        singleSource && sourceCount.included === sourceCount.total
+      body: singleSourceNeedsReview
+        ? `${singleSource.label} has saved data that needs review before the comparison is complete.`
+        : singleSource && sourceCount.included === sourceCount.total
           ? `${singleSource.label} has data for this comparison.`
           : singleSource
             ? `${singleSource.label} needs data in both ranges before the trend is useful.`

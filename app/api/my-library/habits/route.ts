@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
-import { buildHabitDefinitionInsert, type HabitCreateRequestBody } from "@/lib/habits/shared";
+import {
+  buildHabitDefinitionInsert,
+  UnsupportedHabitDefinitionValueError,
+  validateHabitDefinitionCoreInput,
+  type HabitCreateRequestBody,
+} from "@/lib/habits/shared";
 import { isLocalDayDateKey, validateRenderedLocalDayDate } from "@/lib/my-library/local-day";
 import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -69,6 +74,21 @@ export async function POST(request: Request) {
     );
   }
   const body = parsedBody as HabitCreateRequestBody;
+
+  try {
+    validateHabitDefinitionCoreInput(body);
+  } catch (error) {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          ...(error instanceof UnsupportedHabitDefinitionValueError ? { code: error.code } : {}),
+          error: error instanceof Error ? error.message : "Could not create that habit.",
+        },
+        { status: 400 }
+      )
+    );
+  }
 
   if (body.startDate !== undefined && !isLocalDayDateKey(body.startDate)) {
     return applySupabaseCookies(
@@ -155,11 +175,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const activeRows = (existingResult.data ?? []) as Pick<
+  const existingRows = (existingResult.data ?? []) as Pick<
     HabitDefinitionRow,
     "id" | "sort_order" | "status"
   >[];
-  if (activeRows.length >= 12) {
+  if (existingRows.length >= 12) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Archive one habit before adding another." }, { status: 400 })
     );
@@ -168,7 +188,7 @@ export async function POST(request: Request) {
   let insertPayload;
   try {
     const nextSortOrder =
-      activeRows.reduce((max, row) => Math.max(max, row.sort_order ?? 0), 0) + 1;
+      existingRows.reduce((max, row) => Math.max(max, row.sort_order ?? 0), 0) + 1;
     insertPayload = buildHabitDefinitionInsert(
       user.id,
       body,
@@ -180,6 +200,7 @@ export async function POST(request: Request) {
       noStoreJson(
         {
           ok: false,
+          ...(error instanceof UnsupportedHabitDefinitionValueError ? { code: error.code } : {}),
           error: error instanceof Error ? error.message : "Could not create that habit.",
         },
         { status: 400 }
@@ -209,6 +230,10 @@ export async function POST(request: Request) {
     );
   }
 
+  const snapshot = await loadHabitSnapshot(supabase, user.id, {
+    selectedDate: body.selectedDate,
+    todayDate: localDayContext.todayDate,
+  });
   trackAnalyticsEvent({
     eventName: "habit_created",
     channel: "server",
@@ -223,13 +248,8 @@ export async function POST(request: Request) {
       cadencePeriod: insertPayload.cadence_period,
       cadenceDayPolicy: insertPayload.cadence_day_policy,
       cadenceTargetCount: insertPayload.cadence_target_count,
-      activeHabitCountBefore: activeRows.length,
+      activeHabitCountBefore: Math.max(0, snapshot.activeHabits.length - 1),
     },
-  });
-
-  const snapshot = await loadHabitSnapshot(supabase, user.id, {
-    selectedDate: body.selectedDate,
-    todayDate: localDayContext.todayDate,
   });
   return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
 }

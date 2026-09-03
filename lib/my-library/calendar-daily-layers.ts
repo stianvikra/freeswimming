@@ -1,13 +1,14 @@
 import {
   HABIT_CADENCE_DAY_POLICY_VALUES,
   HABIT_CADENCE_PERIOD_VALUES,
-  HABIT_MODE_VALUES,
   buildHabitDaySummary,
+  classifyHabitDefinition,
   type HabitCheckInView,
   type HabitDayItem,
   type HabitDefinitionRow,
   type HabitDefinitionView,
   type HabitMotivationResetView,
+  type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
   DRYLAND_MICRO_BLOCK_STATUSES,
@@ -134,32 +135,39 @@ function isMappedMicroBlockStatus(value: unknown): value is DrylandMicroBlockSta
   );
 }
 
-function hasUnsupportedHabitContract(row: HabitDefinitionRow): boolean {
+function hasUnsupportedCalendarCadence(row: HabitDefinitionRow): boolean {
   const hasUnknownCadencePeriod =
     row.cadence_period !== null &&
     !HABIT_CADENCE_PERIOD_VALUES.includes(row.cadence_period as never);
   const hasUnknownCadenceDayPolicy =
     row.cadence_day_policy !== null &&
     !HABIT_CADENCE_DAY_POLICY_VALUES.includes(row.cadence_day_policy as never);
-  const hasUnknownHabitMode =
-    row.habit_mode !== null && !HABIT_MODE_VALUES.includes(row.habit_mode as never);
 
-  return hasUnknownCadencePeriod || hasUnknownCadenceDayPolicy || hasUnknownHabitMode;
+  return hasUnknownCadencePeriod || hasUnknownCadenceDayPolicy;
 }
 
 export function partitionCalendarHabitRows(rows: HabitDefinitionRow[]): {
-  supportedRows: HabitDefinitionRow[];
+  supportedRows: SupportedHabitDefinitionRow[];
   unsupported: UnsupportedHabitScope;
 } {
-  const supportedRows: HabitDefinitionRow[] = [];
+  const supportedRows: SupportedHabitDefinitionRow[] = [];
   const unsupportedLabels: string[] = [];
 
   for (const row of rows) {
-    if (hasUnsupportedHabitContract(row)) {
-      unsupportedLabels.push(row.title || row.id);
-    } else {
-      supportedRows.push(row);
+    const definition = classifyHabitDefinition(row);
+    if (definition.kind === "unsupported") {
+      unsupportedLabels.push(definition.descriptor.title || definition.descriptor.id);
+      continue;
     }
+
+    // H-081 remains separate: keep Calendar's existing cadence gate after the
+    // shared H-080 type/mode/status boundary.
+    if (hasUnsupportedCalendarCadence(definition.row)) {
+      unsupportedLabels.push(definition.row.title || definition.row.id);
+      continue;
+    }
+
+    supportedRows.push(definition.row);
   }
 
   return {
@@ -245,15 +253,18 @@ function getHabitLayerCompactLabel(input: {
   hasReview: boolean;
 }) {
   if (input.dailyTotalCount > 0) {
-    return `${input.dailyCompletedCount}/${input.dailyTotalCount} habits`;
+    const progress = `${input.dailyCompletedCount}/${input.dailyTotalCount} habits`;
+    return input.hasReview ? `${progress} · review` : progress;
   }
 
   if (input.weeklyCompletedOnDateCount > 0) {
-    return pluralize(input.weeklyCompletedOnDateCount, "weekly habit");
+    const progress = pluralize(input.weeklyCompletedOnDateCount, "weekly habit");
+    return input.hasReview ? `${progress} · review` : progress;
   }
 
   if (input.monthlyCompletedOnDateCount > 0) {
-    return pluralize(input.monthlyCompletedOnDateCount, "monthly habit");
+    const progress = pluralize(input.monthlyCompletedOnDateCount, "monthly habit");
+    return input.hasReview ? `${progress} · review` : progress;
   }
 
   if (input.hasReview) return "Habits review needed";
@@ -280,8 +291,10 @@ function getHabitLayerSummary(input: {
   if (input.monthlyCompletedOnDateCount > 0) {
     lines.push(`${pluralize(input.monthlyCompletedOnDateCount, "monthly habit")} completed today.`);
   }
+  if (input.hasReview) {
+    lines.push("Some Habits need review before Calendar can count them.");
+  }
   if (lines.length > 0) return lines.join(" ");
-  if (input.hasReview) return "Some Habits need review before Calendar can count them.";
   if (input.hasVisibleItems)
     return "Weekly and monthly Habits are counted in the week or period totals.";
   return "No due, done, rest, or slip Habit signals on this date.";
@@ -338,7 +351,10 @@ function buildHabitsLayer(input: {
     });
   }
 
-  const dayCheckIns = state.checkIns.filter((checkIn) => checkIn.checkInDate <= input.date);
+  const supportedHabitIds = new Set(state.habits.map((habit) => habit.id));
+  const dayCheckIns = state.checkIns.filter(
+    (checkIn) => supportedHabitIds.has(checkIn.habitId) && checkIn.checkInDate <= input.date
+  );
   const daySummary = buildHabitDaySummary(state.habits, dayCheckIns, input.date);
   const visibleItems = getHabitVisibleItems(daySummary.items);
   const dailyHabitItems = getDailyHabitItems(daySummary.items);
@@ -366,6 +382,7 @@ function buildHabitsLayer(input: {
   ).length;
   const resetCount = state.resetEvents.filter(
     (reset) =>
+      supportedHabitIds.has(reset.habitId) &&
       reset.effectiveDate === input.date &&
       reset.resetType === "reset_stats" &&
       reset.status === "active"
@@ -378,8 +395,11 @@ function buildHabitsLayer(input: {
     restCount > 0 ||
     slipCount > 0 ||
     resetCount > 0;
-  const status: MyLibraryCalendarDailyLayerStatus =
-    hasReview && !hasUserVisibleSignal ? "review" : hasUserVisibleSignal ? "mapped" : "no_data";
+  const status: MyLibraryCalendarDailyLayerStatus = hasReview
+    ? "review"
+    : hasUserVisibleSignal
+      ? "mapped"
+      : "no_data";
   const compactLabel = getHabitLayerCompactLabel({
     dailyCompletedCount: dailyHabitCompletedCount,
     dailyTotalCount: dailyHabitTotalCount,
@@ -392,7 +412,9 @@ function buildHabitsLayer(input: {
       ? ` ${pluralize(
           state.unsupported.count,
           "Habit"
-        )} need a Calendar cadence mapping before they count.`
+        )} ${state.unsupported.count === 1 ? "needs" : "need"} review before ${
+          state.unsupported.count === 1 ? "it counts" : "they count"
+        }.`
       : "";
   const metrics: MyLibraryCalendarDailyLayerMetric[] = [
     {
@@ -450,7 +472,7 @@ function buildHabitsLayer(input: {
       ? [
           {
             id: "habit_review",
-            label: "Needs mapping",
+            label: "Needs review",
             value: pluralize(state.unsupported.count, "habit"),
             tone: "warning" as const,
           },

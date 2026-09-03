@@ -66,6 +66,20 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
   };
 }
 
+function buildResetRow(overrides?: Partial<HabitMotivationResetRow>): HabitMotivationResetRow {
+  return {
+    id: "33333333-3333-4333-8333-333333333333",
+    user_id: "user-1",
+    habit_id: "11111111-1111-4111-8111-111111111111",
+    reset_type: "reset_stats",
+    status: "active",
+    effective_date: "2026-05-04",
+    created_by: "user-1",
+    created_at: "2026-05-04T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
 function buildSupabaseMock(
   definitions: HabitDefinitionRow[],
   checkIns: HabitCheckInRow[],
@@ -184,6 +198,75 @@ describe("habits server loader", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+  });
+
+  it("separates unsupported definitions and excludes their child rows from all summaries", async () => {
+    const supported = buildHabitRow();
+    const unsupportedType = buildHabitRow({
+      id: "22222222-2222-4222-8222-222222222222",
+      title: "Future type habit",
+      habit_type: "future_type",
+      sort_order: 2,
+    });
+    const unsupportedMode = buildHabitRow({
+      id: "33333333-3333-4333-8333-333333333333",
+      title: "Future mode habit",
+      habit_mode: "future_mode",
+      sort_order: 3,
+    });
+    const unsupportedStatus = buildHabitRow({
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "Future status habit",
+      status: "future_status",
+      sort_order: 4,
+    });
+    const { supabase, microLinkQuery } = buildSupabaseMock(
+      [supported, unsupportedType, unsupportedMode, unsupportedStatus],
+      [
+        buildCheckInRow({ habit_id: supported.id }),
+        buildCheckInRow({
+          id: "55555555-5555-4555-8555-555555555555",
+          habit_id: unsupportedType.id,
+          value_numeric: 100,
+        }),
+      ],
+      [
+        buildResetRow({ habit_id: supported.id }),
+        buildResetRow({
+          id: "66666666-6666-4666-8666-666666666666",
+          habit_id: unsupportedMode.id,
+        }),
+      ]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-04",
+      todayDate: "2026-05-04",
+    });
+
+    expect(snapshot.activeHabits.map((habit) => habit.id)).toEqual([supported.id]);
+    expect(snapshot.archivedHabits).toEqual([]);
+    expect(snapshot.unsupportedHabits).toEqual([
+      {
+        id: unsupportedType.id,
+        title: unsupportedType.title,
+        unsupportedFields: ["unknown_habit_type"],
+      },
+      {
+        id: unsupportedMode.id,
+        title: unsupportedMode.title,
+        unsupportedFields: ["unknown_habit_mode"],
+      },
+      {
+        id: unsupportedStatus.id,
+        title: unsupportedStatus.title,
+        unsupportedFields: ["unknown_definition_status"],
+      },
+    ]);
+    expect(snapshot.daySummary.items.map((item) => item.habit.id)).toEqual([supported.id]);
+    expect(snapshot.motivationSummary?.items.map((item) => item.habitId)).toEqual([supported.id]);
+    expect(microLinkQuery.in).toHaveBeenCalledWith("habit_id", [supported.id]);
+    expect(JSON.stringify(snapshot)).not.toMatch(/future_(type|mode|status)/);
   });
 
   it("adds linked Micro Session progress to habit definitions", async () => {

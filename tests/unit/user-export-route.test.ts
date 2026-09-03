@@ -57,6 +57,77 @@ describe("/api/user/export route", () => {
     vi.clearAllMocks();
   });
 
+  it("returns raw future Habit values only through the authenticated private export", async () => {
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
+    const supabase = buildExportSupabaseClient({
+      profiles: {
+        data: {
+          id: "user-1",
+          email: "swimmer@example.com",
+          created_at: "2026-08-31T08:00:00.000Z",
+          updated_at: "2026-08-31T08:00:00.000Z",
+        },
+        error: null,
+      },
+      athlete_profiles: { data: null, error: null },
+      training_preferences: { data: null, error: null },
+      habit_definitions: {
+        data: [
+          {
+            id: "habit-future",
+            title: "Private future habit",
+            notes: "Private future note",
+            habit_mode: "future_mode",
+            habit_type: "future_type",
+            status: "future_status",
+          },
+        ],
+        error: null,
+      },
+      habit_check_ins: {
+        data: [
+          {
+            id: "check-future",
+            habit_id: "habit-future",
+            note: "Private preserved history",
+            source_kind: "micro_session",
+            source_dryland_micro_plan_id: "micro-plan-1",
+          },
+        ],
+        error: null,
+      },
+    });
+    createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
+
+    const response = await GET();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.export.habitDefinitions).toEqual([
+      expect.objectContaining({
+        id: "habit-future",
+        habitMode: "future_mode",
+        habitType: "future_type",
+        status: "future_status",
+      }),
+    ]);
+    expect(payload.export.habitCheckIns).toEqual([
+      expect.objectContaining({
+        id: "check-future",
+        habitId: "habit-future",
+        note: "Private preserved history",
+        sourceKind: "micro_session",
+        sourceDrylandMicroPlanId: "micro-plan-1",
+      }),
+    ]);
+    expect(payload).toMatchObject({
+      ok: true,
+      export: { schemaVersion: "2026-06-23-training-activity-export" },
+    });
+    expect(supabase.from).toHaveBeenCalledWith("habit_definitions");
+    expect(supabase.from).toHaveBeenCalledWith("habit_check_ins");
+  });
+
   it("returns an export with empty provider arrays when provider evidence schema is missing", async () => {
     loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
     const missingProviderTable = {
