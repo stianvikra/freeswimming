@@ -3,27 +3,27 @@
 ## Metadata
 
 - `id`: `2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-09-01`
-- `updated`: `2026-09-01`
+- `updated`: `2026-09-03`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `parent_child`: `Child AA`
 - `target_findings`: `H-080`
-- `execution_mode`: `implementation authorized by the owner's explicit \`Kjør Child AA\``
+- `execution_mode`: `shipped through PR #1251 and closed by the repo-managed docs-only closeout`
 - `intended_branch`: `codex/aw-006-habits-type-mode-status-fail-closed`
 - `strict_10_10_mode`: `yes; visible review-state changes require screenshot approval before pre-PR gates`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-09-01`
-- `base`: clean synced `main@9d315c53` before the uncommitted parent/child planning diff.
-- `audit_status`: `ready`
-- `decision`: Execute this as the only selected Habits child for H-080 on `codex/aw-006-habits-type-mode-status-fail-closed`. Preserve the screenshot approval stop before pre-PR gates.
-- `reason`: Current reads silently coerce unknown persisted `habit_type`, `habit_mode`, and definition `status` into `binary`, `build`, and `active`. The same type/mode fallback can accept explicit future values in create/update input. This can make a partially deployed or future definition look successful across Habits, Home/My Routines, Calendar, Motivation, analytics, and linked Micro Session credit. One shared supported/unsupported boundary plus write guards is bounded and does not require a new product semantic or database migration.
+- `last_audited`: `2026-09-03`
+- `base`: shipped on clean synced `main@5d12445b` after PR `#1251`.
+- `audit_status`: `closed`
+- `decision`: Child AA shipped H-080 through PR `#1251`, squash commit `5d12445b`; no Habits child is selected by this closeout.
+- `reason`: Before Child AA, reads silently coerced unknown persisted `habit_type`, `habit_mode`, and definition `status` into `binary`, `build`, and `active`, and the same fallback could accept explicit future type/mode values in create/update input. PR `#1251` replaced that risk with one shared supported/unsupported boundary plus write guards without adding a new product semantic or database migration.
 - `must_refresh_before_execution_if`: Refresh this brief if `AGENTS.md`, the parent H-080/H-081 disposition, `lib/habits/{shared,server}.ts`, Habits route handlers, Today/Home/My Routines contracts, Calendar Plan/Trends adapters, Micro Session Habit linkage, private export, analytics payloads, `habit_definitions` constraints/generated types, local Next.js 16 docs, support/Help contracts, scorecard categories, screenshot rules, or verification lanes change after `main@9d315c53`; also refresh if `origin/main` advances before execution.
 - `scope_stop`: Stop and revise before implementation broadens into a schema migration, a new habit type/mode/status, H-081 category/operator/unit/cadence repair, raw-value logging, an admin repair tool, or a redesign. If safe classification cannot be centralized without such expansion, return to the parent for a product/architecture decision.
 
@@ -56,7 +56,7 @@ Explicitly not owned:
 - `H-081`: category, target operator/unit, cadence/day-policy, schedule, or target-shape legacy/default compatibility.
 - New Habit values, database constraint changes, history versioning, repair tooling, reminders, hard delete, provider/native sync, export-format redesign, or broad visual redesign.
 
-## Current Audit Evidence
+## Pre-Implementation Audit Evidence
 
 - `lib/habits/shared.ts`:
   - `getHabitType` maps every unknown value to `binary`;
@@ -126,7 +126,26 @@ All user-facing errors are generic and retry-safe. Reload cannot reinterpret the
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for a `10/10` claim: Product goals and IA; UX flow clarity; Visual design quality; Business logic correctness and data integrity; Accessibility (a11y); Performance (CWV + payloads); Data placement and sync boundaries; Reliability and failure handling; Security and authz; Privacy and compliance; Content governance; Analytics and KPI observability; Incident response and support operations; i18n operational readiness; Stack-fit and dependency discipline; Testing and QA automation; Scalability and cost efficiency; DevOps and rollback readiness.
+Critical target categories for a `10/10` claim:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- *Accessibility (a11y)*
+- *Performance (CWV + payloads)*
+- `Data placement and sync boundaries`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Privacy and compliance`
+- `Content governance`
+- `Analytics and KPI observability`
+- `Incident response and support operations`
+- `i18n operational readiness`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `Scalability and cost efficiency`
+- `DevOps and rollback readiness`
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                                                                                                                                                    | Evidence                                                     | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
@@ -514,7 +533,7 @@ Any code, test, config, script, or runtime diff uses the full validation lane. N
 
 ## Automation, Git, And Session Continuity
 
-- Current mode is active implementation on `codex/aw-006-habits-type-mode-status-fail-closed`. Runtime/tests/docs and screenshot capture are authorized; commit/push/PR wait until the required owner screenshot approval, and merge still requires separate explicit approval.
+- Child AA shipped from `codex/aw-006-habits-type-mode-status-fail-closed` through PR `#1251` as squash commit `5d12445b` after owner-approved screenshots, green local gates, green CI, and explicit merge approval.
 - When explicitly executed, use automation-first delivery with the screenshot approval exception: branch, implementation, targeted tests, screenshot handoff and stop, then pre-PR/commit/push/PR/CI/pre-merge.
 - Never merge without explicit owner approval.
 - Commit/push each validated implementation checkpoint; avoid unrelated batching. Open/update the PR after one complete vertical slice or 2–4 validated commits.
@@ -539,7 +558,7 @@ Any code, test, config, script, or runtime diff uses the full validation lane. N
   - private export/privacy and support recovery;
   - screenshots, target scores, validation, commit, and PR.
 - H-081 and H-071–H-075 remain explicitly open unless a separate owner-selected brief later owns them.
-- After merge/closeout, move this brief to `done`, update the parent/queue/inventory, reset `selected_child` to `none`, and do not imply another Habits child.
+- This closeout moves the brief to `done`, updates the parent/queue/inventory, resets `selected_child` to `none`, and does not imply another Habits child.
 
 ## Checkpoint Log
 
@@ -549,9 +568,37 @@ Any code, test, config, script, or runtime diff uses the full validation lane. N
 - `2026-09-01 | screenshots-approved | owner explicitly approved the four after/reference artifacts; no product-rendering file, style, asset, or export HTML changed after final capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor required CI, then run npm run verify:pre-merge`
 - `2026-09-01 | pre-pr-green | first npm run verify:pre-pr attempt stopped at the deterministic brief quality gate because the operational evidence did not use the required literal phrases for unexpected-500 coverage and the route/label/support sweep; added those exact evidence labels without changing scope or runtime, confirmed npm run lint:quality-gates, then reran the full gate successfully: branch-current and brief/governance checks passed; ESLint reported 0 errors and 8 unrelated existing warnings; TypeScript passed; Vitest passed 264 files / 1888 tests; the production build passed; route performance budgets passed with a 16.8% worst margin and the baseline decision remains hold at green run 1/2; Playwright passed 111 tests with 573 environment/profile skips in 5.4 minutes; verify-open reported PASS | next: run final brief lint and git diff check, commit, push, open PR, monitor required CI, then run npm run verify:pre-merge`
 - `2026-09-02 | pr-size-recovery | committed and pushed 0c98df7b, opened PR #1251, and observed every required CI job except PR Size pass; the size check correctly rejected 4538 changed lines against its hard 4000-line limit; preserved the atomic Child AA behavior and all required scenarios while removing Markdown table-formatting churn, an unrelated unchanged-auth export assertion, duplicate completed sweep instructions, and repetitive test fixture/setup/expected blocks; no product-rendering file/style/asset/export HTML changed, and the resulting main diff is 3953 lines including this checkpoint; PASS focused Vitest 5 files / 77 tests, npm run typecheck, npm run lint:briefs:all for 560 briefs, and git diff --check | next: rerun npm run verify:pre-pr on the revised HEAD, commit and push the bounded recovery, confirm required CI including PR Size, then run npm run verify:pre-merge`
+- `2026-09-03 | done | owner approved merge after current-head local pre-PR/pre-merge, green required CI, approved after/reference screenshots, independent no-P0/P1/P2 review, and a passing 3953/4000 PR-size gate; PR #1251 shipped H-080 as squash commit 5d12445b, the brief moved to done, H-081 and H-071–H-075 remain outside scope, and no next Habits child is selected | next: merge this repo-managed docs-only closeout, sync main, rerun post-merge preflight, then perform the mandatory chat-handoff assessment`
 
 ## Completion Record
 
-- `status`: implementation, targeted QA, owner screenshot approval, initial full pre-PR, commit/push, and PR creation are complete; a bounded PR-size recovery awaits full pre-PR, update push, CI, and pre-merge; merge and closeout remain open.
-- `10/10 claim`: no - the revised HEAD still needs full pre-PR, required CI, pre-merge, merge evidence, and closeout scores.
-- Target-category achieved scores: to be filled only from implementation/merge evidence.
+- `completed`: `2026-09-03`
+- `merged_pr`: `#1251`
+- `squash_commit`: `5d12445b`
+- `result`: Closed AW-006 Child AA by replacing silent fallback of unknown Habit `habit_type`, `habit_mode`, and definition `status` with one shared fail-closed boundary. Unsupported rows remain private, stable, read-only, and visibly marked `Needs review`; they cannot affect success metrics or direct Habit writes. Valid Micro Session completion remains independent while unsupported linked Habit credit is blocked and exact source-owned undo stays provenance-safe.
+- `validation`: Focused Vitest (`18` files / `351` tests, then final recovery matrix `5` files / `77` tests); typecheck; lint with `0` errors and `8` unrelated existing warnings; all-brief lint for `560` files; `git diff --check`; owner-approved screenshots; full `npm run verify:pre-pr` with `264` unit files / `1887` tests, build, performance budgets, and Playwright `111` passed / `573` expected environment/profile skips; all required GitHub CI for PR `#1251`, including CodeQL, deploy preview, site-lock smoke, and `3953/4000` PR Size; and current-head `npm run verify:pre-merge` for `54895608` with PASS marker `artifacts/verify-pre-merge/20260902-201019.json` before squash merge `5d12445b`.
+- `screenshot_artifacts`: `output/playwright/habits-definition-fail-closed-2026-09-01-131633`; captured `2026-09-01 13:21`, approved by owner; comparison type `after/reference`; four mobile/desktop artifacts use production components with deterministic synthetic data; no product rendering file, style, asset, or export HTML changed after capture.
+- `resolved_findings`: `H-080`.
+- `remaining_gaps`: None in Child AA. `H-081` and `H-071`–`H-075` remain explicitly outside scope and require fresh owner selection before implementation.
+- `10/10 claim`: yes - all 18 critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | H-080 closed across the named read/write consumers without changing H-081 or other Habits semantics.                                  | None.        |
+| UX flow clarity                               | `5/5`          | One `Needs review` state replaces false setup/done/success copy and removes unsupported mutation actions.                             | None.        |
+| Visual design quality                         | `5/5`          | Mature notice/status patterns passed owner-approved mobile/desktop after/reference review.                                            | None.        |
+| Business logic correctness and data integrity | `5/5`          | Type/mode/status/mixed fixtures prove zero success contribution, zero rejected writes/events, raw preservation, and exact undo.       | None.        |
+| Accessibility (a11y)                          | `5/5`          | Programmatic review status, absent blocked actions, responsive assertions, and full browser gates passed.                             | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | O(n) partitioning adds no history expansion or N+1; build and route budgets passed with 16.8% worst margin.                           | None.        |
+| Data placement and sync boundaries            | `5/5`          | Raw values/IDs remain server-canonical; classification is derived on each fresh load with no browser copy or rewrite.                 | None.        |
+| Reliability and failure handling              | `5/5`          | Mixed rows render; invalid input returns typed `400`, stored conflict `409`, Micro credit blocks explicitly, and no expected `500`.   | None.        |
+| Security and authz                            | `5/5`          | Existing auth/owner filters remain fail closed and guards run before mutation without cross-owner disclosure.                         | None.        |
+| Privacy and compliance                        | `5/5`          | Private export preserves raw values; analytics/logs exclude raw unknown values and private titles.                                   | None.        |
+| Content governance                            | `5/5`          | Shared contracts agree across API, user flow, support, privacy, parent, queue, inventory, and child brief.                            | None.        |
+| Analytics and KPI observability               | `5/5`          | Unsupported rows contribute zero to active/success metrics and no private/raw value enters event payloads.                           | None.        |
+| Incident response and support operations      | `5/5`          | Support guidance covers symptom, stable error, safe diagnosis, escalation, private logging boundary, and no-history-rewrite recovery. | None.        |
+| i18n operational readiness                    | `5/5`          | Labels stay shared and machine values never become copy; responsive layouts tolerate longer localized text.                          | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Next.js 16, TypeScript, Supabase owner-scope, Habits/Calendar patterns, and existing tests with no dependency or migration.    | None.        |
+| Testing and QA automation                     | `5/5`          | Focused matrices, full local gates, green required CI, screenshot approval, and independent review cover every H-080 boundary.       | None.        |
+| Scalability and cost efficiency               | `5/5`          | One bounded O(n) partition per row set, no background work/external service, and no supported-path extra round trip.                  | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration/secret/flag; atomic PR, conditional fail-closed rollback, current-head gates, CI, and PR Size all passed.                | None.        |

@@ -44,7 +44,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 
 2026-09-01 planned Child AA note: the owner authorized the plan-only brief at `docs/task-briefs/planned/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` for H-080. A future explicitly authorized implementation will add one shared fail-closed boundary plus an accessible read-only `Needs review` state for unsupported Habit type/mode/status values; no runtime/UI change or screenshot evidence exists yet.
 
-2026-09-01 in-progress Child AA note: the owner explicitly authorized `docs/task-briefs/in-progress/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` for H-080. Implementation now owns the shared fail-closed boundary and accessible read-only `Needs review` state; screenshot evidence and owner visual approval remain required before pre-PR gates.
+2026-09-03 shipped Child AA note: PR `#1251` closed `docs/task-briefs/done/2026-09-01-aw-006-habits-type-mode-status-fail-closed-10-10.md` as squash commit `5d12445b`. H-080 is resolved through the shared fail-closed boundary and accessible read-only `Needs review` state, with owner-approved after/reference screenshots. No additional notice redesign was included; the queue has no selected Habits child, and H-081 plus H-071-H-075 remain separate unowned findings.
 
 ## Representative Inventory
 
