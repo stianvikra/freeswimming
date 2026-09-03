@@ -206,6 +206,78 @@ describe("TodayTabsPanel", () => {
     );
   });
 
+  it("renders a not-tracked Habit day as neutral without completion credit", () => {
+    const habitSnapshot = buildHabitSnapshot();
+    habitSnapshot.daySummary = {
+      ...habitSnapshot.daySummary,
+      dayStatus: "not_tracked",
+      trackingState: "not_tracked",
+      potentialPerfectDayItemCount: 2,
+      perfectDayItemCount: 0,
+      satisfiedPerfectDayItemCount: 0,
+      completionPercent: null,
+      isPerfectDay: false,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+        notTrackedDayCount: 1,
+      }),
+    };
+
+    render(
+      <TodayTabsPanel
+        drylandLibrary={buildDrylandLibrary()}
+        habitSnapshot={habitSnapshot}
+        nowIso="2026-05-10T09:00:00.000Z"
+      />
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+    fireEvent.click(within(panel).getByRole("tab", { name: "Habits" }));
+
+    expect(panel).toHaveAttribute("data-routine-state", "not_tracked");
+    expect(within(panel).getByText("Not tracked")).toBeVisible();
+    expect(
+      within(panel).getByText(/excluded from Habit performance, totals, and streaks/i)
+    ).toBeVisible();
+    expect(within(panel).queryByText(/0%|100%|done|missed|rest day|slip|perfect day/i)).toBeNull();
+  });
+
+  it("renders incomplete cadence tracking without a success percentage", () => {
+    const habitSnapshot = buildHabitSnapshot();
+    habitSnapshot.daySummary = {
+      ...habitSnapshot.daySummary,
+      potentialPerfectDayItemCount: 2,
+      perfectDayItemCount: 1,
+      satisfiedPerfectDayItemCount: 1,
+      completionPercent: 100,
+      isPerfectDay: false,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        notTrackedDayCount: 1,
+      }),
+    };
+
+    render(
+      <TodayTabsPanel
+        drylandLibrary={buildDrylandLibrary()}
+        habitSnapshot={habitSnapshot}
+        nowIso="2026-05-10T09:00:00.000Z"
+      />
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+    fireEvent.click(within(panel).getByRole("tab", { name: "Habits" }));
+
+    expect(panel).toHaveAttribute("data-routine-state", "tracking_incomplete");
+    expect(within(panel).getByText("Tracking incomplete")).toBeVisible();
+    expect(within(panel).getByText(/does not have enough tracked days/i)).toBeVisible();
+    expect(within(panel).queryByText(/100%|done|perfect day/i)).toBeNull();
+  });
+
   it("renders unsupported Habits as review without a percentage or edit action", () => {
     const habitSnapshot = buildHabitSnapshot();
     habitSnapshot.activeHabits = [];

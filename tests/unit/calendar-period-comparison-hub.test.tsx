@@ -44,7 +44,7 @@ function buildModel(): MyLibraryCalendarComparisonModel {
         source: "habits",
         label: "Habits",
         status: "mapped",
-        summary: "Habits were on target 50% across 4 tracked days.",
+        summary: "Habits were on target 50% across 4 included days. Coverage was 4/4 · 100%.",
         supportLabel: "Habits counts existing check-ins only.",
         details: [
           {
@@ -58,9 +58,19 @@ function buildModel(): MyLibraryCalendarComparisonModel {
             value: "Morning mobility, Water, Read",
           },
           {
-            id: "tracked_days",
-            label: "Tracked days",
-            value: "4 days",
+            id: "included_days",
+            label: "Included days",
+            value: "4/4 days",
+          },
+          {
+            id: "habit_coverage",
+            label: "Coverage",
+            value: "4/4 · 100%",
+          },
+          {
+            id: "habit_not_tracked",
+            label: "Not tracked",
+            value: "0 days",
           },
         ],
         metrics: [
@@ -209,8 +219,12 @@ describe("CalendarPeriodComparisonHub", () => {
     expect(within(habits).getByText("3 habits")).toBeVisible();
     expect(within(habits).getByText("Included habits")).toBeVisible();
     expect(within(habits).getByText("Morning mobility, Water, Read")).toBeVisible();
-    expect(within(habits).getByText("Tracked days")).toBeVisible();
-    expect(within(habits).getByText("4 days")).toBeVisible();
+    expect(within(habits).getByText("Included days")).toBeVisible();
+    expect(within(habits).getByText("4/4 days")).toBeVisible();
+    expect(within(habits).getByText("Coverage")).toBeVisible();
+    expect(within(habits).getByText("4/4 · 100%")).toBeVisible();
+    expect(within(habits).getByText("Not tracked")).toBeVisible();
+    expect(within(habits).getByText("0 days")).toBeVisible();
     expect(within(habits).getByText("Targets hit")).toBeVisible();
     expect(within(habits).getByText("This week 50% vs 25% last week.")).toBeVisible();
     expect(within(habits).getByText("50% vs 25%")).toHaveClass("text-emerald-800");
@@ -277,6 +291,78 @@ describe("CalendarPeriodComparisonHub", () => {
     render(<CalendarPeriodComparisonHub model={habitsOnlyModel} />);
 
     expect(screen.getByText("Habits comparison details")).toBeVisible();
+  });
+
+  it("shows coverage gaps neutrally without claiming that Habit consistency changed", () => {
+    const model = buildModel();
+    const habits = model.sourceComparisons[0];
+    const coverageModel: MyLibraryCalendarComparisonModel = {
+      ...model,
+      selectedSource: "habits",
+      sourceComparisons: [
+        {
+          ...habits,
+          summary:
+            "Habits were on target 80% across 5 included days. Coverage was 5/7 · 71% with 2 days not tracked.",
+          details: [
+            ...(habits.details ?? []).filter(
+              (detail) =>
+                detail.id !== "included_days" &&
+                detail.id !== "habit_coverage" &&
+                detail.id !== "habit_not_tracked"
+            ),
+            { id: "included_days", label: "Included days", value: "5/7 days" },
+            { id: "habit_coverage", label: "Coverage", value: "5/7 · 71%" },
+            { id: "habit_not_tracked", label: "Not tracked", value: "2 days" },
+          ],
+          metrics: [
+            {
+              id: "habit_completion_average",
+              label: "Targets hit",
+              currentLabel: "80%",
+              comparisonLabel: "100%",
+              deltaLabel: "Coverage differs",
+              tone: "neutral",
+            },
+            {
+              id: "habit_coverage",
+              label: "Coverage",
+              currentLabel: "5/7 · 71%",
+              comparisonLabel: "7/7 · 100%",
+              deltaLabel: "Coverage differs",
+              tone: "neutral",
+            },
+            {
+              id: "habit_not_tracked",
+              label: "Not tracked",
+              currentLabel: "2 days",
+              comparisonLabel: "0 days",
+              deltaLabel: "Coverage only",
+              tone: "neutral",
+            },
+          ],
+        },
+      ],
+    };
+
+    render(<CalendarPeriodComparisonHub model={coverageModel} />);
+
+    const insight = screen.getByTestId("calendar-insight-summary");
+    expect(within(insight).getByText("Habit coverage differs")).toBeVisible();
+    expect(within(insight).getByText("Coverage differs")).toBeVisible();
+    expect(within(insight).getByText(/No improvement or decline is inferred/)).toBeVisible();
+    expect(within(insight).queryByText("Consistency improved")).toBeNull();
+    expect(within(insight).queryByText("Consistency dropped")).toBeNull();
+    expect(within(insight).queryByText("Consistency stayed steady")).toBeNull();
+
+    const source = screen.getByTestId("calendar-source-habits");
+    expect(within(source).getByText("Included days")).toBeVisible();
+    expect(within(source).getByText("5/7 days")).toBeVisible();
+    expect(within(source).getAllByText("Not tracked")[0]).toBeVisible();
+    expect(within(source).getByText("2 days")).toBeVisible();
+    expect(within(source).getAllByText("Coverage differs")[0]).toHaveClass(
+      "text-[color:var(--fs-color-muted)]"
+    );
   });
 
   it("prioritizes a visible review state over a misleading complete Habit trend", () => {

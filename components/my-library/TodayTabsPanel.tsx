@@ -32,6 +32,8 @@ const secondaryActionClass =
 
 function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
   const isReview = state.state === "review";
+  const showsDetail =
+    isReview || state.state === "not_tracked" || state.state === "tracking_incomplete";
 
   return (
     <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-3">
@@ -41,7 +43,7 @@ function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
           {state.progressLabel}
           {state.progressPercent === null ? null : ` · ${state.progressPercent}%`}
         </p>
-        {isReview ? <p className={`mt-1 ${mutedTextClass}`}>{state.detail}</p> : null}
+        {showsDetail ? <p className={`mt-1 ${mutedTextClass}`}>{state.detail}</p> : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <Link href={state.href} className={primaryActionClass}>

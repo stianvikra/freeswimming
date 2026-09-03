@@ -5,12 +5,14 @@ import {
   buildTodayRoutineQuickActions,
 } from "@/lib/my-library/today";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
-import { buildHabitMetricCoverage } from "@/lib/habits/shared";
 import type {
+  HabitCheckInStatus,
+  HabitCheckInView,
   HabitDefinitionView,
   HabitSnapshot,
   HabitUnsupportedDefinitionView,
 } from "@/lib/habits/shared";
+import { buildHabitDaySummary, buildHabitMetricCoverage } from "@/lib/habits/shared";
 
 function buildMicroBlock(
   overrides?: Partial<DrylandMicroBlockSnapshot>
@@ -123,20 +125,61 @@ function buildHabit(id: string): HabitDefinitionView {
   };
 }
 
+function buildHabitCheckIn(
+  status: Extract<HabitCheckInStatus, "logged" | "skipped">
+): HabitCheckInView {
+  return {
+    id: `check-${status}`,
+    habitId: "0",
+    checkInDate: "2026-05-10",
+    timezone: "Europe/Oslo",
+    valueNumeric: null,
+    valueBoolean: status === "logged" ? true : null,
+    valueTime: null,
+    timerSeconds: 0,
+    manualMinutes: 0,
+    legacyTimedSeconds: 0,
+    note: null,
+    status,
+    sourceKind: "manual",
+    sourceDrylandMicroPlanId: null,
+    sourceMicroBlockId: null,
+    sourceCompletedAt: null,
+    completedAt: status === "logged" ? "2026-05-10T08:00:00.000Z" : null,
+    createdAt: "2026-05-10T08:00:00.000Z",
+    updatedAt: "2026-05-10T08:00:00.000Z",
+  };
+}
+
 function buildHabitSnapshot(options?: {
   activeCount?: number;
   perfectDayItemCount?: number;
   satisfiedCount?: number;
   schemaReady?: boolean;
+  dayStatusesReady?: boolean;
+  trackingState?: "known" | "not_tracked" | "needs_review";
   unsupportedHabits?: HabitUnsupportedDefinitionView[];
 }): HabitSnapshot {
   const activeCount = options?.activeCount ?? 3;
   const perfectDayItemCount = options?.perfectDayItemCount ?? activeCount;
   const satisfiedCount = options?.satisfiedCount ?? 1;
+  const trackingState = options?.trackingState ?? "known";
+  const potentialPerfectDayItemCount =
+    trackingState === "known" ? perfectDayItemCount : activeCount;
+  const knownUnitCount = trackingState === "known" ? perfectDayItemCount : 0;
+  const successfulUnitCount = trackingState === "known" ? satisfiedCount : 0;
+  const metricCoverage = buildHabitMetricCoverage({
+    potentialUnitCount: potentialPerfectDayItemCount,
+    knownUnitCount,
+    successfulUnitCount,
+    notTrackedDayCount: trackingState === "not_tracked" ? 1 : 0,
+    hasUnsupportedDayStatus: trackingState === "needs_review",
+  });
   const activeHabits = Array.from({ length: activeCount }, (_, index) => buildHabit(String(index)));
 
   return {
     schemaReady: options?.schemaReady ?? true,
+    dayStatusesReady: options?.dayStatusesReady,
     loadError: null,
     selectedDate: "2026-05-10",
     activeHabits,
@@ -144,22 +187,22 @@ function buildHabitSnapshot(options?: {
     unsupportedHabits: options?.unsupportedHabits ?? [],
     daySummary: {
       date: "2026-05-10",
-      dayStatus: null,
-      trackingState: "known",
+      dayStatus:
+        trackingState === "known"
+          ? null
+          : trackingState === "not_tracked"
+            ? "not_tracked"
+            : "unsupported",
+      trackingState,
       scheduledHabitCount: activeCount,
-      potentialPerfectDayItemCount: perfectDayItemCount,
-      perfectDayItemCount,
-      satisfiedPerfectDayItemCount: satisfiedCount,
-      completionPercent:
-        perfectDayItemCount === 0 ? 0 : Math.round((satisfiedCount / perfectDayItemCount) * 100),
-      isPerfectDay: perfectDayItemCount > 0 && satisfiedCount === perfectDayItemCount,
+      potentialPerfectDayItemCount,
+      perfectDayItemCount: knownUnitCount,
+      satisfiedPerfectDayItemCount: successfulUnitCount,
+      completionPercent: metricCoverage.performancePercent,
+      isPerfectDay: knownUnitCount > 0 && successfulUnitCount === knownUnitCount,
       completedDurationMinutes: 0,
       completedCountTotal: 0,
-      metricCoverage: buildHabitMetricCoverage({
-        potentialUnitCount: perfectDayItemCount,
-        knownUnitCount: perfectDayItemCount,
-        successfulUnitCount: satisfiedCount,
-      }),
+      metricCoverage,
       items: [],
     },
     weekSummary: {
@@ -320,6 +363,141 @@ describe("my library today state", () => {
     expect(state.actionLabel).toBe("Open");
     expect(state.progressPercent).toBe(100);
   });
+
+  it("keeps an explicitly not-tracked day neutral across Today and Home routines", () => {
+    const snapshot = buildHabitSnapshot({
+      activeCount: 3,
+      perfectDayItemCount: 0,
+      satisfiedCount: 0,
+      trackingState: "not_tracked",
+    });
+    const state = buildTodayHabitsState(snapshot);
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: null,
+        recentSessions: [],
+      },
+      snapshot,
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(state).toMatchObject({
+      state: "not_tracked",
+      progressLabel: "Not tracked",
+      progressPercent: null,
+      detail: "This day is excluded from Habit performance, totals, and streaks.",
+    });
+    expect(state.progressLabel).not.toMatch(/done|missed|rest|slip|perfect/i);
+    expect(actions[1]).toEqual({
+      id: "habits",
+      title: "Habits",
+      subtitle: "Not tracked",
+      href: "/my-library/habits",
+      state: "not_tracked",
+    });
+  });
+
+  it("keeps a partially observed cadence period neutral across Today and Home routines", () => {
+    const snapshot = buildHabitSnapshot({
+      activeCount: 2,
+      perfectDayItemCount: 1,
+      satisfiedCount: 1,
+    });
+    snapshot.daySummary = {
+      ...snapshot.daySummary,
+      potentialPerfectDayItemCount: 2,
+      perfectDayItemCount: 1,
+      satisfiedPerfectDayItemCount: 1,
+      completionPercent: 100,
+      isPerfectDay: false,
+      metricCoverage: buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        notTrackedDayCount: 1,
+      }),
+    };
+
+    const state = buildTodayHabitsState(snapshot);
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: null,
+        recentSessions: [],
+      },
+      snapshot,
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(state).toMatchObject({
+      state: "tracking_incomplete",
+      progressLabel: "Tracking incomplete",
+      progressPercent: null,
+      href: "/my-library/habits",
+    });
+    expect(state.detail).toContain("does not have enough tracked days");
+    expect(actions[1]).toEqual({
+      id: "habits",
+      title: "Habits",
+      subtitle: "Tracking incomplete",
+      href: "/my-library/habits",
+      state: "tracking_incomplete",
+    });
+    expect(actions[1]?.subtitle).not.toMatch(/100|done|perfect/i);
+  });
+
+  it("fails closed when whole-day status evidence is unavailable or unsupported", () => {
+    const unavailable = buildTodayHabitsState(
+      buildHabitSnapshot({ activeCount: 3, satisfiedCount: 3, dayStatusesReady: false })
+    );
+    const unsupported = buildTodayHabitsState(
+      buildHabitSnapshot({ activeCount: 3, satisfiedCount: 3, trackingState: "needs_review" })
+    );
+
+    expect(unavailable).toMatchObject({
+      state: "review",
+      progressLabel: "Day status unavailable",
+      progressPercent: null,
+      editHref: null,
+    });
+    expect(unsupported).toMatchObject({
+      state: "review",
+      progressLabel: "Needs review",
+      progressPercent: null,
+      editHref: null,
+    });
+    expect(unavailable.progressLabel).not.toContain("100");
+    expect(unsupported.progressLabel).not.toContain("100");
+  });
+
+  it.each(["logged", "skipped"] as const)(
+    "fails closed for a supported %s check-in when period-level day-status evidence is unavailable",
+    (checkInStatus) => {
+      const snapshot = buildHabitSnapshot({
+        activeCount: 1,
+        perfectDayItemCount: 1,
+        satisfiedCount: checkInStatus === "logged" ? 1 : 0,
+        dayStatusesReady: false,
+      });
+      snapshot.daySummary = buildHabitDaySummary(
+        snapshot.activeHabits,
+        [buildHabitCheckIn(checkInStatus)],
+        snapshot.selectedDate
+      );
+
+      const state = buildTodayHabitsState(snapshot);
+
+      expect(state).toMatchObject({
+        state: "review",
+        progressLabel: "Day status unavailable",
+        progressPercent: null,
+        editHref: null,
+      });
+    }
+  );
 
   it("uses review instead of setup when only unsupported Habits exist", () => {
     const state = buildTodayHabitsState(

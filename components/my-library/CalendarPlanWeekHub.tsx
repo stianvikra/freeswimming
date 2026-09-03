@@ -5,6 +5,7 @@ import { cx } from "@/components/ui/cx";
 import CalendarPlanSessionActions from "@/components/my-library/CalendarPlanSessionActions";
 import { buildMyLibraryCalendarPlanHref } from "@/lib/my-library/calendar";
 import type { MyLibraryCalendarDailyLayer } from "@/lib/my-library/calendar-daily-layers";
+import { getHabitDayStatusLabel } from "@/lib/habits/shared";
 import type {
   MyLibraryCalendarPlanDay,
   MyLibraryCalendarPlanMonthDay,
@@ -302,6 +303,12 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
   const sessions = getWeekSessions(days);
   const microExerciseKeys = new Set<string>();
   const latestHabitWeekStats = getLatestHabitWeekStats(days);
+  const habitMetricsNeedReview = days.some((day) => {
+    const layer = day.dailyLayers.find((candidate) => candidate.source === "habits");
+    return (
+      layer?.status === "review" || layer?.status === "error" || layer?.status === "schema_missing"
+    );
+  });
   const distanceMeters = sessions.reduce<number | null>((total, session) => {
     const distance = session.workout?.totalDistanceM;
     return typeof distance === "number" ? (total ?? 0) + distance : total;
@@ -321,6 +328,8 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
   const dailyHabitTotals = days.reduce(
     (totals, day) => {
       const stats = day.dailyLayers.find((layer) => layer.source === "habits")?.stats;
+      const fallbackDayCount =
+        typeof stats?.dailyHabitTotalCount === "number" && stats.dailyHabitTotalCount > 0 ? 1 : 0;
       return {
         completed:
           totals.completed +
@@ -330,9 +339,22 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
         total:
           totals.total +
           (typeof stats?.dailyHabitTotalCount === "number" ? stats.dailyHabitTotalCount : 0),
+        potentialDays:
+          totals.potentialDays +
+          (typeof stats?.habitPotentialDayCount === "number"
+            ? stats.habitPotentialDayCount
+            : fallbackDayCount),
+        includedDays:
+          totals.includedDays +
+          (typeof stats?.habitIncludedDayCount === "number"
+            ? stats.habitIncludedDayCount
+            : fallbackDayCount),
+        notTrackedDays:
+          totals.notTrackedDays +
+          (typeof stats?.habitNotTrackedDayCount === "number" ? stats.habitNotTrackedDayCount : 0),
       };
     },
-    { completed: 0, total: 0 }
+    { completed: 0, total: 0, potentialDays: 0, includedDays: 0, notTrackedDays: 0 }
   );
   const microTotals = days.reduce(
     (totals, day) => {
@@ -365,6 +387,10 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     doneCount,
     dailyHabitCompletedCount: dailyHabitTotals.completed,
     dailyHabitTotalCount: dailyHabitTotals.total,
+    habitPotentialDayCount: dailyHabitTotals.potentialDays,
+    habitIncludedDayCount: dailyHabitTotals.includedDays,
+    habitNotTrackedDayCount: dailyHabitTotals.notTrackedDays,
+    habitMetricsNeedReview,
     weeklyHabitCompletedCount: latestHabitWeekStats?.weeklyHabitCompletedCount ?? 0,
     weeklyHabitTotalCount: latestHabitWeekStats?.weeklyHabitTotalCount ?? 0,
     microCompletedUnitCount: microTotals.completedUnits,
@@ -373,6 +399,13 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     microRepsTotal: microTotals.reps,
     microLoadKgTotal: Math.round(microTotals.loadKg * 10) / 10,
   };
+}
+
+function formatHabitCoverage(input: { included: number; potential: number }) {
+  if (input.potential <= 0) return "No eligible days";
+  return `${input.included}/${input.potential} · ${Math.round(
+    (input.included / input.potential) * 100
+  )}%`;
 }
 
 function getWeekTotalRangeLabel(days: MyLibraryCalendarPlanDay[]) {
@@ -875,7 +908,12 @@ function DailyLayerRows({
 function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] }) {
   const totals = getWeekTotals(days);
   const weekStartDate = days[0]?.date ?? "unknown";
-  const hasHabitTotals = totals.dailyHabitTotalCount > 0 || totals.weeklyHabitTotalCount > 0;
+  const hasHabitCoverage = totals.habitPotentialDayCount > 0 || totals.habitNotTrackedDayCount > 0;
+  const hasHabitTotals =
+    totals.habitMetricsNeedReview ||
+    totals.dailyHabitTotalCount > 0 ||
+    totals.weeklyHabitTotalCount > 0 ||
+    hasHabitCoverage;
   const hasMicroTotals = totals.microCompletedUnitCount > 0 || totals.microSkippedUnitCount > 0;
   const ariaParts = [
     `Week total ${getWeekTotalRangeLabel(days)}`,
@@ -883,16 +921,30 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
     formatDistanceTotal(totals.distanceMeters),
     formatDurationTotal(totals.durationMinutes),
     `${totals.actualCount} actual recorded`,
-    totals.dailyHabitTotalCount > 0
-      ? `Daily habits ${formatWeekMetricRatio(
-          totals.dailyHabitCompletedCount,
-          totals.dailyHabitTotalCount
-        )}`
-      : null,
-    totals.weeklyHabitTotalCount > 0
+    totals.habitMetricsNeedReview
+      ? "Habit metrics need review"
+      : totals.dailyHabitTotalCount > 0
+        ? `Daily habits ${formatWeekMetricRatio(
+            totals.dailyHabitCompletedCount,
+            totals.dailyHabitTotalCount
+          )}`
+        : null,
+    !totals.habitMetricsNeedReview && totals.weeklyHabitTotalCount > 0
       ? `Weekly habits ${formatWeekMetricRatio(
           totals.weeklyHabitCompletedCount,
           totals.weeklyHabitTotalCount
+        )}`
+      : null,
+    !totals.habitMetricsNeedReview && hasHabitCoverage
+      ? `Habit coverage ${formatHabitCoverage({
+          included: totals.habitIncludedDayCount,
+          potential: totals.habitPotentialDayCount,
+        })}`
+      : null,
+    !totals.habitMetricsNeedReview && totals.habitNotTrackedDayCount > 0
+      ? `${getHabitDayStatusLabel("not_tracked")} ${pluralize(
+          totals.habitNotTrackedDayCount,
+          "day"
         )}`
       : null,
     hasMicroTotals ? pluralize(totals.microCompletedUnitCount, "micro unit") : null,
@@ -952,7 +1004,13 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
       )}
       {hasHabitTotals ? (
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-blue-100 pt-3">
-          {totals.dailyHabitTotalCount > 0 ? (
+          {totals.habitMetricsNeedReview ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-amber-700 uppercase">Habits</dt>
+              <dd className="text-sm font-semibold text-amber-800">Needs review</dd>
+            </div>
+          ) : null}
+          {!totals.habitMetricsNeedReview && totals.dailyHabitTotalCount > 0 ? (
             <div>
               <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
                 Daily habits
@@ -965,7 +1023,7 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
               </dd>
             </div>
           ) : null}
-          {totals.weeklyHabitTotalCount > 0 ? (
+          {!totals.habitMetricsNeedReview && totals.weeklyHabitTotalCount > 0 ? (
             <div>
               <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
                 Weekly habits
@@ -975,6 +1033,29 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
                   totals.weeklyHabitCompletedCount,
                   totals.weeklyHabitTotalCount
                 )}
+              </dd>
+            </div>
+          ) : null}
+          {!totals.habitMetricsNeedReview && hasHabitCoverage ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Coverage
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">
+                {formatHabitCoverage({
+                  included: totals.habitIncludedDayCount,
+                  potential: totals.habitPotentialDayCount,
+                })}
+              </dd>
+            </div>
+          ) : null}
+          {!totals.habitMetricsNeedReview && totals.habitNotTrackedDayCount > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                {getHabitDayStatusLabel("not_tracked")}
+              </dt>
+              <dd className="text-sm font-semibold text-[color:var(--fs-color-muted)]">
+                {pluralize(totals.habitNotTrackedDayCount, "day")}
               </dd>
             </div>
           ) : null}
