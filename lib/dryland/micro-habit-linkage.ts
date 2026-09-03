@@ -42,10 +42,11 @@ export function buildDrylandMicroHabitLinkRecord(
   habit: HabitDefinitionRow | null
 ): DrylandMicroHabitLinkRecord {
   const habitClassification = habit ? classifyHabitDefinition(habit) : null;
-  const habitView =
-    habitClassification?.kind === "supported"
-      ? buildHabitDefinitionView(habitClassification.row)
-      : null;
+  const usableHabitDefinition =
+    habitClassification && habitClassification.kind !== "unsupported" ? habitClassification : null;
+  const habitView = usableHabitDefinition
+    ? buildHabitDefinitionView(usableHabitDefinition.row)
+    : null;
   const startsOn = isLocalDayDateKey(link.starts_on) ? link.starts_on : "";
   const status = startsOn && isMicroHabitLinkStatus(link.status) ? link.status : "unsupported";
   const habitStatus = habitView?.status ?? "unsupported";
@@ -57,7 +58,7 @@ export function buildDrylandMicroHabitLinkRecord(
     status,
     habitDefinitionSupport: !habitClassification
       ? "unavailable"
-      : habitClassification.kind === "supported"
+      : usableHabitDefinition
         ? "supported"
         : "unsupported",
     startsOn,
@@ -69,7 +70,7 @@ export function buildDrylandMicroHabitLinkRecord(
     habitMode,
     habitCadenceLabel: habitView?.cadenceLabel ?? null,
     canCount:
-      habitClassification?.kind === "supported" &&
+      Boolean(usableHabitDefinition) &&
       status === "active" &&
       habitStatus === "active" &&
       habitMode === "build",

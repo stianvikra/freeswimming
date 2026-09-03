@@ -108,7 +108,7 @@ function buildSnapshot(
     unsupportedHabits: Array.from({ length: input.unsupportedHabitCount ?? 0 }, (_, index) => ({
       id: `unsupported-${index + 1}`,
       title: `Unsupported ${index + 1}`,
-      unsupportedFields: ["unknown_habit_type"],
+      unsupportedFields: ["unknown_category", "invalid_cadence_shape"],
     })),
   } as unknown as HabitSnapshot;
 }

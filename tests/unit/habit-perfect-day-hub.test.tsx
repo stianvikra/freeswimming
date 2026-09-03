@@ -121,12 +121,14 @@ function buildSnapshot(options?: {
   completed?: boolean;
   selectedDate?: string;
   perfectDayItem?: boolean;
+  habitOverrides?: Partial<HabitDefinitionRow>;
 }): HabitSnapshot {
   const selectedDate = options?.selectedDate ?? "2026-05-10";
   const habit = options?.withHabit
     ? buildHabitDefinitionView(
         buildHabitRow({
           is_perfect_day_item: options.perfectDayItem ?? true,
+          ...options.habitOverrides,
         })
       )
     : null;
@@ -164,7 +166,15 @@ function buildUnsupportedHabitSnapshot(options?: {
       {
         id: "unsupported-habit-1",
         title: "Future rhythm",
-        unsupportedFields: ["unknown_habit_type", "unknown_definition_status"],
+        unsupportedFields: [
+          "unknown_habit_type",
+          "unknown_definition_status",
+          "unknown_category",
+          "invalid_target_shape",
+          "invalid_timer_shape",
+          "invalid_cadence_shape",
+          "invalid_schedule_days",
+        ],
       },
     ],
   };
@@ -480,7 +490,7 @@ function buildTimedSnapshot(options?: {
           title: "Breathing timer",
           habit_mode: "timed",
           habit_type: "duration",
-          category: "breathing",
+          category: "recovery",
           target_operator: "at_least",
           target_value_numeric: 5,
           target_unit: "minutes",
@@ -1302,7 +1312,9 @@ describe("HabitPerfectDayHub", () => {
     expect(within(reviewCard).getByRole("heading", { name: "Future rhythm" })).toBeVisible();
     expect(within(reviewCard).getByText("Needs review")).toBeVisible();
     expect(reviewCard).toHaveTextContent("Your saved Habit and history are preserved.");
-    expect(reviewCard).toHaveTextContent("Review needed: Habit type, Status");
+    expect(reviewCard).toHaveTextContent(
+      "Review needed: Habit type, Status, Category, Target setup, Cadence, Schedule"
+    );
     expect(within(reviewCard).queryAllByRole("button")).toHaveLength(0);
     expect(within(reviewCard).queryAllByRole("link")).toHaveLength(0);
   });
@@ -2996,14 +3008,18 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
-      habitMode: string;
-      isPerfectDayItem: boolean;
-      timezone: string;
-    };
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.habitMode).toBe("build");
     expect(body.isPerfectDayItem).toBe(true);
     expect(body.timezone).toBe(getBrowserLocalDayTimezone());
+    expect(body).not.toHaveProperty("targetValueNumeric");
+    expect(body).not.toHaveProperty("targetUnit");
+    expect(body).not.toHaveProperty("targetTime");
+    expect(body).not.toHaveProperty("timerEnabled");
+    expect(body).not.toHaveProperty("timerTargetSeconds");
     const createdStatus = await screen.findByRole("status");
     expect(createdStatus).toHaveAttribute("aria-live", "polite");
     expect(createdStatus).toHaveTextContent("Habit added");
@@ -3176,12 +3192,16 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
-      startDate: string;
-      targetValueNumeric: string;
-    };
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.startDate).toBe("2026-05-07");
-    expect(body.targetValueNumeric).toBe("0");
+    expect(body).not.toHaveProperty("targetValueNumeric");
+    expect(body).not.toHaveProperty("targetUnit");
+    expect(body).not.toHaveProperty("targetTime");
+    expect(body).not.toHaveProperty("timerEnabled");
+    expect(body).not.toHaveProperty("timerTargetSeconds");
   });
 
   it("creates timed habits with timer metadata", async () => {
@@ -3214,10 +3234,15 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
-      timerTargetSeconds: number;
-    };
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.timerTargetSeconds).toBe(480);
+    expect(body.timerEnabled).toBe(true);
+    expect(body.targetValueNumeric).toBe("8");
+    expect(body.targetUnit).toBe("minutes");
+    expect(body).not.toHaveProperty("targetTime");
   });
 
   it("shows timed habits as startable before the local timer has begun", async () => {
@@ -4217,6 +4242,19 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("Saved history")).toBeNull();
   });
 
+  it("explains that known Motivation results exclude Habits needing review", () => {
+    const snapshot = {
+      ...buildMotivationHistorySnapshot(),
+      unsupportedHabits: buildUnsupportedHabitSnapshot().unsupportedHabits,
+    };
+
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+
+    expect(screen.getByTestId("habits-motivation-unsupported-caveat")).toHaveTextContent(
+      "Known results exclude Habits that need review."
+    );
+  });
+
   it("shows week number and the full week range in Motivation Stats week view", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildMotivationHistorySnapshot()} />);
 
@@ -4828,6 +4866,94 @@ describe("HabitPerfectDayHub", () => {
     ).toBeVisible();
   });
 
+  it.each([
+    {
+      name: "a time target with stored seconds",
+      habitOverrides: {
+        title: "Early start",
+        habit_type: "time_of_day",
+        target_operator: "after",
+        target_time: "05:00:30",
+      } satisfies Partial<HabitDefinitionRow>,
+    },
+    {
+      name: "a numeric target with stored precision beyond two decimals",
+      habitOverrides: {
+        title: "Precise duration",
+        habit_type: "duration",
+        target_operator: "at_most",
+        target_value_numeric: 1.234,
+        target_unit: "minutes",
+      } satisfies Partial<HabitDefinitionRow>,
+    },
+  ])("omits the unchanged target group when editing only the title of $name", async (testCase) => {
+    const snapshot = buildSnapshot({ withHabit: true, habitOverrides: testCase.habitOverrides });
+    vi.mocked(fetch).mockResolvedValue(successfulSnapshotResponse(snapshot));
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+    openHabitEditForm();
+    const editForm = screen.getByTestId("habit-edit-form-11111111-1111-4111-8111-111111111111");
+    fireEvent.change(within(editForm).getByLabelText("Name"), {
+      target: { value: "Renamed habit" },
+    });
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const body = readFetchBody();
+    expect(body.title).toBe("Renamed habit");
+    for (const field of [
+      "habitMode",
+      "habitType",
+      "targetOperator",
+      "targetValueNumeric",
+      "targetUnit",
+      "targetTime",
+      "timerEnabled",
+      "timerTargetSeconds",
+    ]) {
+      expect(body).not.toHaveProperty(field);
+    }
+  });
+
+  it("sends the complete minimal target group for a real timed-target edit", async () => {
+    const snapshot = buildSnapshot({
+      withHabit: true,
+      habitOverrides: {
+        title: "Precise timer",
+        habit_mode: "timed",
+        habit_type: "duration",
+        target_value_numeric: 1.242,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 75,
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue(successfulSnapshotResponse(snapshot));
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+    openHabitEditForm();
+    const editForm = screen.getByTestId("habit-edit-form-11111111-1111-4111-8111-111111111111");
+    fireEvent.change(within(editForm).getByLabelText("Timer target"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const body = readFetchBody();
+    expect(body).toMatchObject({
+      habitMode: "timed",
+      habitType: "duration",
+      targetValueNumeric: "2",
+      targetUnit: "minutes",
+      timerEnabled: true,
+      timerTargetSeconds: 120,
+    });
+    expect(body).not.toHaveProperty("targetOperator");
+    expect(body).not.toHaveProperty("targetTime");
+    expect(body).not.toHaveProperty("cadencePeriod");
+    expect(body).not.toHaveProperty("cadenceTargetCount");
+    expect(body).not.toHaveProperty("cadenceDayPolicy");
+    expect(body).not.toHaveProperty("scheduleDays");
+  });
+
   it("keeps a tracking-only habit out of Perfect Day when edited", async () => {
     const snapshot = buildSnapshot({ withHabit: true, perfectDayItem: false });
     vi.mocked(fetch).mockResolvedValue({
@@ -4854,10 +4980,23 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
-      isPerfectDayItem: boolean;
-    };
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.isPerfectDayItem).toBe(false);
+    expect(body).not.toHaveProperty("habitMode");
+    expect(body).not.toHaveProperty("habitType");
+    expect(body).not.toHaveProperty("targetOperator");
+    expect(body).not.toHaveProperty("targetValueNumeric");
+    expect(body).not.toHaveProperty("targetUnit");
+    expect(body).not.toHaveProperty("targetTime");
+    expect(body).not.toHaveProperty("timerEnabled");
+    expect(body).not.toHaveProperty("timerTargetSeconds");
+    expect(body).not.toHaveProperty("cadencePeriod");
+    expect(body).not.toHaveProperty("cadenceTargetCount");
+    expect(body).not.toHaveProperty("cadenceDayPolicy");
+    expect(body).not.toHaveProperty("scheduleDays");
   });
 
   it.each`

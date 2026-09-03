@@ -29,7 +29,7 @@ import {
   type HabitMotivationRangeSummaries,
   type HabitMotivationResetView,
   type HabitSnapshot,
-  type SupportedHabitDefinitionRow,
+  type UsableHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import type { Database } from "@/types/database";
 
@@ -62,6 +62,26 @@ export const HABIT_DEFINITION_SELECT = `
   sort_order,
   created_at,
   updated_at
+`;
+
+export const HABIT_DEFINITION_WRITE_GUARD_SELECT = `
+  id,
+  title,
+  habit_mode,
+  habit_type,
+  status,
+  start_date,
+  category,
+  target_operator,
+  target_value_numeric,
+  target_unit,
+  target_time,
+  timer_enabled,
+  timer_target_seconds,
+  cadence_period,
+  cadence_target_count,
+  cadence_day_policy,
+  schedule_days
 `;
 
 export const HABIT_CHECK_IN_SELECT = `
@@ -263,13 +283,15 @@ function buildHabitMotivationSummaries(
   checkIns: ReturnType<typeof buildHabitCheckInView>[],
   selectedDate: string,
   resetEvents: HabitMotivationResetView[] = [],
-  dayStatuses: HabitDayStatusView[] = []
+  dayStatuses: HabitDayStatusView[] = [],
+  dayStatusPrecedenceCheckIns: ReturnType<typeof buildHabitCheckInView>[] = checkIns
 ): HabitMotivationRangeSummaries {
   return HABIT_MOTIVATION_RANGE_VALUES.reduce<HabitMotivationRangeSummaries>((summaries, range) => {
     summaries[range] = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
       historyStartDate: getHabitMotivationRangeStartDate(range, selectedDate),
       resetEvents,
       dayStatuses,
+      dayStatusPrecedenceCheckIns,
     });
     return summaries;
   }, {});
@@ -338,23 +360,23 @@ export async function loadHabitSnapshot(
   }
 
   const habitRows = (habitResult.data ?? []) as HabitDefinitionRow[];
-  const supportedHabitRows: SupportedHabitDefinitionRow[] = [];
+  const usableHabitRows: UsableHabitDefinitionRow[] = [];
   const unsupportedHabits: HabitSnapshot["unsupportedHabits"] = [];
   for (const row of habitRows) {
     const definition = classifyHabitDefinition(row);
-    if (definition.kind === "supported") {
-      supportedHabitRows.push(definition.row);
+    if (definition.kind !== "unsupported") {
+      usableHabitRows.push(definition.row);
     } else {
       unsupportedHabits.push(definition.descriptor);
     }
   }
-  const supportedHabitIds = new Set(supportedHabitRows.map((row) => row.id));
+  const usableHabitIds = new Set(usableHabitRows.map((row) => row.id));
   const microSessionLinksByHabitId = await loadHabitMicroSessionLinksByHabitId(
     supabase,
     userId,
-    supportedHabitRows.map((row) => row.id)
+    usableHabitRows.map((row) => row.id)
   );
-  const habits = supportedHabitRows.map((row) =>
+  const habits = usableHabitRows.map((row) =>
     buildHabitDefinitionView(row, {
       microSessionLink: microSessionLinksByHabitId.get(row.id) ?? null,
     })
@@ -393,6 +415,7 @@ export async function loadHabitSnapshot(
   }
 
   const rawCheckInRows = (checkInResult.data ?? []) as HabitCheckInRow[];
+  const dayStatusPrecedenceCheckIns = rawCheckInRows.map(buildHabitCheckInView);
   const selectedWeekStart = getWeekStartDate(selectedDate);
   const absenceReviewEnd = getHabitCheckInEndDate(selectedDate, dateContext.todayDate);
   const absenceReviewRecordedCheckInDates = [
@@ -404,9 +427,7 @@ export async function loadHabitSnapshot(
         .map((row) => row.check_in_date)
     ),
   ].sort((left, right) => left.localeCompare(right));
-  const checkIns = rawCheckInRows
-    .filter((row) => supportedHabitIds.has(row.habit_id))
-    .map(buildHabitCheckInView);
+  const checkIns = dayStatusPrecedenceCheckIns.filter((row) => usableHabitIds.has(row.habitId));
   const resetResult = await supabase
     .from("habit_motivation_resets")
     .select(HABIT_MOTIVATION_RESET_SELECT)
@@ -416,7 +437,7 @@ export async function loadHabitSnapshot(
   const resetEvents =
     resetEventsReady && !resetResult.error
       ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
-          .filter((row) => supportedHabitIds.has(row.habit_id))
+          .filter((row) => usableHabitIds.has(row.habit_id))
           .map(buildHabitMotivationResetView)
       : [];
 
@@ -477,13 +498,15 @@ export async function loadHabitSnapshot(
   const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
     resetEvents,
     dayStatuses,
+    dayStatusPrecedenceCheckIns,
   });
   const motivationSummaries = buildHabitMotivationSummaries(
     habits,
     checkIns,
     selectedDate,
     resetEvents,
-    dayStatuses
+    dayStatuses,
+    dayStatusPrecedenceCheckIns
   );
 
   return {
@@ -496,8 +519,14 @@ export async function loadHabitSnapshot(
     activeHabits,
     archivedHabits,
     unsupportedHabits,
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, { dayStatuses }),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, { dayStatuses }),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, {
+      dayStatuses,
+      dayStatusPrecedenceCheckIns,
+    }),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, {
+      dayStatuses,
+      dayStatusPrecedenceCheckIns,
+    }),
     absenceReviewRecordedCheckInDates,
     absenceReviewAcknowledgedDates,
     dayStatuses,

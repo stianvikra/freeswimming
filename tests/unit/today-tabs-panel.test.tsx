@@ -293,7 +293,7 @@ describe("TodayTabsPanel", () => {
       {
         id: "unsupported-1",
         title: "Future Habit",
-        unsupportedFields: ["unknown_habit_mode"],
+        unsupportedFields: ["unknown_target_unit", "invalid_timer_shape"],
       },
     ];
 
@@ -312,6 +312,8 @@ describe("TodayTabsPanel", () => {
     expect(within(panel).getByRole("status")).toHaveTextContent("1 habit needs review");
     expect(within(panel).getByText(/Saved Habit history is preserved/i)).toBeVisible();
     expect(within(panel).queryByText(/0%/)).toBeNull();
+    expect(panel).not.toHaveTextContent("Future Habit");
+    expect(panel).not.toHaveTextContent("unknown_target_unit");
     expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
     expect(within(panel).queryByRole("link", { name: "Edit" })).toBeNull();
   });

@@ -26,6 +26,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/habits/server", () => ({
   HABIT_DEFINITION_SELECT: "habit definition select",
+  HABIT_DEFINITION_WRITE_GUARD_SELECT: "habit definition write guard select",
   HABIT_CHECK_IN_SELECT: "habit check-in select",
   HABIT_MOTIVATION_RESET_SELECT: "habit motivation reset select",
   HABIT_ABSENCE_REVIEW_SELECT: "habit absence review select",
@@ -53,6 +54,7 @@ import { POST as postHabitAbsenceReview } from "@/app/api/my-library/habits/abse
 import { POST as postHabitResetStats } from "@/app/api/my-library/habits/[habitId]/reset-stats/route";
 import { PATCH as patchHabit } from "@/app/api/my-library/habits/[habitId]/route";
 import { POST as postHabit } from "@/app/api/my-library/habits/route";
+import { HABIT_WEEKDAY_VALUES } from "@/lib/habits/shared";
 
 function applyResponseCookiesIdentity<T>(response: T): T {
   return response;
@@ -132,6 +134,106 @@ function buildHabitDefinitionRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function buildFullEditorTargetBody(overrides: Record<string, unknown> = {}) {
+  return {
+    habitMode: "build",
+    habitType: "binary",
+    targetValueNumeric: "10",
+    targetUnit: "minutes",
+    targetTime: "05:00",
+    timerEnabled: false,
+    timerTargetSeconds: 600,
+    ...overrides,
+  };
+}
+
+const FULL_EDITOR_COMPATIBILITY_CASES = [
+  { name: "build binary", row: {}, body: buildFullEditorTargetBody() },
+  {
+    name: "build count",
+    row: { habit_type: "count", target_value_numeric: 10, target_unit: "times" },
+    body: buildFullEditorTargetBody({ habitType: "count", targetUnit: "times" }),
+    updateRow: { target_operator: "at_most" },
+  },
+  {
+    name: "build duration",
+    row: { habit_type: "duration", target_value_numeric: 10, target_unit: "minutes" },
+    body: buildFullEditorTargetBody({ habitType: "duration" }),
+    updateRow: { target_operator: "at_most", target_value_numeric: 1.234 },
+    updateBody: { targetValueNumeric: "1.234" },
+  },
+  {
+    name: "build time of day",
+    row: { habit_type: "time_of_day", target_operator: "before", target_time: "05:00:00" },
+    body: buildFullEditorTargetBody({ habitType: "time_of_day", targetUnit: "times" }),
+    updateRow: { target_operator: "after", target_time: "05:00:30" },
+  },
+  {
+    name: "build avoidance",
+    row: {
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+    },
+    body: buildFullEditorTargetBody({
+      habitType: "avoidance",
+      targetValueNumeric: "0",
+      targetUnit: "times",
+      timerTargetSeconds: null,
+    }),
+  },
+  {
+    name: "quit avoidance",
+    row: {
+      habit_mode: "quit",
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+    },
+    body: buildFullEditorTargetBody({
+      habitMode: "quit",
+      habitType: "avoidance",
+      targetValueNumeric: "0",
+      targetUnit: "times",
+      timerTargetSeconds: null,
+    }),
+  },
+  {
+    name: "timed duration",
+    row: {
+      habit_mode: "timed",
+      habit_type: "duration",
+      target_value_numeric: 10,
+      target_unit: "minutes",
+      timer_enabled: true,
+      timer_target_seconds: 600,
+    },
+    body: buildFullEditorTargetBody({
+      habitMode: "timed",
+      habitType: "duration",
+      timerEnabled: true,
+    }),
+    updateRow: { target_value_numeric: 1.242, timer_target_seconds: 75 },
+    updateBody: { targetValueNumeric: "1.242", timerTargetSeconds: 75 },
+  },
+] as const;
+
+function getPersistedTargetShape(overrides: Record<string, unknown>) {
+  const row = buildHabitDefinitionRow(overrides);
+  return {
+    habit_mode: row.habit_mode,
+    habit_type: row.habit_type,
+    target_operator: row.target_operator,
+    target_value_numeric: row.target_value_numeric,
+    target_unit: row.target_unit,
+    target_time: row.target_time,
+    timer_enabled: row.timer_enabled,
+    timer_target_seconds: row.timer_target_seconds,
+  };
+}
+
 const HABIT_MUTATION_ROUTES = [
   ["create", "POST", "", { title: "Read" }],
   ["update", "PATCH", `/${HABIT_ID}`, { title: "Read" }],
@@ -141,6 +243,28 @@ const HABIT_MUTATION_ROUTES = [
 ] as const;
 type HabitMutationRoute = (typeof HABIT_MUTATION_ROUTES)[number];
 type HabitMutationKind = HabitMutationRoute[0];
+
+const UNSUPPORTED_HABIT_DEFINITION_INPUT_CASES = [
+  { name: "unknown type", body: { habitType: "future_type" } },
+  { name: "null type", body: { habitType: null } },
+  { name: "unknown mode", body: { habitMode: "future_mode" } },
+  { name: "null mode", body: { habitMode: null } },
+  { name: "unknown category", body: { category: "future_category" } },
+  { name: "null category", body: { category: null } },
+  { name: "client-supplied operator", body: { targetOperator: "at_least" } },
+  { name: "malformed target", body: { targetValueNumeric: "not-a-number" } },
+  { name: "unknown target unit", body: { targetUnit: "future_unit" } },
+  { name: "malformed target time", body: { targetTime: "25:00" } },
+  { name: "malformed timer flag", body: { timerEnabled: "yes" } },
+  { name: "fractional timer target", body: { timerTargetSeconds: 1.5 } },
+  { name: "unknown cadence period", body: { cadencePeriod: "future_period" } },
+  { name: "fractional cadence count", body: { cadenceTargetCount: 1.5 } },
+  { name: "unknown cadence policy", body: { cadenceDayPolicy: "future_policy" } },
+  {
+    name: "duplicate schedule day",
+    body: { scheduleDays: ["monday", "monday"] },
+  },
+] as const;
 
 function mockAuthenticatedRouteClient(from = vi.fn()) {
   const client = {
@@ -230,7 +354,31 @@ function mockResetStatsClient(startDate: string) {
   const insert = vi.fn();
   const from = vi.fn(() => ({ select: habitSelect, insert }));
   mockAuthenticatedRouteClient(from);
-  return { from, insert };
+  return { from, habitSelect, insert };
+}
+
+function mockHabitDefinitionUpdateClient(
+  currentOverrides: Record<string, unknown>,
+  updatedOverrides: Record<string, unknown> = currentOverrides
+) {
+  const currentSelectMaybeSingle = vi.fn().mockResolvedValue({
+    data: buildHabitDefinitionRow(currentOverrides),
+    error: null,
+  });
+  const currentSelectEqId = vi.fn(() => ({ maybeSingle: currentSelectMaybeSingle }));
+  const currentSelectEqUser = vi.fn(() => ({ eq: currentSelectEqId }));
+  const currentSelect = vi.fn(() => ({ eq: currentSelectEqUser }));
+  const updateSelectMaybeSingle = vi.fn().mockResolvedValue({
+    data: buildHabitDefinitionRow(updatedOverrides),
+    error: null,
+  });
+  const updateSelect = vi.fn(() => ({ maybeSingle: updateSelectMaybeSingle }));
+  const updateEqId = vi.fn(() => ({ select: updateSelect }));
+  const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
+  const update = vi.fn(() => ({ eq: updateEqUser }));
+  const from = vi.fn().mockReturnValueOnce({ select: currentSelect }).mockReturnValue({ update });
+  mockAuthenticatedRouteClient(from);
+  return { from, currentSelect, update };
 }
 
 describe("habits routes", () => {
@@ -253,6 +401,34 @@ describe("habits routes", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("keeps the Habit definition write guard to one fixed 17-column projection", async () => {
+    const { HABIT_DEFINITION_WRITE_GUARD_SELECT } =
+      await vi.importActual<typeof import("@/lib/habits/server")>("@/lib/habits/server");
+    const columns = HABIT_DEFINITION_WRITE_GUARD_SELECT.split(",")
+      .map((column) => column.trim())
+      .filter(Boolean);
+
+    expect(columns).toEqual([
+      "id",
+      "title",
+      "habit_mode",
+      "habit_type",
+      "status",
+      "start_date",
+      "category",
+      "target_operator",
+      "target_value_numeric",
+      "target_unit",
+      "target_time",
+      "timer_enabled",
+      "timer_target_seconds",
+      "cadence_period",
+      "cadence_target_count",
+      "cadence_day_policy",
+      "schedule_days",
+    ]);
   });
 
   it("fails closed for unauthenticated habit create", async () => {
@@ -1172,31 +1348,92 @@ describe("habits routes", () => {
     );
   });
 
-  it.each([
-    ["habitType", "future_type"],
-    ["habitType", null],
-    ["habitMode", "future_mode"],
-    ["habitMode", null],
-  ])("rejects explicit unsupported create input for %s=%s with a typed 400", async (key, value) => {
-    const { from, insert } = mockHabitDefinitionCreateClient();
+  it.each(FULL_EDITOR_COMPATIBILITY_CASES)(
+    "keeps the old full-editor $name create payload compatible",
+    async ({ row, body }) => {
+      const existingEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+      const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
+      const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
+      const insertSingle = vi.fn().mockResolvedValue({ data: { id: HABIT_ID }, error: null });
+      const insertSelect = vi.fn(() => ({ single: insertSingle }));
+      const insert = vi.fn(() => ({ select: insertSelect }));
+      mockAuthenticatedRouteClient(vi.fn(() => ({ select: existingSelect, insert })));
 
-    const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
-      title: "Read",
-      [key]: value,
-      renderedTodayDate: "2026-05-10",
-    });
+      const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+        title: "Compatible habit",
+        notes: "",
+        category: "movement",
+        startDate: "2026-05-10",
+        cadencePeriod: "daily",
+        cadenceTargetCount: 1,
+        cadenceDayPolicy: "fixed",
+        scheduleDays: HABIT_WEEKDAY_VALUES,
+        isPerfectDayItem: true,
+        ...body,
+        renderedTodayDate: "2026-05-10",
+      });
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      ok: false,
-      code: "UNSUPPORTED_HABIT_DEFINITION_VALUE",
-    });
-    expect(insert).not.toHaveBeenCalled();
-    expect(from).not.toHaveBeenCalled();
-    expect(getRequestLocalDayContextMock).not.toHaveBeenCalled();
-    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
-    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(200);
+      expect(existingSelect).toHaveBeenCalledWith("id, sort_order, status");
+      expect(insert).toHaveBeenCalledWith(expect.objectContaining(getPersistedTargetShape(row)));
+      expect(trackAnalyticsEventMock).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it.each(FULL_EDITOR_COMPATIBILITY_CASES)(
+    "keeps the old full-editor $name update payload compatible without rewriting semantics",
+    async ({ row, body, ...testCase }) => {
+      const currentRow = { ...row, ...("updateRow" in testCase ? testCase.updateRow : {}) };
+      const updateBody = "updateBody" in testCase ? testCase.updateBody : {};
+      const { update } = mockHabitDefinitionUpdateClient(currentRow, {
+        ...currentRow,
+        title: "Edited habit",
+      });
+
+      const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+        title: "Edited habit",
+        notes: "",
+        category: "learning",
+        startDate: "2026-05-01",
+        cadencePeriod: "daily",
+        cadenceTargetCount: 1,
+        cadenceDayPolicy: "fixed",
+        scheduleDays: HABIT_WEEKDAY_VALUES,
+        isPerfectDayItem: true,
+        ...body,
+        ...updateBody,
+        renderedTodayDate: "2026-05-10",
+      });
+
+      expect(response.status).toBe(200);
+      expect(update).toHaveBeenCalledWith({ title: "Edited habit" });
+      expect(trackAnalyticsEventMock).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it.each(UNSUPPORTED_HABIT_DEFINITION_INPUT_CASES)(
+    "rejects explicit unsupported create input for $name with a typed 400",
+    async ({ body }) => {
+      const { from, insert } = mockHabitDefinitionCreateClient();
+
+      const response = await callHabitMutationJson(getHabitMutationRoute("create"), {
+        title: "Read",
+        ...body,
+        renderedTodayDate: "2026-05-10",
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        ok: false,
+        code: "UNSUPPORTED_HABIT_DEFINITION_VALUE",
+      });
+      expect(insert).not.toHaveBeenCalled();
+      expect(from).not.toHaveBeenCalled();
+      expect(getRequestLocalDayContextMock).not.toHaveBeenCalled();
+      expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
 
   it("counts unsupported active rows toward the persisted create cap", async () => {
     const existingRows = [
@@ -1352,13 +1589,43 @@ describe("habits routes", () => {
         }),
       })
     );
-    const payload = (await response.json()) as { ok: boolean; error: string };
+    const payload = (await response.json()) as { ok: boolean; code?: string; error: string };
 
     expect(response.status).toBe(400);
     expect(payload.ok).toBe(false);
-    expect(payload.error).toBe("Monthly fixed dates are not available yet.");
+    expect(payload.code).toBe("UNSUPPORTED_HABIT_DEFINITION_VALUE");
+    expect(payload.error).toBe("This Habit setup is not supported yet.");
     expect(insert).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["daily", "daily", 1, "fixed", ["monday"]],
+    ["weekly any-day", "weekly", 2, "any", ["monday", "wednesday"]],
+    ["monthly any-day", "monthly", 5, "any", ["monday"]],
+  ] as const)(
+    "rejects an explicit subset schedule for %s cadence without updating",
+    async (_, cadencePeriod, cadenceTargetCount, cadenceDayPolicy, scheduleDays) => {
+      const { update } = mockHabitDefinitionUpdateClient({});
+
+      const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+        cadencePeriod,
+        cadenceTargetCount,
+        cadenceDayPolicy,
+        scheduleDays,
+        renderedTodayDate: "2026-05-10",
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        ok: false,
+        code: "UNSUPPORTED_HABIT_DEFINITION_VALUE",
+        error: "This Habit setup is not supported yet.",
+      });
+      expect(update).not.toHaveBeenCalled();
+      expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+      expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    }
+  );
 
   it("rejects invalid habit ids before auth work", async () => {
     const response = await patchHabit(
@@ -1520,6 +1787,8 @@ describe("habits routes", () => {
       data: buildHabitDefinitionRow({
         habit_mode: "build",
         habit_type: "count",
+        target_value_numeric: 1,
+        target_unit: "litres",
         status: "active",
       }),
       error: null,
@@ -1554,6 +1823,9 @@ describe("habits routes", () => {
             targetValueNumeric: 1,
             targetUnit: "litres",
             startDate: "2026-05-04",
+            cadencePeriod: "weekly",
+            cadenceTargetCount: 3,
+            cadenceDayPolicy: "fixed",
             scheduleDays: ["monday", "wednesday", "friday"],
             selectedDate: "2026-05-10",
             renderedTodayDate: "2026-05-10",
@@ -1573,13 +1845,11 @@ describe("habits routes", () => {
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "W: Fasting",
-        habit_mode: "build",
         habit_type: "count",
         target_value_numeric: 1,
         target_unit: "litres",
         cadence_period: "weekly",
         cadence_target_count: 3,
-        cadence_day_policy: "fixed",
         schedule_days: ["monday", "wednesday", "friday"],
       })
     );
@@ -1587,6 +1857,73 @@ describe("habits routes", () => {
     expect(from).not.toHaveBeenCalledWith("habit_check_ins");
     expect(updateEqUser).toHaveBeenCalledWith("user_id", "user-1");
     expect(updateEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+  });
+
+  it("derives the canonical operator on an actual type transition", async () => {
+    const { update } = mockHabitDefinitionUpdateClient(
+      {
+        habit_type: "count",
+        target_operator: "at_most",
+        target_value_numeric: 5,
+        target_unit: "times",
+      },
+      {
+        habit_type: "duration",
+        target_operator: "at_least",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+      }
+    );
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+      habitMode: "build",
+      habitType: "duration",
+      targetValueNumeric: 10,
+      targetUnit: "minutes",
+      timerEnabled: false,
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(200);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        habit_type: "duration",
+        target_operator: "at_least",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+      })
+    );
+  });
+
+  it("keeps legacy cadence raw on a title-only update and reports resolved analytics", async () => {
+    const legacyCadence = {
+      cadence_period: null,
+      cadence_target_count: null,
+      cadence_day_policy: null,
+      schedule_days: ["monday", "wednesday", "friday"],
+    };
+    const { update } = mockHabitDefinitionUpdateClient(legacyCadence, {
+      ...legacyCadence,
+      title: "Edited legacy habit",
+    });
+
+    const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
+      title: "Edited legacy habit",
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(200);
+    expect(update).toHaveBeenCalledWith({ title: "Edited legacy habit" });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_updated",
+        payload: expect.objectContaining({
+          cadencePeriod: "weekly",
+          cadenceTargetCount: 3,
+          cadenceDayPolicy: "fixed",
+        }),
+      })
+    );
   });
 
   it("rejects matching future start and selected dates before habit updates", async () => {
@@ -1644,18 +1981,13 @@ describe("habits routes", () => {
     expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["habitType", "future_type"],
-    ["habitType", null],
-    ["habitMode", "future_mode"],
-    ["habitMode", null],
-  ])(
-    "rejects explicit unsupported update input for %s=%s before reads or writes",
-    async (key, value) => {
+  it.each(UNSUPPORTED_HABIT_DEFINITION_INPUT_CASES)(
+    "rejects explicit unsupported update input for $name before reads or writes",
+    async ({ body }) => {
       const from = mockAuthenticatedRouteClient();
 
       const response = await callHabitMutationJson(getHabitMutationRoute("update"), {
-        [key]: value,
+        ...body,
         renderedTodayDate: "2026-05-10",
       });
 
@@ -1674,6 +2006,15 @@ describe("habits routes", () => {
     { name: "type-only", overrides: { habit_type: "future_type" } },
     { name: "mode-only", overrides: { habit_mode: "future_mode" } },
     { name: "status-only", overrides: { status: "future_status" } },
+    { name: "category-only", overrides: { category: "future_category" } },
+    { name: "operator-only", overrides: { target_operator: "future_operator" } },
+    { name: "unit-only", overrides: { target_unit: "future_unit" } },
+    { name: "target-shape", overrides: { target_value_numeric: 1 } },
+    { name: "timer-shape", overrides: { timer_enabled: true } },
+    { name: "cadence-period", overrides: { cadence_period: "future_period" } },
+    { name: "cadence-policy", overrides: { cadence_day_policy: "future_policy" } },
+    { name: "cadence-count", overrides: { cadence_target_count: 2 } },
+    { name: "schedule", overrides: { schedule_days: ["monday", "monday"] } },
     {
       name: "mixed",
       overrides: {
@@ -1697,9 +2038,8 @@ describe("habits routes", () => {
         const insert = vi.fn();
         const upsert = vi.fn();
         const deleteRows = vi.fn();
-        mockAuthenticatedRouteClient(
-          vi.fn(() => ({ select, update, insert, upsert, delete: deleteRows }))
-        );
+        const from = vi.fn(() => ({ select, update, insert, upsert, delete: deleteRows }));
+        mockAuthenticatedRouteClient(from);
 
         const response = await callHabitMutationJson(getHabitMutationRoute(kind), {
           renderedTodayDate: "2026-05-10",
@@ -1714,11 +2054,65 @@ describe("habits routes", () => {
         expect(insert).not.toHaveBeenCalled();
         expect(upsert).not.toHaveBeenCalled();
         expect(deleteRows).not.toHaveBeenCalled();
+        expect(select).toHaveBeenCalledTimes(1);
+        expect(select).toHaveBeenCalledWith(
+          kind === "update" ? "habit definition select" : "habit definition write guard select"
+        );
+        expect(from).toHaveBeenCalledTimes(1);
         expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
         expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
       }
     }
   );
+
+  it.each([
+    { name: "archive", kind: "update" as const, body: { status: "archived" } },
+    { name: "restore", kind: "update" as const, body: { status: "active" } },
+    { name: "clear", kind: "check-in" as const, body: { clear: true } },
+    {
+      name: "timer save",
+      kind: "check-in" as const,
+      body: { timerSeconds: 120, manualMinutes: 0 },
+    },
+    {
+      name: "timer undo",
+      kind: "check-in" as const,
+      body: { clearTimedCompletion: true },
+    },
+  ])("guards $name before any branch-specific read or write", async ({ kind, body }) => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: buildHabitDefinitionRow({ category: "future_category" }),
+      error: null,
+    });
+    const eqId = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ eq: eqId }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    const update = vi.fn();
+    const insert = vi.fn();
+    const upsert = vi.fn();
+    const deleteRows = vi.fn();
+    const from = vi.fn(() => ({ select, update, insert, upsert, delete: deleteRows }));
+    mockAuthenticatedRouteClient(from);
+
+    const response = await callHabitMutationJson(getHabitMutationRoute(kind), {
+      ...body,
+      renderedTodayDate: "2026-05-10",
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      code: "UNSUPPORTED_HABIT_DEFINITION",
+    });
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+    expect(deleteRows).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
 
   it("restores archived habits without touching check-ins", async () => {
     const currentMaybeSingle = vi.fn().mockResolvedValue({
@@ -1972,12 +2366,19 @@ describe("habits routes", () => {
     );
   });
 
-  it("creates owner-scoped reset-stats events without deleting check-ins", async () => {
+  it("creates owner-scoped reset-stats events for legacy cadence without deleting check-ins", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: buildHabitDefinitionRow({
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
+        cadence_period: null,
+        cadence_target_count: null,
+        cadence_day_policy: null,
         status: "active",
       }),
       error: null,
@@ -2031,6 +2432,8 @@ describe("habits routes", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
+    expect(habitSelect).toHaveBeenCalledTimes(1);
+    expect(habitSelect).toHaveBeenCalledWith("habit definition write guard select");
     expect(habitEqUser).toHaveBeenCalledWith("user_id", "user-1");
     expect(habitEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
     expect(insert).toHaveBeenCalledWith(
@@ -2061,7 +2464,7 @@ describe("habits routes", () => {
   });
 
   it("rejects future reset boundaries before reset-event writes", async () => {
-    const { insert } = mockResetStatsClient("2026-05-01");
+    const { habitSelect, insert } = mockResetStatsClient("2026-05-01");
     const response = await callHabitMutationJson(getHabitMutationRoute("reset-stats"), {
       effectiveDate: "2026-05-11",
       selectedDate: "2026-05-11",
@@ -2074,6 +2477,8 @@ describe("habits routes", () => {
       error: "Choose today or an earlier reset date.",
     });
     expect(insert).not.toHaveBeenCalled();
+    expect(habitSelect).toHaveBeenCalledTimes(1);
+    expect(habitSelect).toHaveBeenCalledWith("habit definition write guard select");
     expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
   });
 
@@ -2104,6 +2509,10 @@ describe("habits routes", () => {
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
         status: "active",
       }),
       error: null,
@@ -2163,9 +2572,13 @@ describe("habits routes", () => {
     );
   });
 
-  it("accepts and stores a check-in on an opposite positive local-date boundary", async () => {
+  it("accepts and stores a legacy-cadence check-in on an opposite local-date boundary", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
-      data: buildHabitDefinitionRow(),
+      data: buildHabitDefinitionRow({
+        cadence_period: null,
+        cadence_target_count: null,
+        cadence_day_policy: null,
+      }),
       error: null,
     });
     const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
@@ -2201,6 +2614,8 @@ describe("habits routes", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
+    expect(habitSelect).toHaveBeenCalledTimes(1);
+    expect(habitSelect).toHaveBeenCalledWith("habit definition write guard select");
     expect(habitEqUser).toHaveBeenCalledWith("user_id", "user-1");
     expect(habitEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
     expect(upsert).toHaveBeenCalledWith(
@@ -2301,6 +2716,10 @@ describe("habits routes", () => {
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
       }),
       error: null,
     });
@@ -2375,6 +2794,10 @@ describe("habits routes", () => {
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
       }),
       error: null,
     });
@@ -2461,6 +2884,10 @@ describe("habits routes", () => {
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
       }),
       error: null,
     });
@@ -2530,6 +2957,10 @@ describe("habits routes", () => {
         habit_mode: "timed",
         habit_type: "duration",
         start_date: "2026-05-01",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
       }),
       error: null,
     });
@@ -2696,6 +3127,9 @@ describe("habits routes", () => {
         habit_mode: "quit",
         habit_type: "avoidance",
         start_date: "2026-05-07",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
       }),
       error: null,
     });

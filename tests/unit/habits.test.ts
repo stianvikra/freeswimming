@@ -18,6 +18,8 @@ import {
   getHabitAbsenceReviewCandidateDates,
   getHabitDayStatusLabel,
   getHabitMotivationRangeStartDate,
+  HABIT_WEEKDAY_VALUES,
+  isUsableHabitDefinition,
   UNSUPPORTED_HABIT_DEFINITION_CODE,
   UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE,
   type HabitCheckInRow,
@@ -55,6 +57,112 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow>): SupportedHabitDe
     updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
   } as SupportedHabitDefinitionRow;
+}
+
+function buildFullEditorTargetBody(overrides: Record<string, unknown> = {}) {
+  return {
+    habitMode: "build",
+    habitType: "binary",
+    targetValueNumeric: "10",
+    targetUnit: "minutes",
+    targetTime: "05:00",
+    timerEnabled: false,
+    timerTargetSeconds: 600,
+    ...overrides,
+  };
+}
+
+const FULL_EDITOR_COMPATIBILITY_CASES = [
+  { name: "build binary", row: buildHabitRow({}), body: buildFullEditorTargetBody() },
+  {
+    name: "build count",
+    row: buildHabitRow({ habit_type: "count", target_value_numeric: 10, target_unit: "times" }),
+    body: buildFullEditorTargetBody({ habitType: "count", targetUnit: "times" }),
+  },
+  {
+    name: "build duration",
+    row: buildHabitRow({
+      habit_type: "duration",
+      target_value_numeric: 10,
+      target_unit: "minutes",
+    }),
+    body: buildFullEditorTargetBody({ habitType: "duration" }),
+    updateRow: { target_value_numeric: 1.234 },
+    updateBody: { targetValueNumeric: "1.234" },
+  },
+  {
+    name: "build time of day",
+    row: buildHabitRow({
+      habit_type: "time_of_day",
+      target_operator: "before",
+      target_time: "05:00:00",
+    }),
+    body: buildFullEditorTargetBody({ habitType: "time_of_day", targetUnit: "times" }),
+    updateRow: { target_time: "05:00:30" },
+  },
+  {
+    name: "build avoidance",
+    row: buildHabitRow({
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+    }),
+    body: buildFullEditorTargetBody({
+      habitType: "avoidance",
+      targetValueNumeric: "0",
+      targetUnit: "times",
+      timerTargetSeconds: null,
+    }),
+  },
+  {
+    name: "quit avoidance",
+    row: buildHabitRow({
+      habit_mode: "quit",
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+    }),
+    body: buildFullEditorTargetBody({
+      habitMode: "quit",
+      habitType: "avoidance",
+      targetValueNumeric: "0",
+      targetUnit: "times",
+      timerTargetSeconds: null,
+    }),
+  },
+  {
+    name: "timed duration",
+    row: buildHabitRow({
+      habit_mode: "timed",
+      habit_type: "duration",
+      target_value_numeric: 10,
+      target_unit: "minutes",
+      timer_enabled: true,
+      timer_target_seconds: 600,
+    }),
+    body: buildFullEditorTargetBody({
+      habitMode: "timed",
+      habitType: "duration",
+      timerEnabled: true,
+    }),
+    updateRow: { target_value_numeric: 1.242, timer_target_seconds: 75 },
+    updateBody: { targetValueNumeric: "1.242", timerTargetSeconds: 75 },
+  },
+] as const;
+
+function getPersistedTargetShape(row: SupportedHabitDefinitionRow) {
+  return {
+    habit_mode: row.habit_mode,
+    habit_type: row.habit_type,
+    target_operator: row.target_operator,
+    target_value_numeric: row.target_value_numeric,
+    target_unit: row.target_unit,
+    target_time: row.target_time,
+    timer_enabled: row.timer_enabled,
+    timer_target_seconds: row.timer_target_seconds,
+  };
 }
 
 function buildCheckInRow(overrides: Partial<HabitCheckInRow>): HabitCheckInRow {
@@ -149,6 +257,300 @@ describe("habits domain helpers", () => {
     }
   });
 
+  it("classifies every canonical target, mode, timer, and cadence family as supported", () => {
+    const rows = [
+      buildHabitRow({}),
+      buildHabitRow({
+        habit_type: "count",
+        target_operator: "at_most",
+        target_value_numeric: 12.5,
+        target_unit: "pages",
+      }),
+      buildHabitRow({
+        habit_type: "duration",
+        target_operator: "at_most",
+        target_value_numeric: 30,
+        target_unit: "seconds",
+      }),
+      buildHabitRow({
+        habit_type: "time_of_day",
+        target_operator: "after",
+        target_time: "05:15:00",
+      }),
+      buildHabitRow({
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 2,
+        target_unit: "glasses",
+      }),
+      buildHabitRow({
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+      }),
+      buildHabitRow({
+        habit_mode: "timed",
+        habit_type: "duration",
+        target_value_numeric: 8,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 480,
+      }),
+      buildHabitRow({
+        habit_mode: "timed",
+        habit_type: "duration",
+        target_value_numeric: 1.5,
+        target_unit: "seconds",
+        timer_enabled: true,
+        timer_target_seconds: 2,
+      }),
+      buildHabitRow({
+        cadence_period: "weekly",
+        cadence_target_count: 3,
+        cadence_day_policy: "fixed",
+        schedule_days: ["monday", "wednesday", "friday"],
+      }),
+      buildHabitRow({
+        cadence_period: "weekly",
+        cadence_target_count: 3,
+        cadence_day_policy: "any",
+        schedule_days: [...HABIT_WEEKDAY_VALUES],
+      }),
+      buildHabitRow({
+        cadence_period: "monthly",
+        cadence_target_count: 12,
+        cadence_day_policy: "any",
+        schedule_days: [...HABIT_WEEKDAY_VALUES],
+      }),
+    ];
+
+    for (const row of rows) {
+      expect(classifyHabitDefinition(row).kind).toBe("supported");
+    }
+  });
+
+  it("derives only the exact all-null legacy cadence tuple and keeps its raw row untouched", () => {
+    for (const scheduleDays of [
+      ["monday"],
+      ["monday", "wednesday", "friday"],
+      ["sunday", "saturday", "friday", "thursday", "wednesday", "tuesday", "monday"],
+    ]) {
+      const row = {
+        ...buildHabitRow({ schedule_days: scheduleDays }),
+        cadence_period: null as unknown as string,
+        cadence_target_count: null as unknown as number,
+        cadence_day_policy: null as unknown as string,
+      };
+      const definition = classifyHabitDefinition(row);
+
+      expect(definition.kind).toBe("legacy_cadence");
+      expect(isUsableHabitDefinition(definition)).toBe(true);
+      if (definition.kind !== "legacy_cadence") continue;
+      expect(definition.row).toBe(row);
+      expect(definition.resolvedCadence).toEqual({
+        cadencePeriod: scheduleDays.length === 7 ? "daily" : "weekly",
+        cadenceTargetCount: scheduleDays.length === 7 ? 1 : scheduleDays.length,
+        cadenceDayPolicy: "fixed",
+        scheduleDays,
+      });
+      expect(buildHabitDefinitionView(definition.row)).toMatchObject({
+        cadencePeriod: scheduleDays.length === 7 ? "daily" : "weekly",
+        cadenceTargetCount: scheduleDays.length === 7 ? 1 : scheduleDays.length,
+        cadenceDayPolicy: "fixed",
+        scheduleDays,
+      });
+    }
+  });
+
+  it("fails closed field-by-field without exposing unknown definition values", () => {
+    const cases: Array<{
+      row: SupportedHabitDefinitionRow;
+      unsupportedFields: string[];
+    }> = [
+      {
+        row: buildHabitRow({ category: "future_category" }),
+        unsupportedFields: ["unknown_category"],
+      },
+      {
+        row: buildHabitRow({ target_operator: "future_operator" }),
+        unsupportedFields: ["unknown_target_operator"],
+      },
+      {
+        row: buildHabitRow({ target_unit: "future_unit" }),
+        unsupportedFields: ["unknown_target_unit"],
+      },
+      {
+        row: buildHabitRow({ target_value_numeric: 1 }),
+        unsupportedFields: ["invalid_target_shape"],
+      },
+      {
+        row: buildHabitRow({ timer_enabled: true }),
+        unsupportedFields: ["invalid_timer_shape"],
+      },
+      {
+        row: buildHabitRow({ cadence_period: "future_period" }),
+        unsupportedFields: ["unknown_cadence_period"],
+      },
+      {
+        row: buildHabitRow({ cadence_day_policy: "future_policy" }),
+        unsupportedFields: ["unknown_cadence_day_policy"],
+      },
+      {
+        row: buildHabitRow({ cadence_target_count: 0 }),
+        unsupportedFields: ["invalid_cadence_target_count"],
+      },
+      {
+        row: buildHabitRow({ schedule_days: ["monday", "monday"] }),
+        unsupportedFields: ["invalid_schedule_days"],
+      },
+      {
+        row: buildHabitRow({
+          cadence_period: "weekly",
+          cadence_target_count: 2,
+          cadence_day_policy: "fixed",
+          schedule_days: ["monday"],
+        }),
+        unsupportedFields: ["invalid_cadence_shape"],
+      },
+    ];
+
+    for (const { row, unsupportedFields } of cases) {
+      const definition = classifyHabitDefinition(row);
+      expect(definition).toEqual({
+        kind: "unsupported",
+        descriptor: { id: row.id, title: row.title, unsupportedFields },
+      });
+      expect(isUsableHabitDefinition(definition)).toBe(false);
+      expect(
+        definition.kind === "unsupported" ? definition.descriptor.unsupportedFields : []
+      ).toHaveLength(unsupportedFields.length);
+      expect(JSON.stringify(definition)).not.toMatch(
+        /future_(category|operator|unit|period|policy)/
+      );
+    }
+  });
+
+  it("keeps mixed reason keys deterministic, deduplicated, bounded, and value-private", () => {
+    const unknownDefinition = classifyHabitDefinition(
+      buildHabitRow({
+        habit_type: "future_type",
+        habit_mode: "future_mode",
+        status: "future_status",
+        category: "future_category",
+        target_operator: "future_operator",
+        target_unit: "future_unit",
+        cadence_period: "future_period",
+        cadence_target_count: 0,
+        cadence_day_policy: "future_policy",
+        schedule_days: ["monday", "monday"],
+      })
+    );
+    expect(unknownDefinition).toEqual({
+      kind: "unsupported",
+      descriptor: {
+        id: "11111111-1111-4111-8111-111111111111",
+        title: "Read",
+        unsupportedFields: [
+          "unknown_habit_type",
+          "unknown_habit_mode",
+          "unknown_definition_status",
+          "unknown_category",
+          "unknown_target_operator",
+          "unknown_target_unit",
+          "unknown_cadence_period",
+          "unknown_cadence_day_policy",
+          "invalid_cadence_target_count",
+          "invalid_schedule_days",
+        ],
+      },
+    });
+    expect(JSON.stringify(unknownDefinition)).not.toContain("future_");
+    if (unknownDefinition.kind === "unsupported") {
+      expect(new Set(unknownDefinition.descriptor.unsupportedFields).size).toBe(
+        unknownDefinition.descriptor.unsupportedFields.length
+      );
+      expect(unknownDefinition.descriptor.unsupportedFields.length).toBeLessThanOrEqual(13);
+    }
+
+    expect(
+      classifyHabitDefinition(
+        buildHabitRow({
+          target_value_numeric: 1,
+          timer_enabled: true,
+          cadence_period: "weekly",
+          cadence_target_count: 2,
+          cadence_day_policy: "fixed",
+          schedule_days: ["monday"],
+        })
+      )
+    ).toMatchObject({
+      kind: "unsupported",
+      descriptor: {
+        unsupportedFields: ["invalid_target_shape", "invalid_timer_shape", "invalid_cadence_shape"],
+      },
+    });
+  });
+
+  it("requires every non-cadence field to be canonical before using legacy cadence", () => {
+    const definition = classifyHabitDefinition({
+      ...buildHabitRow({ category: "future_category" }),
+      cadence_period: null as unknown as string,
+      cadence_target_count: null as unknown as number,
+      cadence_day_policy: null as unknown as string,
+    });
+
+    expect(definition).toEqual({
+      kind: "unsupported",
+      descriptor: {
+        id: "11111111-1111-4111-8111-111111111111",
+        title: "Read",
+        unsupportedFields: ["unknown_category"],
+      },
+    });
+  });
+
+  it("rejects partial-null cadence, type-specific unit drift, malformed times, and timer mismatch", () => {
+    const cases = [
+      buildHabitRow({ cadence_period: null as unknown as string }),
+      buildHabitRow({
+        habit_type: "count",
+        target_value_numeric: 1,
+        target_unit: "minutes",
+      }),
+      buildHabitRow({
+        habit_type: "duration",
+        target_value_numeric: 1,
+        target_unit: "times",
+      }),
+      buildHabitRow({
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 1,
+        target_unit: "steps",
+      }),
+      buildHabitRow({
+        habit_type: "time_of_day",
+        target_operator: "before",
+        target_time: "25:61:00",
+      }),
+      buildHabitRow({
+        habit_mode: "timed",
+        habit_type: "duration",
+        target_value_numeric: 8,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 479,
+      }),
+    ];
+
+    for (const row of cases) {
+      expect(classifyHabitDefinition(row).kind).toBe("unsupported");
+      expect(() => buildHabitDefinitionView(row)).toThrow(UNSUPPORTED_HABIT_DEFINITION_CODE);
+    }
+  });
+
   it("keeps omitted create defaults but rejects explicit unknown or null type and mode", () => {
     expect(buildHabitDefinitionInsert("user-1", { title: "Read" }, 1, "2026-05-10")).toMatchObject({
       habit_type: "binary",
@@ -162,6 +564,132 @@ describe("habits domain helpers", () => {
       { title: "Read", habitMode: null },
     ]) {
       expect(() => buildHabitDefinitionInsert("user-1", body, 1, "2026-05-10")).toThrow(
+        expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
+      );
+    }
+  });
+
+  it("projects all seven pre-boundary full-editor create payloads to canonical rows", () => {
+    const common = {
+      category: "movement",
+      cadencePeriod: "daily",
+      cadenceTargetCount: 1,
+      cadenceDayPolicy: "fixed",
+      scheduleDays: HABIT_WEEKDAY_VALUES,
+      isPerfectDayItem: true,
+    };
+
+    for (const [index, testCase] of FULL_EDITOR_COMPATIBILITY_CASES.entries()) {
+      const insert = buildHabitDefinitionInsert(
+        "user-1",
+        { title: `Habit ${index}`, ...common, ...testCase.body },
+        index,
+        "2026-05-10"
+      );
+      expect(insert).toMatchObject(getPersistedTargetShape(testCase.row));
+      expect(
+        classifyHabitDefinition({
+          ...buildHabitRow({
+            ...insert,
+            id: `00000000-0000-4000-8000-00000000000${index}`,
+          }),
+        }).kind
+      ).toBe("supported");
+    }
+  });
+
+  it("rejects unknown or malformed supplied fields even when projection would discard them", () => {
+    const invalidBodies = [
+      { category: "future_category" },
+      { category: null },
+      { targetOperator: "at_least" },
+      { targetUnit: "future_unit" },
+      { targetValueNumeric: "not-a-number" },
+      { targetTime: "25:00" },
+      { timerEnabled: null },
+      { timerTargetSeconds: 0 },
+      { cadencePeriod: "future_period" },
+      { cadencePeriod: null },
+      { cadenceTargetCount: 1.5 },
+      { cadenceDayPolicy: "future_policy" },
+      { cadenceDayPolicy: null },
+      { scheduleDays: ["monday", "monday"] },
+      { scheduleDays: ["future_day"] },
+      { scheduleDays: "monday" },
+    ];
+
+    for (const body of invalidBodies) {
+      expect(() =>
+        buildHabitDefinitionInsert("user-1", { title: "Read", ...body }, 1, "2026-05-10")
+      ).toThrow(expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE }));
+      expect(() => buildHabitDefinitionUpdate(body, "2026-05-10", buildHabitRow({}))).toThrow(
+        expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
+      );
+    }
+  });
+
+  it("rejects projected null, unit, cadence, and timer contradictions with the typed value error", () => {
+    const invalidBodies = [
+      { habitType: "count", targetValueNumeric: 1, targetUnit: null },
+      { habitType: "count", targetValueNumeric: 1, targetUnit: "minutes" },
+      { habitType: "duration", targetValueNumeric: 1, targetUnit: "times" },
+      { habitType: "time_of_day", targetTime: null },
+      { habitMode: "quit", targetValueNumeric: 1, targetUnit: "times" },
+      { habitMode: "quit", targetValueNumeric: 0, targetUnit: "minutes" },
+      {
+        habitMode: "timed",
+        habitType: "duration",
+        targetValueNumeric: 8,
+        targetUnit: "minutes",
+        timerEnabled: true,
+        timerTargetSeconds: null,
+      },
+      {
+        habitMode: "timed",
+        habitType: "duration",
+        targetValueNumeric: 8,
+        targetUnit: "minutes",
+        timerEnabled: true,
+        timerTargetSeconds: 479,
+      },
+      {
+        habitMode: "build",
+        habitType: "duration",
+        targetValueNumeric: 8,
+        targetUnit: "minutes",
+        timerEnabled: true,
+      },
+      {
+        cadencePeriod: "weekly",
+        cadenceTargetCount: 2,
+        cadenceDayPolicy: "fixed",
+        scheduleDays: ["monday"],
+      },
+      {
+        cadencePeriod: "daily",
+        cadenceTargetCount: 1,
+        cadenceDayPolicy: "fixed",
+        scheduleDays: ["monday"],
+      },
+      {
+        cadencePeriod: "weekly",
+        cadenceTargetCount: 2,
+        cadenceDayPolicy: "any",
+        scheduleDays: ["monday", "wednesday"],
+      },
+      {
+        cadencePeriod: "monthly",
+        cadenceTargetCount: 5,
+        cadenceDayPolicy: "any",
+        scheduleDays: ["monday"],
+      },
+    ];
+
+    for (const body of invalidBodies) {
+      expect(() =>
+        buildHabitDefinitionInsert("user-1", { title: "Read", ...body }, 1, "2026-05-10")
+      ).toThrow(expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE }));
+      expect(() => buildHabitDefinitionUpdate(body, "2026-05-10", buildHabitRow({}))).toThrow(
         expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
       );
     }
@@ -181,11 +709,8 @@ describe("habits domain helpers", () => {
 
     expect(
       buildHabitDefinitionUpdate({ targetValueNumeric: 20 }, "2026-05-10", currentDefinition.row)
-    ).toMatchObject({
-      habit_type: "duration",
-      habit_mode: "build",
+    ).toEqual({
       target_value_numeric: 20,
-      target_unit: "minutes",
     });
 
     for (const body of [
@@ -198,6 +723,139 @@ describe("habits domain helpers", () => {
         expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE })
       );
     }
+  });
+
+  it("keeps full-editor title-only patches semantic-write free and preserves stored operators", () => {
+    const currentRows = FULL_EDITOR_COMPATIBILITY_CASES.map(({ name, row, ...testCase }) =>
+      buildHabitRow({
+        ...row,
+        ...("updateRow" in testCase ? testCase.updateRow : {}),
+        title: name,
+        target_operator:
+          row.habit_type === "time_of_day"
+            ? "after"
+            : row.habit_mode === "build" &&
+                (row.habit_type === "count" || row.habit_type === "duration")
+              ? "at_most"
+              : row.target_operator,
+      })
+    );
+
+    for (const [index, testCase] of FULL_EDITOR_COMPATIBILITY_CASES.entries()) {
+      const current = currentRows[index]!;
+      const update = buildHabitDefinitionUpdate(
+        {
+          title: `${current.title} updated`,
+          notes: current.notes,
+          category: current.category,
+          ...testCase.body,
+          ...("updateBody" in testCase ? testCase.updateBody : {}),
+          cadencePeriod: "daily",
+          cadenceTargetCount: 1,
+          cadenceDayPolicy: "fixed",
+          scheduleDays: HABIT_WEEKDAY_VALUES,
+          isPerfectDayItem: true,
+        },
+        "2026-05-10",
+        current
+      );
+
+      expect(update).toEqual({ title: `${current.title} updated` });
+    }
+
+    expect(
+      buildHabitDefinitionUpdate({ targetValueNumeric: 11 }, "2026-05-10", currentRows[1]!)
+    ).toEqual({ target_value_numeric: 11 });
+    expect(
+      buildHabitDefinitionUpdate({ targetTime: "06:00" }, "2026-05-10", currentRows[3]!)
+    ).toEqual({ target_time: "06:00:00" });
+  });
+
+  it("derives a new operator only for an actual type or mode transition", () => {
+    const current = buildHabitRow({
+      habit_type: "count",
+      target_operator: "at_most",
+      target_value_numeric: 10,
+      target_unit: "times",
+    });
+
+    expect(
+      buildHabitDefinitionUpdate(
+        {
+          habitType: "duration",
+          targetValueNumeric: 5,
+          targetUnit: "minutes",
+        },
+        "2026-05-10",
+        current
+      )
+    ).toMatchObject({
+      habit_type: "duration",
+      target_operator: "at_least",
+      target_value_numeric: 5,
+      target_unit: "minutes",
+    });
+  });
+
+  it("keeps legacy cadence raw for unrelated/full-editor no-op edits and canonicalizes only a real complete cadence edit", () => {
+    const rawLegacyRow = {
+      ...buildHabitRow({ schedule_days: ["monday", "wednesday", "friday"] }),
+      cadence_period: null as unknown as string,
+      cadence_target_count: null as unknown as number,
+      cadence_day_policy: null as unknown as string,
+    };
+    const definition = classifyHabitDefinition(rawLegacyRow);
+    expect(definition.kind).toBe("legacy_cadence");
+    if (definition.kind !== "legacy_cadence") return;
+
+    expect(
+      buildHabitDefinitionUpdate({ title: "Read more" }, "2026-05-10", definition.row)
+    ).toEqual({
+      title: "Read more",
+    });
+    expect(
+      buildHabitDefinitionUpdate(
+        {
+          title: "Read more",
+          habitMode: "build",
+          habitType: "binary",
+          category: "learning",
+          targetValueNumeric: "10",
+          targetUnit: "minutes",
+          targetTime: "05:00",
+          timerEnabled: false,
+          timerTargetSeconds: 600,
+          cadencePeriod: "weekly",
+          cadenceTargetCount: 3,
+          cadenceDayPolicy: "fixed",
+          scheduleDays: ["friday", "wednesday", "monday"],
+          isPerfectDayItem: true,
+        },
+        "2026-05-10",
+        definition.row
+      )
+    ).toEqual({ title: "Read more" });
+
+    expect(() =>
+      buildHabitDefinitionUpdate({ cadenceTargetCount: 2 }, "2026-05-10", definition.row)
+    ).toThrow(expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE }));
+    expect(
+      buildHabitDefinitionUpdate(
+        {
+          cadencePeriod: "weekly",
+          cadenceTargetCount: 2,
+          cadenceDayPolicy: "any",
+          scheduleDays: HABIT_WEEKDAY_VALUES,
+        },
+        "2026-05-10",
+        definition.row
+      )
+    ).toEqual({
+      cadence_period: "weekly",
+      cadence_target_count: 2,
+      cadence_day_policy: "any",
+      schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    });
   });
 
   it("builds avoidance habits as at-most raw targets", () => {
@@ -1033,7 +1691,7 @@ describe("habits domain helpers", () => {
     });
   });
 
-  it("normalizes weekly and monthly any-day cadence fields on create", () => {
+  it("derives all-days schedules when weekly and monthly any-day cadence omits them", () => {
     const weekly = buildHabitDefinitionInsert(
       "user-1",
       {
@@ -1041,7 +1699,6 @@ describe("habits domain helpers", () => {
         cadencePeriod: "weekly",
         cadenceTargetCount: 3,
         cadenceDayPolicy: "any",
-        scheduleDays: ["monday"],
       },
       1,
       "2026-05-10"
@@ -1084,11 +1741,11 @@ describe("habits domain helpers", () => {
         1,
         "2026-05-10"
       )
-    ).toThrow("Monthly fixed dates are not available yet.");
+    ).toThrow(expect.objectContaining({ code: UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE }));
   });
 
   it("keeps legacy schedule-day rows readable as weekly fixed days", () => {
-    const habit = buildHabitDefinitionView({
+    const definition = classifyHabitDefinition({
       ...buildHabitRow({
         schedule_days: ["monday", "wednesday", "friday"],
       }),
@@ -1096,6 +1753,9 @@ describe("habits domain helpers", () => {
       cadence_target_count: null as unknown as number,
       cadence_day_policy: null as unknown as string,
     });
+    expect(definition.kind).toBe("legacy_cadence");
+    if (definition.kind !== "legacy_cadence") return;
+    const habit = buildHabitDefinitionView(definition.row);
 
     expect(habit.cadencePeriod).toBe("weekly");
     expect(habit.cadenceTargetCount).toBe(3);
@@ -1660,6 +2320,30 @@ describe("habits domain helpers", () => {
     });
   });
 
+  it("uses hidden-parent check-ins only for stale day-status precedence", () => {
+    const visibleHabit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
+    const hiddenParentCheckIn = buildHabitCheckInView(
+      buildCheckInRow({
+        id: "99999999-9999-4999-8999-999999999999",
+        habit_id: "88888888-8888-4888-8888-888888888888",
+        check_in_date: "2026-05-10",
+      })
+    );
+    const options = {
+      dayStatuses: [{ reviewDate: "2026-05-10", dayStatus: "not_tracked" as const }],
+      dayStatusPrecedenceCheckIns: [hiddenParentCheckIn],
+    };
+
+    expect(buildHabitDaySummary([visibleHabit], [], "2026-05-10", options)).toMatchObject({
+      dayStatus: null,
+      trackingState: "known",
+    });
+    expect(buildHabitMotivationSummary([visibleHabit], [], "2026-05-10", options)).toMatchObject({
+      notTrackedDayCount: 0,
+      metricCoverage: { notTrackedDayCount: 0 },
+    });
+  });
+
   it("excludes not-tracked dates from weekly performance while retaining coverage", () => {
     const habit = buildHabitDefinitionView(
       buildHabitRow({ title: "Read", start_date: "2026-05-04" })
@@ -2103,6 +2787,8 @@ describe("habits domain helpers", () => {
       buildHabitRow({
         title: "Sunday reset",
         start_date: "2026-05-04",
+        cadence_period: "weekly",
+        cadence_target_count: 1,
         schedule_days: ["sunday"],
       })
     );

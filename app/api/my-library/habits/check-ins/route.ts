@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
-import { HABIT_CHECK_IN_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
+import {
+  HABIT_CHECK_IN_SELECT,
+  HABIT_DEFINITION_WRITE_GUARD_SELECT,
+  loadHabitSnapshot,
+} from "@/lib/habits/server";
 import {
   buildTimedTotalMinutes,
   buildHabitCheckInInsert,
@@ -157,7 +161,7 @@ export async function POST(request: Request) {
   const actionSource = getHabitMutationActionSource(body.actionSource);
   const habitResult = await supabase
     .from("habit_definitions")
-    .select("id, title, habit_type, habit_mode, status, start_date")
+    .select(HABIT_DEFINITION_WRITE_GUARD_SELECT)
     .eq("user_id", user.id)
     .eq("id", body.habitId)
     .maybeSingle();

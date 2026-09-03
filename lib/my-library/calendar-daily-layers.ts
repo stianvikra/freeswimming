@@ -1,6 +1,4 @@
 import {
-  HABIT_CADENCE_DAY_POLICY_VALUES,
-  HABIT_CADENCE_PERIOD_VALUES,
   buildHabitDayStatusView,
   buildHabitDaySummary,
   classifyHabitDefinition,
@@ -12,7 +10,7 @@ import {
   type HabitDefinitionView,
   type HabitMotivationResetView,
   type HabitDayStatusView,
-  type SupportedHabitDefinitionRow,
+  type UsableHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
   DRYLAND_MICRO_BLOCK_STATUSES,
@@ -127,6 +125,7 @@ type CalendarHabitLayerState =
       status: "ready";
       habits: HabitDefinitionView[];
       checkIns: HabitCheckInView[];
+      dayStatusPrecedenceCheckIns?: HabitCheckInView[];
       resetEvents: HabitMotivationResetView[];
       unsupported: UnsupportedHabitScope;
       dayStatuses?: CalendarHabitDayStatusState;
@@ -179,22 +178,11 @@ function isMappedMicroBlockStatus(value: unknown): value is DrylandMicroBlockSta
   );
 }
 
-function hasUnsupportedCalendarCadence(row: HabitDefinitionRow): boolean {
-  const hasUnknownCadencePeriod =
-    row.cadence_period !== null &&
-    !HABIT_CADENCE_PERIOD_VALUES.includes(row.cadence_period as never);
-  const hasUnknownCadenceDayPolicy =
-    row.cadence_day_policy !== null &&
-    !HABIT_CADENCE_DAY_POLICY_VALUES.includes(row.cadence_day_policy as never);
-
-  return hasUnknownCadencePeriod || hasUnknownCadenceDayPolicy;
-}
-
 export function partitionCalendarHabitRows(rows: HabitDefinitionRow[]): {
-  supportedRows: SupportedHabitDefinitionRow[];
+  usableRows: UsableHabitDefinitionRow[];
   unsupported: UnsupportedHabitScope;
 } {
-  const supportedRows: SupportedHabitDefinitionRow[] = [];
+  const usableRows: UsableHabitDefinitionRow[] = [];
   const unsupportedLabels: string[] = [];
 
   for (const row of rows) {
@@ -204,18 +192,11 @@ export function partitionCalendarHabitRows(rows: HabitDefinitionRow[]): {
       continue;
     }
 
-    // H-081 remains separate: keep Calendar's existing cadence gate after the
-    // shared H-080 type/mode/status boundary.
-    if (hasUnsupportedCalendarCadence(definition.row)) {
-      unsupportedLabels.push(definition.row.title || definition.row.id);
-      continue;
-    }
-
-    supportedRows.push(definition.row);
+    usableRows.push(definition.row);
   }
 
   return {
-    supportedRows,
+    usableRows,
     unsupported: {
       count: unsupportedLabels.length,
       labels: unsupportedLabels.slice(0, 3),
@@ -402,10 +383,13 @@ function buildHabitsLayer(input: {
     });
   }
 
-  const supportedHabitIds = new Set(state.habits.map((habit) => habit.id));
+  const usableHabitIds = new Set(state.habits.map((habit) => habit.id));
   const dayStatusState = state.dayStatuses ?? { status: "ready", entries: [] };
   const dayCheckIns = state.checkIns.filter(
-    (checkIn) => supportedHabitIds.has(checkIn.habitId) && checkIn.checkInDate <= input.date
+    (checkIn) => usableHabitIds.has(checkIn.habitId) && checkIn.checkInDate <= input.date
+  );
+  const dayStatusPrecedenceCheckIns = (state.dayStatusPrecedenceCheckIns ?? state.checkIns).filter(
+    (checkIn) => checkIn.checkInDate <= input.date
   );
   if (dayStatusState.status === "schema_missing") {
     return buildUnavailableLayer({
@@ -431,7 +415,9 @@ function buildHabitsLayer(input: {
 
   const daySummary = buildHabitDaySummary(state.habits, dayCheckIns, input.date, {
     dayStatuses: dayStatusState.status === "ready" ? dayStatusState.entries : [],
+    dayStatusPrecedenceCheckIns,
   });
+  const hasReview = state.unsupported.count > 0;
 
   if (
     daySummary.trackingState === "needs_review" ||
@@ -461,10 +447,12 @@ function buildHabitsLayer(input: {
     return {
       source: "habits",
       label: "Habits",
-      status: "mapped",
-      tone: "muted",
-      compactLabel: getHabitDayStatusLabel("not_tracked"),
-      summary: "Habit activity was not tracked on this date.",
+      status: hasReview ? "review" : "mapped",
+      tone: hasReview ? "warning" : "muted",
+      compactLabel: hasReview ? "Habits review needed" : getHabitDayStatusLabel("not_tracked"),
+      summary: hasReview
+        ? "Habit activity was not tracked on this date, and some Habits need review."
+        : "Habit activity was not tracked on this date.",
       supportLabel:
         "This date is excluded from Habit performance but remains in coverage. A later check-in replaces this status.",
       href: `${SOURCE_HREFS.habits}?date=${input.date}`,
@@ -475,6 +463,16 @@ function buildHabitsLayer(input: {
           value: getHabitDayStatusLabel("not_tracked"),
           tone: "muted",
         },
+        ...(hasReview
+          ? [
+              {
+                id: "habit_review",
+                label: getHabitDayStatusLabel("unsupported"),
+                value: pluralize(state.unsupported.count, "habit"),
+                tone: "warning" as const,
+              },
+            ]
+          : []),
       ],
       stats: {
         dailyHabitCompletedCount: 0,
@@ -516,12 +514,11 @@ function buildHabitsLayer(input: {
   ).length;
   const resetCount = state.resetEvents.filter(
     (reset) =>
-      supportedHabitIds.has(reset.habitId) &&
+      usableHabitIds.has(reset.habitId) &&
       reset.effectiveDate === input.date &&
       reset.resetType === "reset_stats" &&
       reset.status === "active"
   ).length;
-  const hasReview = state.unsupported.count > 0;
   const hasIncompleteTracking = daySummary.items.some(
     (item) => item.trackingState === "incomplete"
   );

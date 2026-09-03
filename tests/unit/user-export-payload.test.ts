@@ -783,6 +783,17 @@ describe("buildUserExportPayload", () => {
           habit_type,
           habit_mode,
           status,
+          category: index === 3 ? "future_category" : "other",
+          target_operator: index === 3 ? "future_operator" : "at_least",
+          target_value_numeric: index === 3 ? -7 : null,
+          target_unit: index === 3 ? "future_unit" : null,
+          target_time: index === 3 ? "future_time" : null,
+          timer_enabled: index === 3,
+          timer_target_seconds: index === 3 ? 99_999 : null,
+          cadence_period: index === 3 ? "future_period" : "daily",
+          cadence_target_count: index === 3 ? 99 : 1,
+          cadence_day_policy: index === 3 ? "future_policy" : "fixed",
+          schedule_days: index === 3 ? ["monday", "monday", "future_day"] : ["monday"],
           sort_order: index + 1,
         }) as unknown as ExportHabitDefinition
     );
@@ -840,6 +851,19 @@ describe("buildUserExportPayload", () => {
         status,
       }))
     );
+    expect(payload.habitDefinitions.find((row) => row.id === "habit-future-mixed")).toMatchObject({
+      category: "future_category",
+      targetOperator: "future_operator",
+      targetValueNumeric: -7,
+      targetUnit: "future_unit",
+      targetTime: "future_time",
+      timerEnabled: true,
+      timerTargetSeconds: 99_999,
+      cadencePeriod: "future_period",
+      cadenceTargetCount: 99,
+      cadenceDayPolicy: "future_policy",
+      scheduleDays: ["monday", "monday", "future_day"],
+    });
     expect(payload.habitCheckIns).toEqual(
       checkIns.map((row) =>
         expect.objectContaining({

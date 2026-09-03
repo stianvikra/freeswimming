@@ -94,10 +94,20 @@ function buildReset(overrides: Partial<HabitMotivationResetView> = {}): HabitMot
 function buildHabitRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
+    user_id: "user-1",
     title: "Morning mobility",
+    notes: null,
     habit_mode: "build",
     habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
     start_date: "2026-05-01",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
     cadence_period: "daily",
     cadence_target_count: 1,
     cadence_day_policy: "fixed",
@@ -108,7 +118,7 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefini
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     ...overrides,
-  } as HabitDefinitionRow;
+  };
 }
 
 function buildCheckInRow(overrides: Partial<HabitCheckInRow> = {}): HabitCheckInRow {
@@ -622,6 +632,10 @@ describe("my library calendar comparison", () => {
     const source = buildHabitsCalendarComparisonSource({
       habits: [buildHabit()],
       checkIns: [buildCheckIn({ checkInDate: "2026-06-02" })],
+      dayStatusPrecedenceCheckIns: [
+        buildCheckIn({ habitId: "unsupported-habit", checkInDate: "2026-06-03" }),
+      ],
+      dayStatusEntries: [{ reviewDate: "2026-06-03", dayStatus: "not_tracked" }],
       unsupportedHabitCount: 1,
       window,
     });
@@ -637,6 +651,9 @@ describe("my library calendar comparison", () => {
       ])
     );
     expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toBeDefined();
+    expect(source.metrics.find((metric) => metric.id === "habit_not_tracked")?.currentLabel).toBe(
+      "0 days"
+    );
   });
 
   it("uses an explicit review state instead of zero-value Trends for unsupported-only Habits", () => {
@@ -943,16 +960,25 @@ describe("my library calendar comparison", () => {
   });
 
   it("filters unsupported Habit child rows before building Trends", async () => {
+    const legacyHabitId = "88888888-8888-4888-8888-888888888888";
     const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
     const { calls, client } = createComparisonSupabaseClient({
       habit_definitions: {
         data: [
           buildHabitRow(),
           buildHabitRow({
+            id: legacyHabitId,
+            title: "Legacy cadence Habit",
+            cadence_period: null,
+            cadence_target_count: null,
+            cadence_day_policy: null,
+            sort_order: 1,
+          } as unknown as Partial<HabitDefinitionRow>),
+          buildHabitRow({
             id: unsupportedHabitId,
             title: "Future Habit",
-            habit_type: "future_type",
-            sort_order: 1,
+            category: "future_category",
+            sort_order: 2,
           }),
         ],
         error: null,
@@ -961,8 +987,15 @@ describe("my library calendar comparison", () => {
         data: [
           buildCheckInRow(),
           buildCheckInRow({
+            id: "88888888-8888-4888-8888-888888888887",
+            habit_id: legacyHabitId,
+            check_in_date: "2026-06-03",
+            completed_at: "2026-06-03T08:00:00.000Z",
+          }),
+          buildCheckInRow({
             id: "99999999-9999-4999-8999-999999999998",
             habit_id: unsupportedHabitId,
+            check_in_date: "2026-06-04",
             status: "skipped",
             value_boolean: null,
             completed_at: null,
@@ -972,6 +1005,10 @@ describe("my library calendar comparison", () => {
       },
       habit_motivation_resets: {
         data: [
+          buildResetRow({
+            id: "88888888-8888-4888-8888-888888888886",
+            habit_id: legacyHabitId,
+          }),
           buildResetRow({
             habit_id: unsupportedHabitId,
           }),
@@ -998,16 +1035,16 @@ describe("my library calendar comparison", () => {
     });
     expect(habits.details).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "active_habits", value: "1 habit" }),
-        expect.objectContaining({ id: "habit_reset_markers", value: "0 markers" }),
-        expect.objectContaining({ id: "habit_not_tracked", value: "1 day" }),
+        expect.objectContaining({ id: "active_habits", value: "2 habits" }),
+        expect.objectContaining({ id: "habit_reset_markers", value: "1 marker" }),
+        expect.objectContaining({ id: "habit_not_tracked", value: "0 days" }),
         expect.objectContaining({ id: "habit_review", value: "1 habit" }),
       ])
     );
     expect(habits.metrics.find((metric) => metric.id === "habit_rest_slips")).toMatchObject({
       currentLabel: "0 rest / 0 slips",
     });
-    expect(JSON.stringify(habits)).not.toContain("future_type");
+    expect(JSON.stringify(habits)).not.toContain("future_category");
     expect(calls).toEqual(
       expect.arrayContaining([
         {

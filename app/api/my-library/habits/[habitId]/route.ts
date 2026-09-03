@@ -273,7 +273,15 @@ export async function PATCH(request: Request, { params }: Props) {
     selectedDate: body.selectedDate,
     todayDate: localDayContext.todayDate,
   });
-  if (updatedDefinition.kind === "supported") {
+  if (updatedDefinition.kind !== "unsupported") {
+    const resolvedCadence =
+      updatedDefinition.kind === "legacy_cadence"
+        ? updatedDefinition.resolvedCadence
+        : {
+            cadencePeriod: updatedDefinition.row.cadence_period,
+            cadenceDayPolicy: updatedDefinition.row.cadence_day_policy,
+            cadenceTargetCount: updatedDefinition.row.cadence_target_count,
+          };
     trackAnalyticsEvent({
       eventName: "habit_updated",
       channel: "server",
@@ -283,9 +291,9 @@ export async function PATCH(request: Request, { params }: Props) {
         status: updatedDefinition.row.status,
         archived: updatedDefinition.row.status === "archived",
         changedStatus: typeof body.status === "string",
-        cadencePeriod: updatedDefinition.row.cadence_period ?? "daily",
-        cadenceDayPolicy: updatedDefinition.row.cadence_day_policy ?? "fixed",
-        cadenceTargetCount: updatedDefinition.row.cadence_target_count ?? 1,
+        cadencePeriod: resolvedCadence.cadencePeriod,
+        cadenceDayPolicy: resolvedCadence.cadenceDayPolicy,
+        cadenceTargetCount: resolvedCadence.cadenceTargetCount,
       },
     });
   }
