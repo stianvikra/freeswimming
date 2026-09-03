@@ -36,7 +36,11 @@ import {
 import { buildDrylandSessionRecord } from "@/lib/dryland/shared";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT } from "@/lib/habits/server";
-import { buildHabitDefinitionInsert, type HabitDefinitionRow } from "@/lib/habits/shared";
+import {
+  buildHabitDefinitionInsert,
+  UNSUPPORTED_HABIT_DEFINITION_CODE,
+  type HabitDefinitionRow,
+} from "@/lib/habits/shared";
 import { isLocalDayDateKey } from "@/lib/my-library/local-day";
 import { getRequestLocalDayContext } from "@/lib/my-library/local-day-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -497,7 +501,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         noStoreJson(
           {
             ok: false,
-            code: "UNSUPPORTED_HABIT_DEFINITION",
+            code: UNSUPPORTED_HABIT_DEFINITION_CODE,
             error: "The linked Habit needs review before counting can be changed.",
           },
           { status: 409 }

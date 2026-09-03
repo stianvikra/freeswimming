@@ -36,7 +36,7 @@ import {
   type HabitMotivationResetRow,
   type HabitMotivationResetView,
   type HabitMetricCoverage,
-  type SupportedHabitDefinitionRow,
+  type UsableHabitDefinitionRow,
 } from "@/lib/habits/shared";
 import {
   buildMyLibraryCalendarComparisonWindow,
@@ -346,16 +346,17 @@ type HabitRangeStats = {
 function buildHabitRangeStats(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
+  dayStatusPrecedenceCheckIns: HabitCheckInView[],
   resetEvents: HabitMotivationResetView[],
   range: MyLibraryCalendarPeriodRange,
   dayStatusEntries: CalendarHabitDayStatusEntry[]
 ): HabitRangeStats {
   const activeHabits = habits.filter((habit) => habit.status === "active");
-  const supportedHabitIds = new Set(habits.map((habit) => habit.id));
+  const usableHabitIds = new Set(habits.map((habit) => habit.id));
   const habitById = new Map(activeHabits.map((habit) => [habit.id, habit]));
   const dateKeys = listDateKeys(range);
   const rangeCheckIns = checkIns.filter(
-    (checkIn) => supportedHabitIds.has(checkIn.habitId) && isDateInRange(checkIn.checkInDate, range)
+    (checkIn) => usableHabitIds.has(checkIn.habitId) && isDateInRange(checkIn.checkInDate, range)
   );
   const daySummaries = dateKeys.map((dateKey) => ({
     dateKey,
@@ -363,7 +364,12 @@ function buildHabitRangeStats(
       activeHabits,
       checkIns.filter((checkIn) => checkIn.checkInDate <= dateKey),
       dateKey,
-      { dayStatuses: dayStatusEntries }
+      {
+        dayStatuses: dayStatusEntries,
+        dayStatusPrecedenceCheckIns: dayStatusPrecedenceCheckIns.filter(
+          (checkIn) => checkIn.checkInDate <= dateKey
+        ),
+      }
     ),
   }));
   const potentialDaySummaries = daySummaries.filter(
@@ -405,7 +411,7 @@ function buildHabitRangeStats(
     periodEnd: range.endDate,
     throughDate: range.endDate,
     dayStatuses: relevantDayStatuses,
-    precedenceCheckIns: checkIns,
+    precedenceCheckIns: dayStatusPrecedenceCheckIns,
   });
   const hasUnsupportedDayStatus =
     rangeStatusEvidence.hasUnsupportedDayStatus ||
@@ -423,7 +429,7 @@ function buildHabitRangeStats(
   });
   const resetMarkers = resetEvents.filter(
     (reset) =>
-      supportedHabitIds.has(reset.habitId) &&
+      usableHabitIds.has(reset.habitId) &&
       reset.resetType === "reset_stats" &&
       reset.status === "active" &&
       isDateInRange(reset.effectiveDate, range)
@@ -461,6 +467,7 @@ function buildHabitRangeStats(
 export function buildHabitsCalendarComparisonSource({
   habits,
   checkIns,
+  dayStatusPrecedenceCheckIns = checkIns,
   resetEvents = [],
   dayStatusEntries = [],
   unsupportedHabitCount = 0,
@@ -468,6 +475,7 @@ export function buildHabitsCalendarComparisonSource({
 }: {
   habits: HabitDefinitionView[];
   checkIns: HabitCheckInView[];
+  dayStatusPrecedenceCheckIns?: HabitCheckInView[];
   resetEvents?: HabitMotivationResetView[];
   dayStatusEntries?: CalendarHabitDayStatusEntry[];
   unsupportedHabitCount?: number;
@@ -478,6 +486,7 @@ export function buildHabitsCalendarComparisonSource({
   const current = buildHabitRangeStats(
     habits,
     checkIns,
+    dayStatusPrecedenceCheckIns,
     resetEvents,
     window.current,
     dayStatusEntries
@@ -485,6 +494,7 @@ export function buildHabitsCalendarComparisonSource({
   const comparison = buildHabitRangeStats(
     habits,
     checkIns,
+    dayStatusPrecedenceCheckIns,
     resetEvents,
     window.comparison,
     dayStatusEntries
@@ -1244,32 +1254,36 @@ export async function loadMyLibraryCalendarComparison(
       }
 
       const habitRows = (habitResult.data ?? []) as HabitDefinitionRow[];
-      const supportedHabitRows: SupportedHabitDefinitionRow[] = [];
+      const usableHabitRows: UsableHabitDefinitionRow[] = [];
       let unsupportedHabitCount = 0;
       for (const row of habitRows) {
         const definition = classifyHabitDefinition(row);
         if (definition.kind === "unsupported") {
           unsupportedHabitCount += 1;
         } else {
-          supportedHabitRows.push(definition.row);
+          usableHabitRows.push(definition.row);
         }
       }
-      const supportedHabitIds = new Set(supportedHabitRows.map((row) => row.id));
+      const usableHabitIds = new Set(usableHabitRows.map((row) => row.id));
       const dayStatuses = buildCalendarHabitDayStatusState(
         (habitDayStatusResult.data ?? []) as unknown as CalendarHabitDayStatusRow[]
+      );
+      const dayStatusPrecedenceCheckIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(
+        buildHabitCheckInView
       );
 
       habits =
         dayStatuses.status === "ready"
           ? buildHabitsCalendarComparisonSource({
-              habits: supportedHabitRows.map(buildHabitDefinitionView),
-              checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
-                .filter((row) => supportedHabitIds.has(row.habit_id))
-                .map(buildHabitCheckInView),
+              habits: usableHabitRows.map(buildHabitDefinitionView),
+              checkIns: dayStatusPrecedenceCheckIns.filter((row) =>
+                usableHabitIds.has(row.habitId)
+              ),
+              dayStatusPrecedenceCheckIns,
               resetEvents:
                 resetEventsReady && !resetResult.error
                   ? ((resetResult.data ?? []) as HabitMotivationResetRow[])
-                      .filter((row) => supportedHabitIds.has(row.habit_id))
+                      .filter((row) => usableHabitIds.has(row.habit_id))
                       .map(buildHabitMotivationResetView)
                   : [],
               unsupportedHabitCount,

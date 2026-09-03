@@ -203,31 +203,57 @@ describe("habits server loader", () => {
 
   it("separates unsupported definitions and excludes their child rows from all summaries", async () => {
     const supported = buildHabitRow();
+    const legacyCadence = buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Legacy cadence habit",
+      cadence_period: null,
+      cadence_target_count: null,
+      cadence_day_policy: null,
+      schedule_days: ["monday", "wednesday", "friday"],
+      sort_order: 2,
+    } as unknown as Partial<HabitDefinitionRow>);
+    const unsupportedCategory = buildHabitRow({
+      id: "88888888-8888-4888-8888-888888888888",
+      title: "Future category habit",
+      category: "future_category",
+      sort_order: 3,
+    });
     const unsupportedType = buildHabitRow({
       id: "22222222-2222-4222-8222-222222222222",
       title: "Future type habit",
       habit_type: "future_type",
-      sort_order: 2,
+      sort_order: 4,
     });
     const unsupportedMode = buildHabitRow({
       id: "33333333-3333-4333-8333-333333333333",
       title: "Future mode habit",
       habit_mode: "future_mode",
-      sort_order: 3,
+      sort_order: 5,
     });
     const unsupportedStatus = buildHabitRow({
       id: "44444444-4444-4444-8444-444444444444",
       title: "Future status habit",
       status: "future_status",
-      sort_order: 4,
+      sort_order: 6,
     });
     const { supabase, microLinkQuery } = buildSupabaseMock(
-      [supported, unsupportedType, unsupportedMode, unsupportedStatus],
+      [
+        supported,
+        legacyCadence,
+        unsupportedCategory,
+        unsupportedType,
+        unsupportedMode,
+        unsupportedStatus,
+      ],
       [
         buildCheckInRow({ habit_id: supported.id }),
         buildCheckInRow({
+          id: "99999999-9999-4999-8999-999999999999",
+          habit_id: legacyCadence.id,
+        }),
+        buildCheckInRow({
           id: "55555555-5555-4555-8555-555555555555",
-          habit_id: unsupportedType.id,
+          habit_id: unsupportedCategory.id,
           value_numeric: 100,
         }),
       ],
@@ -245,9 +271,23 @@ describe("habits server loader", () => {
       todayDate: "2026-05-04",
     });
 
-    expect(snapshot.activeHabits.map((habit) => habit.id)).toEqual([supported.id]);
+    expect(snapshot.activeHabits.map((habit) => habit.id)).toEqual([
+      supported.id,
+      legacyCadence.id,
+    ]);
+    expect(snapshot.activeHabits[1]).toMatchObject({
+      cadencePeriod: "weekly",
+      cadenceTargetCount: 3,
+      cadenceDayPolicy: "fixed",
+      scheduleDays: ["monday", "wednesday", "friday"],
+    });
     expect(snapshot.archivedHabits).toEqual([]);
     expect(snapshot.unsupportedHabits).toEqual([
+      {
+        id: unsupportedCategory.id,
+        title: unsupportedCategory.title,
+        unsupportedFields: ["unknown_category"],
+      },
       {
         id: unsupportedType.id,
         title: unsupportedType.title,
@@ -264,13 +304,19 @@ describe("habits server loader", () => {
         unsupportedFields: ["unknown_definition_status"],
       },
     ]);
-    expect(snapshot.daySummary.items.map((item) => item.habit.id)).toEqual([supported.id]);
-    expect(snapshot.motivationSummary?.items.map((item) => item.habitId)).toEqual([supported.id]);
-    expect(microLinkQuery.in).toHaveBeenCalledWith("habit_id", [supported.id]);
-    expect(JSON.stringify(snapshot)).not.toMatch(/future_(type|mode|status)/);
+    expect(snapshot.daySummary.items.map((item) => item.habit.id)).toEqual([
+      supported.id,
+      legacyCadence.id,
+    ]);
+    expect(snapshot.motivationSummary?.items.map((item) => item.habitId)).toEqual(
+      expect.arrayContaining([supported.id, legacyCadence.id])
+    );
+    expect(snapshot.motivationSummary?.items).toHaveLength(2);
+    expect(microLinkQuery.in).toHaveBeenCalledWith("habit_id", [supported.id, legacyCadence.id]);
+    expect(JSON.stringify(snapshot)).not.toMatch(/future_(category|type|mode|status)/);
   });
 
-  it("keeps archived and unsupported check-in dates out of absence review candidates", async () => {
+  it("keeps hidden-parent check-ins as precedence-only absence evidence", async () => {
     const active = buildHabitRow();
     const archived = buildHabitRow({
       id: "77777777-7777-4777-8777-777777777777",
@@ -280,8 +326,8 @@ describe("habits server loader", () => {
     });
     const unsupported = buildHabitRow({
       id: "88888888-8888-4888-8888-888888888888",
-      title: "Future type habit",
-      habit_type: "future_type",
+      title: "Future category habit",
+      category: "future_category",
       sort_order: 3,
     });
     const { supabase } = buildSupabaseMock(
@@ -298,6 +344,21 @@ describe("habits server loader", () => {
           habit_id: unsupported.id,
           check_in_date: "2026-05-06",
         }),
+      ],
+      [],
+      [],
+      [],
+      [
+        {
+          id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          user_id: "user-1",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-05-06",
+          status: "reviewed",
+          day_status: "not_tracked",
+          created_at: "2026-05-10T09:00:00.000Z",
+          updated_at: "2026-05-10T09:00:00.000Z",
+        },
       ]
     );
 
@@ -311,6 +372,10 @@ describe("habits server loader", () => {
       "2026-05-05",
       "2026-05-06",
     ]);
+    expect(snapshot.weekSummary.days.find((day) => day.date === "2026-05-06")?.trackingState).toBe(
+      "known"
+    );
+    expect(snapshot.motivationSummary).toMatchObject({ notTrackedDayCount: 0, onTrackDayCount: 1 });
     expect(getHabitAbsenceReviewCandidateDates(snapshot, "2026-05-10")).toEqual([
       "2026-05-07",
       "2026-05-08",

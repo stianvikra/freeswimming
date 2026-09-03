@@ -311,11 +311,11 @@ async function loadCalendarDailyLayers(
     console.error("[CalendarPlan] Could not load daily Habits layers", habitResult.error);
     habitLayerState = { status: "error" };
   } else {
-    const { supportedRows, unsupported } = partitionCalendarHabitRows(
+    const { usableRows, unsupported } = partitionCalendarHabitRows(
       (habitResult.data ?? []) as HabitDefinitionRow[]
     );
-    const supportedHabitIds = new Set(supportedRows.map((row) => row.id));
-    const habits = supportedRows
+    const usableHabitIds = new Set(usableRows.map((row) => row.id));
+    const habits = usableRows
       .map(buildHabitDefinitionView)
       .filter((habit) => habit.status === "active");
     const [checkInResult, resetResult] = await Promise.all([
@@ -346,18 +346,20 @@ async function loadCalendarDailyLayers(
       if (resetResult.error && !isHabitsSchemaMissing(resetResult.error)) {
         console.error("[CalendarPlan] Could not load daily Habit reset markers", resetResult.error);
       }
+      const dayStatusPrecedenceCheckIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(
+        buildHabitCheckInView
+      );
 
       habitLayerState = {
         status: "ready",
         habits,
-        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[])
-          .filter((row) => supportedHabitIds.has(row.habit_id))
-          .map(buildHabitCheckInView),
+        checkIns: dayStatusPrecedenceCheckIns.filter((row) => usableHabitIds.has(row.habitId)),
+        dayStatusPrecedenceCheckIns,
         resetEvents:
           resetResult.error || isHabitsSchemaMissing(resetResult.error)
             ? []
             : ((resetResult.data ?? []) as HabitMotivationResetRow[])
-                .filter((row) => supportedHabitIds.has(row.habit_id))
+                .filter((row) => usableHabitIds.has(row.habit_id))
                 .map(buildHabitMotivationResetView),
         unsupported,
         dayStatuses: habitDayStatuses,

@@ -158,7 +158,17 @@ export type HabitMetricOptions = {
 export type HabitUnsupportedDefinitionField =
   | "unknown_habit_type"
   | "unknown_habit_mode"
-  | "unknown_definition_status";
+  | "unknown_definition_status"
+  | "unknown_category"
+  | "unknown_target_operator"
+  | "unknown_target_unit"
+  | "invalid_target_shape"
+  | "invalid_timer_shape"
+  | "unknown_cadence_period"
+  | "unknown_cadence_day_policy"
+  | "invalid_cadence_target_count"
+  | "invalid_schedule_days"
+  | "invalid_cadence_shape";
 
 export type HabitUnsupportedDefinitionView = {
   id: string;
@@ -169,43 +179,204 @@ export type HabitUnsupportedDefinitionView = {
 type HabitDefinitionCore = Pick<
   HabitDefinitionRow,
   "id" | "title" | "habit_type" | "habit_mode" | "status"
->;
+> & {
+  category?: unknown;
+  target_operator?: unknown;
+  target_value_numeric?: unknown;
+  target_unit?: unknown;
+  target_time?: unknown;
+  timer_enabled?: unknown;
+  timer_target_seconds?: unknown;
+  cadence_period?: unknown;
+  cadence_target_count?: unknown;
+  cadence_day_policy?: unknown;
+  schedule_days?: unknown;
+};
+
+type HabitDefinitionSemanticFields =
+  | "habit_type"
+  | "habit_mode"
+  | "status"
+  | "category"
+  | "target_operator"
+  | "target_value_numeric"
+  | "target_unit"
+  | "target_time"
+  | "timer_enabled"
+  | "timer_target_seconds"
+  | "cadence_period"
+  | "cadence_target_count"
+  | "cadence_day_policy"
+  | "schedule_days";
 
 export type SupportedHabitDefinitionRow<T extends HabitDefinitionCore = HabitDefinitionRow> = Omit<
   T,
-  "habit_type" | "habit_mode" | "status"
+  HabitDefinitionSemanticFields
 > & {
   habit_type: HabitType;
   habit_mode: HabitMode;
   status: HabitStatus;
+  category: HabitCategory;
+  target_operator: HabitOperator;
+  target_value_numeric: number | null;
+  target_unit: HabitUnit | null;
+  target_time: string | null;
+  timer_enabled: boolean;
+  timer_target_seconds: number | null;
+  cadence_period: HabitCadencePeriod;
+  cadence_target_count: number;
+  cadence_day_policy: HabitCadenceDayPolicy;
+  schedule_days: HabitWeekday[];
 };
+
+export type LegacyCadenceHabitDefinitionRow<T extends HabitDefinitionCore = HabitDefinitionRow> =
+  Omit<T, HabitDefinitionSemanticFields> & {
+    habit_type: HabitType;
+    habit_mode: HabitMode;
+    status: HabitStatus;
+    category: HabitCategory;
+    target_operator: HabitOperator;
+    target_value_numeric: number | null;
+    target_unit: HabitUnit | null;
+    target_time: string | null;
+    timer_enabled: boolean;
+    timer_target_seconds: number | null;
+    cadence_period?: null;
+    cadence_target_count?: null;
+    cadence_day_policy?: null;
+    schedule_days: HabitWeekday[];
+  };
+
+export type HabitResolvedCadence = {
+  cadencePeriod: "daily" | "weekly";
+  cadenceTargetCount: number;
+  cadenceDayPolicy: "fixed";
+  scheduleDays: HabitWeekday[];
+};
+
+export type UsableHabitDefinitionRow<T extends HabitDefinitionCore = HabitDefinitionRow> =
+  | SupportedHabitDefinitionRow<T>
+  | LegacyCadenceHabitDefinitionRow<T>;
 
 export type HabitDefinitionClassification<T extends HabitDefinitionCore = HabitDefinitionRow> =
   | { kind: "supported"; row: SupportedHabitDefinitionRow<T> }
+  | {
+      kind: "legacy_cadence";
+      row: LegacyCadenceHabitDefinitionRow<T>;
+      resolvedCadence: HabitResolvedCadence;
+    }
   | { kind: "unsupported"; descriptor: HabitUnsupportedDefinitionView };
 
 export class UnsupportedHabitDefinitionValueError extends Error {
   readonly code = UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE;
 
   constructor() {
-    super("This Habit type or tracking mode is not supported yet.");
+    super("This Habit setup is not supported yet.");
     this.name = "UnsupportedHabitDefinitionValueError";
   }
+}
+
+function hasOwnProperty<K extends PropertyKey>(value: object, key: K): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function isFiniteHabitInputNumber(value: unknown, min: number, max: number): boolean {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+        ? Number(value)
+        : Number.NaN;
+  return Number.isFinite(numeric) && numeric >= min && numeric <= max;
+}
+
+function isIntegerHabitInputNumber(value: unknown, min: number, max: number): boolean {
+  if (!isFiniteHabitInputNumber(value, min, max)) return false;
+  return Number.isInteger(typeof value === "number" ? value : Number(value));
 }
 
 export function validateHabitDefinitionCoreInput(body: {
   habitType?: unknown;
   habitMode?: unknown;
   status?: unknown;
+  category?: unknown;
+  targetOperator?: unknown;
+  targetValueNumeric?: unknown;
+  targetUnit?: unknown;
+  targetTime?: unknown;
+  timerEnabled?: unknown;
+  timerTargetSeconds?: unknown;
+  cadencePeriod?: unknown;
+  cadenceTargetCount?: unknown;
+  cadenceDayPolicy?: unknown;
+  scheduleDays?: unknown;
 }): void {
-  if (body.habitType !== undefined && !isOneOf(HABIT_TYPE_VALUES, body.habitType)) {
+  if (hasOwnProperty(body, "habitType") && !isOneOf(HABIT_TYPE_VALUES, body.habitType)) {
     throw new UnsupportedHabitDefinitionValueError();
   }
-  if (body.habitMode !== undefined && !isOneOf(HABIT_MODE_VALUES, body.habitMode)) {
+  if (hasOwnProperty(body, "habitMode") && !isOneOf(HABIT_MODE_VALUES, body.habitMode)) {
     throw new UnsupportedHabitDefinitionValueError();
   }
-  if ("status" in body && !isOneOf(HABIT_STATUS_VALUES, body.status)) {
+  if (hasOwnProperty(body, "status") && !isOneOf(HABIT_STATUS_VALUES, body.status)) {
     throw new Error("Unsupported habit status.");
+  }
+  if (hasOwnProperty(body, "category") && !isOneOf(HABIT_CATEGORY_VALUES, body.category)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (hasOwnProperty(body, "targetOperator")) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "targetValueNumeric") &&
+    body.targetValueNumeric !== null &&
+    !isFiniteHabitInputNumber(body.targetValueNumeric, 0, 10_000)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "targetUnit") &&
+    body.targetUnit !== null &&
+    !isOneOf(HABIT_UNIT_VALUES, body.targetUnit)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "targetTime") &&
+    body.targetTime !== null &&
+    normalizeHabitTime(body.targetTime) === null
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (hasOwnProperty(body, "timerEnabled") && typeof body.timerEnabled !== "boolean") {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "timerTargetSeconds") &&
+    body.timerTargetSeconds !== null &&
+    !isIntegerHabitInputNumber(body.timerTargetSeconds, 1, HABIT_TIMER_MAX_SECONDS)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "cadencePeriod") &&
+    !isOneOf(HABIT_CADENCE_PERIOD_VALUES, body.cadencePeriod)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "cadenceTargetCount") &&
+    !isIntegerHabitInputNumber(body.cadenceTargetCount, 1, 31)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (
+    hasOwnProperty(body, "cadenceDayPolicy") &&
+    !isOneOf(HABIT_CADENCE_DAY_POLICY_VALUES, body.cadenceDayPolicy)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (hasOwnProperty(body, "scheduleDays") && !isCanonicalScheduleDays(body.scheduleDays)) {
+    throw new UnsupportedHabitDefinitionValueError();
   }
 }
 
@@ -418,6 +589,7 @@ export type HabitCreateRequestBody = {
   habitMode?: unknown;
   habitType?: unknown;
   category?: unknown;
+  targetOperator?: unknown;
   targetValueNumeric?: unknown;
   targetUnit?: unknown;
   targetTime?: unknown;
@@ -472,9 +644,167 @@ export type HabitWriteDateContext = {
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^\d{2}:\d{2}(?::\d{2})?$/;
 const DEFAULT_WEEKDAYS: HabitWeekday[] = [...HABIT_WEEKDAY_VALUES];
+const HABIT_COUNT_UNIT_VALUES = [
+  "times",
+  "steps",
+  "pages",
+  "glasses",
+  "litres",
+  "custom",
+] as const satisfies readonly HabitUnit[];
+const HABIT_DURATION_UNIT_VALUES = ["minutes", "seconds"] as const satisfies readonly HabitUnit[];
+const HABIT_AVOIDANCE_UNIT_VALUES = [
+  "times",
+  "glasses",
+  "litres",
+  "custom",
+] as const satisfies readonly HabitUnit[];
 
 function isOneOf<T extends readonly string[]>(values: T, value: unknown): value is T[number] {
   return typeof value === "string" && values.includes(value as T[number]);
+}
+
+function isCanonicalScheduleDays(value: unknown): value is HabitWeekday[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 7) return false;
+  if (!value.every((day) => isOneOf(HABIT_WEEKDAY_VALUES, day))) return false;
+  return new Set(value).size === value.length;
+}
+
+function isCanonicalHabitTime(value: unknown): value is string {
+  if (typeof value !== "string" || value !== value.trim() || !TIME_PATTERN.test(value)) {
+    return false;
+  }
+  const [hours = -1, minutes = -1, seconds = 0] = value.split(":").map(Number);
+  return (
+    hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59 && seconds >= 0 && seconds <= 59
+  );
+}
+
+function isStoredTargetNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10_000;
+}
+
+function isCanonicalTargetShape(
+  row: HabitDefinitionCore,
+  habitType: HabitType,
+  habitMode: HabitMode
+): boolean {
+  const operator = row.target_operator;
+  const value = row.target_value_numeric;
+  const unit = row.target_unit;
+  const time = row.target_time;
+
+  if (habitMode === "quit") {
+    return (
+      habitType === "avoidance" &&
+      operator === "at_most" &&
+      value === 0 &&
+      unit === "times" &&
+      time === null
+    );
+  }
+
+  if (habitMode === "timed") {
+    return (
+      habitType === "duration" &&
+      operator === "at_least" &&
+      isStoredTargetNumber(value) &&
+      value > 0 &&
+      isOneOf(HABIT_DURATION_UNIT_VALUES, unit) &&
+      time === null
+    );
+  }
+
+  if (habitType === "binary") {
+    return operator === "at_least" && value === null && unit === null && time === null;
+  }
+  if (habitType === "count") {
+    return (
+      (operator === "at_least" || operator === "at_most") &&
+      isStoredTargetNumber(value) &&
+      isOneOf(HABIT_COUNT_UNIT_VALUES, unit) &&
+      time === null
+    );
+  }
+  if (habitType === "duration") {
+    return (
+      (operator === "at_least" || operator === "at_most") &&
+      isStoredTargetNumber(value) &&
+      isOneOf(HABIT_DURATION_UNIT_VALUES, unit) &&
+      time === null
+    );
+  }
+  if (habitType === "time_of_day") {
+    return (
+      (operator === "before" || operator === "after") &&
+      value === null &&
+      unit === null &&
+      isCanonicalHabitTime(time)
+    );
+  }
+  return (
+    operator === "at_most" &&
+    isStoredTargetNumber(value) &&
+    isOneOf(HABIT_AVOIDANCE_UNIT_VALUES, unit) &&
+    time === null
+  );
+}
+
+function isCanonicalTimerShape(
+  row: HabitDefinitionCore,
+  habitType: HabitType,
+  habitMode: HabitMode
+): boolean {
+  if (habitMode !== "timed") {
+    return row.timer_enabled === false && row.timer_target_seconds === null;
+  }
+
+  const targetValue = row.target_value_numeric;
+  const targetUnit = row.target_unit;
+  const targetSeconds = row.timer_target_seconds;
+  if (
+    habitType !== "duration" ||
+    !isStoredTargetNumber(targetValue) ||
+    targetValue <= 0 ||
+    !isOneOf(HABIT_DURATION_UNIT_VALUES, targetUnit) ||
+    row.timer_enabled !== true ||
+    typeof targetSeconds !== "number" ||
+    !Number.isInteger(targetSeconds) ||
+    targetSeconds < 1 ||
+    targetSeconds > HABIT_TIMER_MAX_SECONDS
+  ) {
+    return false;
+  }
+
+  const resolvedSeconds = Math.round(targetUnit === "seconds" ? targetValue : targetValue * 60);
+  return targetSeconds === resolvedSeconds;
+}
+
+function isCadenceCountValidForPeriod(value: unknown, period: unknown): value is number {
+  if (typeof value !== "number" || !Number.isInteger(value)) return false;
+  if (period === "daily") return value === 1;
+  if (period === "weekly") return value >= 1 && value <= 7;
+  if (period === "monthly") return value >= 1 && value <= 31;
+  return value >= 1 && value <= 31;
+}
+
+function isCanonicalCadenceShape(
+  period: HabitCadencePeriod,
+  targetCount: number,
+  dayPolicy: HabitCadenceDayPolicy,
+  scheduleDays: HabitWeekday[]
+): boolean {
+  const isAllDays = scheduleDays.length === HABIT_WEEKDAY_VALUES.length;
+  if (period === "daily") {
+    return dayPolicy === "fixed" && targetCount === 1 && isAllDays;
+  }
+  if (period === "weekly" && dayPolicy === "fixed") {
+    return targetCount === scheduleDays.length;
+  }
+  if (period === "weekly" && dayPolicy === "any") {
+    return isAllDays;
+  }
+  return period === "monthly" && dayPolicy === "any" && isAllDays;
 }
 
 export function classifyHabitDayStatus(value: unknown): HabitDayStatusClassification {
@@ -563,14 +893,106 @@ export function classifyHabitDefinition<T extends HabitDefinitionCore>(
   row: T
 ): HabitDefinitionClassification<T> {
   const unsupportedFields: HabitUnsupportedDefinitionField[] = [];
-  if (!isOneOf(HABIT_TYPE_VALUES, row.habit_type)) {
+  const hasKnownHabitType = isOneOf(HABIT_TYPE_VALUES, row.habit_type);
+  const hasKnownHabitMode = isOneOf(HABIT_MODE_VALUES, row.habit_mode);
+  const hasKnownStatus = isOneOf(HABIT_STATUS_VALUES, row.status);
+  const hasKnownCategory = isOneOf(HABIT_CATEGORY_VALUES, row.category);
+  const hasKnownOperator = isOneOf(HABIT_OPERATOR_VALUES, row.target_operator);
+  const hasKnownUnit = row.target_unit === null || isOneOf(HABIT_UNIT_VALUES, row.target_unit);
+  const hasCanonicalSchedule = isCanonicalScheduleDays(row.schedule_days);
+  const cadenceValues = [
+    row.cadence_period,
+    row.cadence_target_count,
+    row.cadence_day_policy,
+  ] as const;
+  const hasLegacyCadenceTuple = cadenceValues.every(
+    (value) => value === null || value === undefined
+  );
+  const hasPartialNullCadenceTuple =
+    !hasLegacyCadenceTuple && cadenceValues.some((value) => value === null || value === undefined);
+  const hasKnownCadencePeriod = isOneOf(HABIT_CADENCE_PERIOD_VALUES, row.cadence_period);
+  const hasKnownCadenceDayPolicy = isOneOf(HABIT_CADENCE_DAY_POLICY_VALUES, row.cadence_day_policy);
+  const hasValidCadenceCount = isCadenceCountValidForPeriod(
+    row.cadence_target_count,
+    row.cadence_period
+  );
+
+  if (!hasKnownHabitType) {
     unsupportedFields.push("unknown_habit_type");
   }
-  if (!isOneOf(HABIT_MODE_VALUES, row.habit_mode)) {
+  if (!hasKnownHabitMode) {
     unsupportedFields.push("unknown_habit_mode");
   }
-  if (!isOneOf(HABIT_STATUS_VALUES, row.status)) {
+  if (!hasKnownStatus) {
     unsupportedFields.push("unknown_definition_status");
+  }
+  if (!hasKnownCategory) {
+    unsupportedFields.push("unknown_category");
+  }
+  if (!hasKnownOperator) {
+    unsupportedFields.push("unknown_target_operator");
+  }
+  if (!hasKnownUnit) {
+    unsupportedFields.push("unknown_target_unit");
+  }
+  if (
+    hasKnownHabitType &&
+    hasKnownHabitMode &&
+    hasKnownOperator &&
+    hasKnownUnit &&
+    !isCanonicalTargetShape(row, row.habit_type as HabitType, row.habit_mode as HabitMode)
+  ) {
+    unsupportedFields.push("invalid_target_shape");
+  }
+  if (
+    hasKnownHabitType &&
+    hasKnownHabitMode &&
+    !isCanonicalTimerShape(row, row.habit_type as HabitType, row.habit_mode as HabitMode)
+  ) {
+    unsupportedFields.push("invalid_timer_shape");
+  }
+  if (
+    !hasLegacyCadenceTuple &&
+    row.cadence_period !== null &&
+    row.cadence_period !== undefined &&
+    !hasKnownCadencePeriod
+  ) {
+    unsupportedFields.push("unknown_cadence_period");
+  }
+  if (
+    !hasLegacyCadenceTuple &&
+    row.cadence_day_policy !== null &&
+    row.cadence_day_policy !== undefined &&
+    !hasKnownCadenceDayPolicy
+  ) {
+    unsupportedFields.push("unknown_cadence_day_policy");
+  }
+  if (
+    !hasLegacyCadenceTuple &&
+    row.cadence_target_count !== null &&
+    row.cadence_target_count !== undefined &&
+    !hasValidCadenceCount
+  ) {
+    unsupportedFields.push("invalid_cadence_target_count");
+  }
+  if (!hasCanonicalSchedule) {
+    unsupportedFields.push("invalid_schedule_days");
+  }
+  if (
+    !hasLegacyCadenceTuple &&
+    (hasPartialNullCadenceTuple ||
+      (hasKnownCadencePeriod &&
+        hasKnownCadenceDayPolicy &&
+        hasValidCadenceCount &&
+        hasCanonicalSchedule &&
+        !isCanonicalCadenceShape(
+          row.cadence_period as HabitCadencePeriod,
+          row.cadence_target_count as number,
+          row.cadence_day_policy as HabitCadenceDayPolicy,
+          row.schedule_days as HabitWeekday[]
+        )))
+  ) {
+    unsupportedFields.push("invalid_cadence_shape");
   }
 
   if (unsupportedFields.length > 0) {
@@ -584,7 +1006,31 @@ export function classifyHabitDefinition<T extends HabitDefinitionCore>(
     };
   }
 
+  if (hasLegacyCadenceTuple && hasCanonicalSchedule) {
+    const scheduleDays = row.schedule_days as HabitWeekday[];
+    const isDaily = scheduleDays.length === HABIT_WEEKDAY_VALUES.length;
+    return {
+      kind: "legacy_cadence",
+      row: row as unknown as LegacyCadenceHabitDefinitionRow<T>,
+      resolvedCadence: {
+        cadencePeriod: isDaily ? "daily" : "weekly",
+        cadenceTargetCount: isDaily ? 1 : scheduleDays.length,
+        cadenceDayPolicy: "fixed",
+        scheduleDays: [...scheduleDays],
+      },
+    };
+  }
+
   return { kind: "supported", row: row as SupportedHabitDefinitionRow<T> };
+}
+
+export function isUsableHabitDefinition<T extends HabitDefinitionCore>(
+  definition: HabitDefinitionClassification<T>
+): definition is Extract<
+  HabitDefinitionClassification<T>,
+  { kind: "supported" | "legacy_cadence" }
+> {
+  return definition.kind !== "unsupported";
 }
 
 function normalizeText(value: unknown, maxLength: number): string | null {
@@ -624,7 +1070,7 @@ export function normalizeHabitTimezone(value: unknown): string {
 export function normalizeHabitTime(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  if (!TIME_PATTERN.test(trimmed)) return null;
+  if (!isCanonicalHabitTime(trimmed)) return null;
   return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
 }
 
@@ -634,6 +1080,28 @@ function normalizePositiveNumber(value: unknown): number | null {
   if (!Number.isFinite(numeric)) return null;
   if (numeric < 0 || numeric > 10000) return null;
   return Math.round(numeric * 100) / 100;
+}
+
+function isSameStoredTargetNumberInput(value: unknown, currentValue: number | null): boolean {
+  if (currentValue === null) return value === null;
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+        ? Number(value)
+        : Number.NaN;
+  return Number.isFinite(numeric) && numeric === currentValue;
+}
+
+function isSameStoredTargetTimeInput(value: unknown, currentValue: string | null): boolean {
+  if (currentValue === null) return value === null;
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  const normalized = normalizeHabitTime(trimmed);
+  if (!normalized) return false;
+  return (
+    normalized === currentValue || (trimmed.length === 5 && trimmed === currentValue.slice(0, 5))
+  );
 }
 
 function normalizeIntegerInRange(
@@ -659,78 +1127,94 @@ export function buildTimedTotalMinutes(timerSeconds: number, manualMinutes: numb
   return Math.round((totalSeconds / 60) * 100) / 100;
 }
 
-function normalizeScheduleDays(value: unknown): HabitWeekday[] {
-  if (!Array.isArray(value)) return DEFAULT_WEEKDAYS;
-  const days = value.filter((day): day is HabitWeekday => isOneOf(HABIT_WEEKDAY_VALUES, day));
-  return days.length > 0 ? Array.from(new Set(days)) : DEFAULT_WEEKDAYS;
-}
-
-function clampInteger(value: unknown, min: number, max: number): number | null {
-  const numeric =
-    typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
-  if (!Number.isFinite(numeric)) return null;
-  return Math.max(min, Math.min(max, Math.round(numeric)));
-}
-
 function getLegacyCadencePeriod(scheduleDays: HabitWeekday[]): HabitCadencePeriod {
   return scheduleDays.length >= 7 ? "daily" : "weekly";
 }
 
-function getCadencePeriod(value: unknown, scheduleDays: HabitWeekday[]): HabitCadencePeriod {
-  if (isOneOf(HABIT_CADENCE_PERIOD_VALUES, value)) return value;
-  return getLegacyCadencePeriod(scheduleDays);
-}
+type HabitInputCadence = {
+  cadencePeriod: HabitCadencePeriod;
+  cadenceTargetCount: number;
+  cadenceDayPolicy: HabitCadenceDayPolicy;
+  scheduleDays: HabitWeekday[];
+};
 
-function getCadenceDayPolicy(
-  value: unknown,
-  cadencePeriod: HabitCadencePeriod,
-  scheduleDays: HabitWeekday[]
-): HabitCadenceDayPolicy {
-  if (cadencePeriod === "daily") return "fixed";
-  if (isOneOf(HABIT_CADENCE_DAY_POLICY_VALUES, value)) return value;
-  return scheduleDays.length >= 7 && cadencePeriod !== "weekly" ? "any" : "fixed";
-}
-
-function normalizeCadenceTargetCount(
-  value: unknown,
-  cadencePeriod: HabitCadencePeriod,
-  cadenceDayPolicy: HabitCadenceDayPolicy,
-  scheduleDays: HabitWeekday[]
-): number {
-  if (cadencePeriod === "daily") return 1;
-  if (cadenceDayPolicy === "fixed") return Math.max(1, Math.min(7, scheduleDays.length));
-  const max = cadencePeriod === "monthly" ? 31 : 7;
-  return clampInteger(value, 1, max) ?? 1;
-}
-
-function normalizeCadenceInput(body: {
+type HabitCadenceInput = {
   cadencePeriod?: unknown;
   cadenceTargetCount?: unknown;
   cadenceDayPolicy?: unknown;
   scheduleDays?: unknown;
-}) {
-  const requestedScheduleDays = normalizeScheduleDays(body.scheduleDays);
-  const cadencePeriod = getCadencePeriod(body.cadencePeriod, requestedScheduleDays);
-  const cadenceDayPolicy = getCadenceDayPolicy(
-    body.cadenceDayPolicy,
-    cadencePeriod,
-    requestedScheduleDays
+};
+
+function hasCadenceInput(body: HabitCadenceInput): boolean {
+  return ["cadencePeriod", "cadenceTargetCount", "cadenceDayPolicy", "scheduleDays"].some((field) =>
+    hasOwnProperty(body, field)
   );
+}
 
-  if (cadencePeriod === "monthly" && cadenceDayPolicy === "fixed") {
-    throw new Error("Monthly fixed dates are not available yet.");
+function getResolvedCadenceForRow(row: UsableHabitDefinitionRow): HabitInputCadence {
+  if (
+    row.cadence_period === null ||
+    row.cadence_period === undefined ||
+    row.cadence_target_count === null ||
+    row.cadence_target_count === undefined ||
+    row.cadence_day_policy === null ||
+    row.cadence_day_policy === undefined
+  ) {
+    const isDaily = row.schedule_days.length === HABIT_WEEKDAY_VALUES.length;
+    return {
+      cadencePeriod: isDaily ? "daily" : "weekly",
+      cadenceTargetCount: isDaily ? 1 : row.schedule_days.length,
+      cadenceDayPolicy: "fixed",
+      scheduleDays: [...row.schedule_days],
+    };
   }
+  return {
+    cadencePeriod: row.cadence_period,
+    cadenceTargetCount: row.cadence_target_count,
+    cadenceDayPolicy: row.cadence_day_policy,
+    scheduleDays: [...row.schedule_days],
+  };
+}
 
+function normalizeCadenceInput(
+  body: HabitCadenceInput,
+  currentCadence?: HabitInputCadence
+): HabitInputCadence {
+  const hasSchedule = hasOwnProperty(body, "scheduleDays");
+  const requestedScheduleDays = hasSchedule
+    ? ([...(body.scheduleDays as HabitWeekday[])] as HabitWeekday[])
+    : [...(currentCadence?.scheduleDays ?? DEFAULT_WEEKDAYS)];
+  const hasPeriod = hasOwnProperty(body, "cadencePeriod");
+  const cadencePeriod = hasPeriod
+    ? (body.cadencePeriod as HabitCadencePeriod)
+    : (currentCadence?.cadencePeriod ?? getLegacyCadencePeriod(requestedScheduleDays));
+  const hasPolicy = hasOwnProperty(body, "cadenceDayPolicy");
+  const cadenceDayPolicy = hasPolicy
+    ? (body.cadenceDayPolicy as HabitCadenceDayPolicy)
+    : (currentCadence?.cadenceDayPolicy ?? (cadencePeriod === "monthly" ? "any" : "fixed"));
+  if (
+    hasSchedule &&
+    (cadencePeriod === "daily" || cadenceDayPolicy === "any") &&
+    !haveSameScheduleDays(requestedScheduleDays, DEFAULT_WEEKDAYS)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
   const scheduleDays =
     cadencePeriod === "daily" || cadenceDayPolicy === "any"
       ? [...DEFAULT_WEEKDAYS]
       : requestedScheduleDays;
-  const cadenceTargetCount = normalizeCadenceTargetCount(
-    body.cadenceTargetCount,
-    cadencePeriod,
-    cadenceDayPolicy,
-    scheduleDays
-  );
+  const hasCount = hasOwnProperty(body, "cadenceTargetCount");
+  const cadenceTargetCount = hasCount
+    ? Number(body.cadenceTargetCount)
+    : (currentCadence?.cadenceTargetCount ??
+      (cadencePeriod === "daily" ? 1 : cadenceDayPolicy === "fixed" ? scheduleDays.length : 1));
+
+  if (
+    !isCadenceCountValidForPeriod(cadenceTargetCount, cadencePeriod) ||
+    !isCanonicalCadenceShape(cadencePeriod, cadenceTargetCount, cadenceDayPolicy, scheduleDays)
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
 
   return {
     cadencePeriod,
@@ -920,24 +1404,38 @@ function normalizeTimerTargetSeconds(
   habitMode: HabitMode,
   targetValueNumeric: number | null,
   targetUnit: HabitUnit | null,
-  explicitSeconds: unknown
+  explicitSeconds: unknown,
+  hasExplicitSeconds: boolean,
+  explicitTimerEnabled: unknown,
+  hasExplicitTimerEnabled: boolean
 ): number | null {
-  if (habitMode !== "timed") return null;
-
-  const explicit =
-    typeof explicitSeconds === "number"
-      ? explicitSeconds
-      : typeof explicitSeconds === "string"
-        ? Number(explicitSeconds)
-        : Number.NaN;
-  if (Number.isFinite(explicit) && explicit >= 1 && explicit <= 86400) {
-    return Math.round(explicit);
+  if (habitMode !== "timed") {
+    if (hasExplicitTimerEnabled && explicitTimerEnabled !== false) {
+      throw new UnsupportedHabitDefinitionValueError();
+    }
+    return null;
   }
 
-  if (targetValueNumeric === null) return null;
+  if (hasExplicitTimerEnabled && explicitTimerEnabled !== true) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (targetValueNumeric === null || !isOneOf(HABIT_DURATION_UNIT_VALUES, targetUnit)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
   const seconds = targetUnit === "seconds" ? targetValueNumeric : targetValueNumeric * 60;
-  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 86400) return null;
-  return Math.round(seconds);
+  const resolvedSeconds = Math.round(seconds);
+  if (
+    !Number.isFinite(seconds) ||
+    resolvedSeconds < 1 ||
+    resolvedSeconds > HABIT_TIMER_MAX_SECONDS
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  if (!hasExplicitSeconds) return resolvedSeconds;
+  if (explicitSeconds === null || Number(explicitSeconds) !== resolvedSeconds) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  return resolvedSeconds;
 }
 
 function getHabitShape(
@@ -945,9 +1443,16 @@ function getHabitShape(
   habitType: HabitType,
   targetValueNumeric: unknown,
   targetUnit: unknown,
-  targetTime: unknown
+  targetTime: unknown,
+  preservedOperator?: HabitOperator
 ) {
   if (habitMode === "quit") {
+    if (
+      (targetValueNumeric !== undefined && normalizePositiveNumber(targetValueNumeric) !== 0) ||
+      (targetUnit !== undefined && targetUnit !== "times")
+    ) {
+      throw new UnsupportedHabitDefinitionValueError();
+    }
     return {
       habitType: "avoidance" as const,
       targetOperator: "at_most" as const,
@@ -960,10 +1465,13 @@ function getHabitShape(
   if (habitMode === "timed") {
     const value = normalizePositiveNumber(targetValueNumeric);
     if (value === null || value <= 0) {
-      throw new Error("Choose a timer target.");
+      throw new UnsupportedHabitDefinitionValueError();
     }
 
-    const unit = targetUnit === "seconds" ? "seconds" : "minutes";
+    const unit = targetUnit === undefined ? "minutes" : targetUnit;
+    if (!isOneOf(HABIT_DURATION_UNIT_VALUES, unit)) {
+      throw new UnsupportedHabitDefinitionValueError();
+    }
     return {
       habitType: "duration" as const,
       targetOperator: "at_least" as const,
@@ -985,10 +1493,13 @@ function getHabitShape(
 
   if (habitType === "time_of_day") {
     const time = normalizeHabitTime(targetTime);
-    if (!time) throw new Error("Choose a target time.");
+    if (!time) throw new UnsupportedHabitDefinitionValueError();
     return {
       habitType,
-      targetOperator: "before" as const,
+      targetOperator:
+        preservedOperator === "after" || preservedOperator === "before"
+          ? preservedOperator
+          : ("before" as const),
       targetValueNumeric: null,
       targetUnit: null,
       targetTime: time,
@@ -997,22 +1508,80 @@ function getHabitShape(
 
   const value = normalizePositiveNumber(targetValueNumeric);
   if (value === null) {
-    throw new Error("Choose a numeric target.");
+    throw new UnsupportedHabitDefinitionValueError();
   }
 
-  const unit = isOneOf(HABIT_UNIT_VALUES, targetUnit)
-    ? targetUnit
-    : habitType === "duration"
-      ? "minutes"
-      : "times";
+  const unit =
+    targetUnit === undefined ? (habitType === "duration" ? "minutes" : "times") : targetUnit;
+  const allowedUnits =
+    habitType === "duration"
+      ? HABIT_DURATION_UNIT_VALUES
+      : habitType === "count"
+        ? HABIT_COUNT_UNIT_VALUES
+        : HABIT_AVOIDANCE_UNIT_VALUES;
+  if (!isOneOf(allowedUnits, unit)) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
+  const defaultOperator = habitType === "avoidance" ? "at_most" : "at_least";
+  const targetOperator =
+    preservedOperator === "at_least" || preservedOperator === "at_most"
+      ? preservedOperator
+      : defaultOperator;
 
   return {
     habitType,
-    targetOperator: habitType === "avoidance" ? ("at_most" as const) : ("at_least" as const),
+    targetOperator,
     targetValueNumeric: value,
     targetUnit: unit,
     targetTime: null,
   };
+}
+
+function getResolvedHabitType(habitMode: HabitMode, requestedHabitType: HabitType): HabitType {
+  if (habitMode === "quit") return "avoidance";
+  if (habitMode === "timed") return "duration";
+  return requestedHabitType;
+}
+
+function hasTargetInput(body: HabitCreateRequestBody | HabitUpdateRequestBody): boolean {
+  return [
+    "habitType",
+    "habitMode",
+    "targetValueNumeric",
+    "targetUnit",
+    "targetTime",
+    "timerEnabled",
+    "timerTargetSeconds",
+  ].some((field) => hasOwnProperty(body, field));
+}
+
+function haveSameScheduleDays(
+  left: readonly HabitWeekday[],
+  right: readonly HabitWeekday[]
+): boolean {
+  return left.length === right.length && left.every((day) => right.includes(day));
+}
+
+function haveSameCadence(left: HabitInputCadence, right: HabitInputCadence): boolean {
+  return (
+    left.cadencePeriod === right.cadencePeriod &&
+    left.cadenceTargetCount === right.cadenceTargetCount &&
+    left.cadenceDayPolicy === right.cadenceDayPolicy &&
+    haveSameScheduleDays(left.scheduleDays, right.scheduleDays)
+  );
+}
+
+function requireUsableHabitDefinitionCandidate(
+  row: HabitDefinitionCore,
+  requireCanonical = false
+): void {
+  const classification = classifyHabitDefinition(row);
+  if (
+    classification.kind === "unsupported" ||
+    (requireCanonical && classification.kind !== "supported")
+  ) {
+    throw new UnsupportedHabitDefinitionValueError();
+  }
 }
 
 export function buildHabitDefinitionInsert(
@@ -1059,14 +1628,14 @@ export function buildHabitDefinitionInsert(
     habitMode,
     shape.targetValueNumeric,
     shape.targetUnit as HabitUnit | null,
-    body.timerTargetSeconds
+    body.timerTargetSeconds,
+    hasOwnProperty(body, "timerTargetSeconds"),
+    body.timerEnabled,
+    hasOwnProperty(body, "timerEnabled")
   );
-  if (habitMode === "timed" && timerTargetSeconds === null) {
-    throw new Error("Choose a timer target.");
-  }
   const cadence = normalizeCadenceInput(body);
 
-  return {
+  const insert = {
     user_id: userId,
     title,
     notes: normalizeOptionalText(body.notes, 280),
@@ -1088,71 +1657,113 @@ export function buildHabitDefinitionInsert(
     is_perfect_day_item: body.isPerfectDayItem === false ? false : true,
     status: "active",
     sort_order: Math.max(0, Math.min(1000, sortOrder)),
-  };
+  } satisfies HabitDefinitionInsert;
+
+  requireUsableHabitDefinitionCandidate(
+    {
+      id: "input-candidate",
+      title,
+      status: "active",
+      habit_type: insert.habit_type,
+      habit_mode: insert.habit_mode,
+      category: insert.category,
+      target_operator: insert.target_operator,
+      target_value_numeric: insert.target_value_numeric,
+      target_unit: insert.target_unit,
+      target_time: insert.target_time,
+      timer_enabled: insert.timer_enabled,
+      timer_target_seconds: insert.timer_target_seconds,
+      cadence_period: insert.cadence_period,
+      cadence_target_count: insert.cadence_target_count,
+      cadence_day_policy: insert.cadence_day_policy,
+      schedule_days: insert.schedule_days,
+    },
+    true
+  );
+
+  return insert;
 }
 
 export function buildHabitDefinitionUpdate(
   body: HabitUpdateRequestBody,
   todayDate: string,
-  currentHabit?: SupportedHabitDefinitionRow
+  currentHabit?: UsableHabitDefinitionRow
 ): HabitDefinitionUpdate {
   requireHabitWriteTodayDate(todayDate);
   validateHabitDefinitionCoreInput(body);
   const update: HabitDefinitionUpdate = {};
 
-  if ("title" in body) {
+  if (hasOwnProperty(body, "title")) {
     const title = normalizeText(body.title, 80);
     if (!title || title.length < 2) throw new Error("Give the habit a short name.");
-    update.title = title;
+    if (!currentHabit || title !== currentHabit.title) update.title = title;
   }
 
-  if ("notes" in body) {
-    update.notes = normalizeOptionalText(body.notes, 280);
+  if (hasOwnProperty(body, "notes")) {
+    const notes = normalizeOptionalText(body.notes, 280);
+    if (!currentHabit || notes !== currentHabit.notes) update.notes = notes;
   }
 
-  if ("category" in body) {
-    update.category = getHabitCategory(body.category);
+  if (hasOwnProperty(body, "category")) {
+    const category = getHabitCategory(body.category);
+    if (!currentHabit || category !== currentHabit.category) update.category = category;
   }
 
-  if (
-    "scheduleDays" in body ||
-    "cadencePeriod" in body ||
-    "cadenceTargetCount" in body ||
-    "cadenceDayPolicy" in body
-  ) {
-    const cadence = normalizeCadenceInput(body);
-    update.cadence_period = cadence.cadencePeriod;
-    update.cadence_target_count = cadence.cadenceTargetCount;
-    update.cadence_day_policy = cadence.cadenceDayPolicy;
-    update.schedule_days = cadence.scheduleDays;
+  if (hasCadenceInput(body)) {
+    const currentCadence = currentHabit ? getResolvedCadenceForRow(currentHabit) : undefined;
+    const isLegacyCadence =
+      currentHabit?.cadence_period === null || currentHabit?.cadence_period === undefined;
+    if (
+      isLegacyCadence &&
+      !["cadencePeriod", "cadenceTargetCount", "cadenceDayPolicy", "scheduleDays"].every((field) =>
+        hasOwnProperty(body, field)
+      )
+    ) {
+      throw new UnsupportedHabitDefinitionValueError();
+    }
+    const cadence = normalizeCadenceInput(body, currentCadence);
+    if (!currentCadence || (isLegacyCadence && !haveSameCadence(cadence, currentCadence))) {
+      update.cadence_period = cadence.cadencePeriod;
+      update.cadence_target_count = cadence.cadenceTargetCount;
+      update.cadence_day_policy = cadence.cadenceDayPolicy;
+      update.schedule_days = cadence.scheduleDays;
+    } else if (!isLegacyCadence) {
+      if (cadence.cadencePeriod !== currentCadence.cadencePeriod) {
+        update.cadence_period = cadence.cadencePeriod;
+      }
+      if (cadence.cadenceTargetCount !== currentCadence.cadenceTargetCount) {
+        update.cadence_target_count = cadence.cadenceTargetCount;
+      }
+      if (cadence.cadenceDayPolicy !== currentCadence.cadenceDayPolicy) {
+        update.cadence_day_policy = cadence.cadenceDayPolicy;
+      }
+      if (!haveSameScheduleDays(cadence.scheduleDays, currentCadence.scheduleDays)) {
+        update.schedule_days = cadence.scheduleDays;
+      }
+    }
   }
 
-  if ("isPerfectDayItem" in body) {
-    update.is_perfect_day_item = body.isPerfectDayItem === false ? false : true;
+  if (hasOwnProperty(body, "isPerfectDayItem")) {
+    const isPerfectDayItem = body.isPerfectDayItem === false ? false : true;
+    if (!currentHabit || isPerfectDayItem !== currentHabit.is_perfect_day_item) {
+      update.is_perfect_day_item = isPerfectDayItem;
+    }
   }
 
-  if ("startDate" in body) {
+  if (hasOwnProperty(body, "startDate")) {
     const selectedDate = normalizeHabitDate(body.selectedDate, buildUtcDate(todayDate));
     const startDate = normalizeHabitStartDate(body.startDate, selectedDate);
     if (isAfterHabitDate(startDate, todayDate)) {
       throw new Error("Choose today or an earlier start date.");
     }
-    update.start_date = startDate;
+    if (!currentHabit || startDate !== currentHabit.start_date) update.start_date = startDate;
   }
 
-  if ("status" in body && isOneOf(HABIT_STATUS_VALUES, body.status)) {
-    update.status = body.status;
+  if (hasOwnProperty(body, "status") && isOneOf(HABIT_STATUS_VALUES, body.status)) {
+    if (!currentHabit || body.status !== currentHabit.status) update.status = body.status;
   }
 
-  if (
-    "habitType" in body ||
-    "targetValueNumeric" in body ||
-    "targetUnit" in body ||
-    "targetTime" in body ||
-    "habitMode" in body ||
-    "timerEnabled" in body ||
-    "timerTargetSeconds" in body
-  ) {
+  if (hasTargetInput(body)) {
     const requestedHabitType = getHabitTypeInput(
       body.habitType,
       currentHabit?.habit_type ?? "binary"
@@ -1166,30 +1777,102 @@ export function buildHabitDefinitionUpdate(
         timerEnabled: body.timerEnabled,
       }
     );
+    const resolvedHabitType = getResolvedHabitType(habitMode, requestedHabitType);
+    const hasSameTypeAndMode =
+      currentHabit?.habit_type === resolvedHabitType && currentHabit.habit_mode === habitMode;
+    const preservesCurrentTargetValue =
+      Boolean(hasSameTypeAndMode && currentHabit) &&
+      (!hasOwnProperty(body, "targetValueNumeric") ||
+        isSameStoredTargetNumberInput(
+          body.targetValueNumeric,
+          currentHabit?.target_value_numeric ?? null
+        ));
+    const preservesCurrentTargetTime =
+      Boolean(hasSameTypeAndMode && currentHabit) &&
+      (!hasOwnProperty(body, "targetTime") ||
+        isSameStoredTargetTimeInput(body.targetTime, currentHabit?.target_time ?? null));
     const shape = getHabitShape(
       habitMode,
-      requestedHabitType,
-      "targetValueNumeric" in body ? body.targetValueNumeric : currentHabit?.target_value_numeric,
-      "targetUnit" in body ? body.targetUnit : currentHabit?.target_unit,
-      "targetTime" in body ? body.targetTime : currentHabit?.target_time
+      resolvedHabitType,
+      hasOwnProperty(body, "targetValueNumeric")
+        ? body.targetValueNumeric
+        : hasSameTypeAndMode
+          ? currentHabit?.target_value_numeric
+          : undefined,
+      hasOwnProperty(body, "targetUnit")
+        ? body.targetUnit
+        : hasSameTypeAndMode
+          ? currentHabit?.target_unit
+          : undefined,
+      hasOwnProperty(body, "targetTime")
+        ? body.targetTime
+        : hasSameTypeAndMode
+          ? currentHabit?.target_time
+          : undefined,
+      hasSameTypeAndMode ? currentHabit?.target_operator : undefined
     );
+    const targetValueNumeric = preservesCurrentTargetValue
+      ? (currentHabit?.target_value_numeric ?? null)
+      : shape.targetValueNumeric;
+    const targetTime = preservesCurrentTargetTime
+      ? (currentHabit?.target_time ?? null)
+      : shape.targetTime;
+    const hasExplicitTimerTargetSeconds = hasOwnProperty(body, "timerTargetSeconds");
+    const hasMergedTimerTargetSeconds =
+      hasExplicitTimerTargetSeconds || (Boolean(hasSameTypeAndMode) && habitMode === "timed");
+    const timerTargetSecondsInput = hasExplicitTimerTargetSeconds
+      ? body.timerTargetSeconds
+      : hasMergedTimerTargetSeconds
+        ? currentHabit?.timer_target_seconds
+        : undefined;
+    const hasExplicitTimerEnabled = hasOwnProperty(body, "timerEnabled");
+    const hasMergedTimerEnabled = hasExplicitTimerEnabled || Boolean(hasSameTypeAndMode);
+    const timerEnabledInput = hasExplicitTimerEnabled
+      ? body.timerEnabled
+      : hasMergedTimerEnabled
+        ? currentHabit?.timer_enabled
+        : undefined;
     const timerTargetSeconds = normalizeTimerTargetSeconds(
       habitMode,
-      shape.targetValueNumeric,
+      targetValueNumeric,
       shape.targetUnit as HabitUnit | null,
-      "timerTargetSeconds" in body ? body.timerTargetSeconds : currentHabit?.timer_target_seconds
+      timerTargetSecondsInput,
+      hasMergedTimerTargetSeconds,
+      timerEnabledInput,
+      hasMergedTimerEnabled
     );
-    if (habitMode === "timed" && timerTargetSeconds === null) {
-      throw new Error("Choose a timer target.");
+    const targetUpdate = {
+      habit_mode: habitMode,
+      habit_type: shape.habitType,
+      target_operator: shape.targetOperator,
+      target_value_numeric: targetValueNumeric,
+      target_unit: shape.targetUnit,
+      target_time: targetTime,
+      timer_enabled: habitMode === "timed",
+      timer_target_seconds: timerTargetSeconds,
+    } satisfies Pick<
+      HabitDefinitionUpdate,
+      | "habit_mode"
+      | "habit_type"
+      | "target_operator"
+      | "target_value_numeric"
+      | "target_unit"
+      | "target_time"
+      | "timer_enabled"
+      | "timer_target_seconds"
+    >;
+    for (const [field, value] of Object.entries(targetUpdate)) {
+      if (!currentHabit || currentHabit[field as keyof typeof targetUpdate] !== value) {
+        Object.assign(update, { [field]: value });
+      }
     }
-    update.habit_mode = habitMode;
-    update.habit_type = shape.habitType;
-    update.target_operator = shape.targetOperator;
-    update.target_value_numeric = shape.targetValueNumeric;
-    update.target_unit = shape.targetUnit;
-    update.target_time = shape.targetTime;
-    update.timer_enabled = habitMode === "timed";
-    update.timer_target_seconds = timerTargetSeconds;
+  }
+
+  if (currentHabit) {
+    requireUsableHabitDefinitionCandidate({
+      ...currentHabit,
+      ...update,
+    });
   }
 
   return update;
@@ -1298,36 +1981,36 @@ export function buildHabitMotivationResetInsert(
 }
 
 export function buildHabitDefinitionView(
-  row: SupportedHabitDefinitionRow,
+  row: UsableHabitDefinitionRow,
   options: { microSessionLink?: HabitMicroSessionLinkView | null } | number = {}
 ): HabitDefinitionView {
-  const definition = classifyHabitDefinition(row);
+  const definition = classifyHabitDefinition<HabitDefinitionRow>(
+    row as unknown as HabitDefinitionRow
+  );
   if (definition.kind === "unsupported") {
     throw new Error(UNSUPPORTED_HABIT_DEFINITION_CODE);
   }
   const supportedRow = definition.row;
   const viewOptions = typeof options === "object" && options !== null ? options : {};
-  const scheduleDays = normalizeScheduleDays(supportedRow.schedule_days);
-  const cadencePeriod = getCadencePeriod(supportedRow.cadence_period, scheduleDays);
-  const cadenceDayPolicy = getCadenceDayPolicy(
-    supportedRow.cadence_day_policy,
-    cadencePeriod,
-    scheduleDays
-  );
-  const cadenceTargetCount = normalizeCadenceTargetCount(
-    supportedRow.cadence_target_count,
-    cadencePeriod,
-    cadenceDayPolicy,
-    scheduleDays
-  );
+  const resolvedCadence: {
+    cadencePeriod: HabitCadencePeriod;
+    cadenceTargetCount: number;
+    cadenceDayPolicy: HabitCadenceDayPolicy;
+    scheduleDays: HabitWeekday[];
+  } =
+    definition.kind === "legacy_cadence"
+      ? definition.resolvedCadence
+      : {
+          cadencePeriod: definition.row.cadence_period,
+          cadenceTargetCount: definition.row.cadence_target_count,
+          cadenceDayPolicy: definition.row.cadence_day_policy,
+          scheduleDays: definition.row.schedule_days,
+        };
+  const { cadencePeriod, cadenceTargetCount, cadenceDayPolicy, scheduleDays } = resolvedCadence;
   const habitType = supportedRow.habit_type;
   const habitMode = supportedRow.habit_mode;
-  const targetOperator = isOneOf(HABIT_OPERATOR_VALUES, supportedRow.target_operator)
-    ? supportedRow.target_operator
-    : "at_least";
-  const targetUnit = isOneOf(HABIT_UNIT_VALUES, supportedRow.target_unit)
-    ? supportedRow.target_unit
-    : null;
+  const targetOperator = supportedRow.target_operator;
+  const targetUnit = supportedRow.target_unit;
 
   return {
     id: supportedRow.id,
@@ -1335,22 +2018,16 @@ export function buildHabitDefinitionView(
     notes: supportedRow.notes,
     habitMode,
     habitType,
-    category: getHabitCategory(supportedRow.category),
+    category: supportedRow.category,
     targetOperator,
-    targetValueNumeric:
-      typeof supportedRow.target_value_numeric === "number"
-        ? supportedRow.target_value_numeric
-        : null,
+    targetValueNumeric: supportedRow.target_value_numeric,
     targetUnit,
     targetTime: supportedRow.target_time,
     targetLabel: buildTargetLabel({
       habitMode,
       habitType,
       targetOperator,
-      targetValueNumeric:
-        typeof supportedRow.target_value_numeric === "number"
-          ? supportedRow.target_value_numeric
-          : null,
+      targetValueNumeric: supportedRow.target_value_numeric,
       targetUnit,
       targetTime: supportedRow.target_time,
     }),
@@ -1361,11 +2038,8 @@ export function buildHabitDefinitionView(
     lastLapseDate: supportedRow.last_lapse_date
       ? normalizeHabitDate(supportedRow.last_lapse_date)
       : null,
-    timerEnabled: supportedRow.timer_enabled === true,
-    timerTargetSeconds:
-      typeof supportedRow.timer_target_seconds === "number"
-        ? supportedRow.timer_target_seconds
-        : null,
+    timerEnabled: supportedRow.timer_enabled,
+    timerTargetSeconds: supportedRow.timer_target_seconds,
     cadencePeriod,
     cadenceTargetCount,
     cadenceDayPolicy,
@@ -2105,7 +2779,11 @@ export function buildHabitDaySummary(
   date: string,
   options?: HabitMetricOptions
 ): HabitDaySummary {
-  const effectiveDayStatus = getEffectiveHabitDayStatus(date, options?.dayStatuses, checkIns);
+  const effectiveDayStatus = getEffectiveHabitDayStatus(
+    date,
+    options?.dayStatuses,
+    options?.dayStatusPrecedenceCheckIns ?? checkIns
+  );
   const trackingState =
     effectiveDayStatus === "not_tracked"
       ? "not_tracked"
@@ -3065,7 +3743,7 @@ export function buildHabitMotivationSummary(
   const resetEvents = options?.resetEvents ?? [];
   const metricOptions: HabitMetricOptions = {
     dayStatuses: options?.dayStatuses,
-    dayStatusPrecedenceCheckIns: checkIns,
+    dayStatusPrecedenceCheckIns: options?.dayStatusPrecedenceCheckIns ?? checkIns,
   };
   const earliestHabitStartDate =
     habits.reduce<string | null>(

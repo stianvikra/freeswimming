@@ -509,7 +509,7 @@ describe("my library today state", () => {
           {
             id: "unsupported-1",
             title: "Future Habit",
-            unsupportedFields: ["unknown_habit_type"],
+            unsupportedFields: ["invalid_target_shape", "invalid_cadence_shape"],
           },
         ],
       })
@@ -534,7 +534,7 @@ describe("my library today state", () => {
         {
           id: "unsupported-1",
           title: "Future Habit",
-          unsupportedFields: ["unknown_definition_status"],
+          unsupportedFields: ["unknown_category", "invalid_schedule_days"],
         },
       ],
     });

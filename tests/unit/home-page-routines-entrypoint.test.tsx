@@ -191,6 +191,48 @@ describe("HomePage routines entrypoint", () => {
     expect(loadHabitSnapshotMock).toHaveBeenCalledWith(supabase, user.id, ROUTINES_LOCAL_DAY);
   });
 
+  it("shows a generic review action for an H-081 unsupported Habit without leaking its title", async () => {
+    const supabase = {};
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user: { id: "user-1", email: "learner@example.com" },
+    });
+    loadHabitSnapshotMock.mockResolvedValue({
+      schemaReady: true,
+      loadError: null,
+      selectedDate: ROUTINES_TODAY,
+      activeHabits: [],
+      archivedHabits: [],
+      unsupportedHabits: [
+        {
+          id: "unsupported-h081",
+          title: "Private future target",
+          unsupportedFields: ["invalid_target_shape", "invalid_schedule_days"],
+        },
+      ],
+      daySummary: {
+        date: ROUTINES_TODAY,
+        scheduledHabitCount: 0,
+        perfectDayItemCount: 0,
+        satisfiedPerfectDayItemCount: 0,
+        completionPercent: 0,
+        isPerfectDay: false,
+        completedDurationMinutes: 0,
+        completedCountTotal: 0,
+        items: [],
+      },
+      weekSummary: { days: [] },
+    });
+
+    render(await HomePage());
+
+    const habitsLink = screen.getByTestId("home-routine-action-habits");
+    expect(habitsLink).toHaveAttribute("aria-label", "Habits: 1 habit needs review");
+    expect(habitsLink).toHaveAttribute("href", "/my-library/habits?view=active#today-habits");
+    expect(document.body).not.toHaveTextContent("Private future target");
+    expect(document.body).not.toHaveTextContent("invalid_target_shape");
+  });
+
   it("keeps the dashboard exit admin-gated while using token actions", async () => {
     const supabase = {};
     const user = {

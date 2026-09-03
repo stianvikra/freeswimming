@@ -419,6 +419,85 @@ function getTimerTargetSeconds(draft: HabitDraft) {
   return draft.targetUnit === "seconds" ? Math.round(target) : Math.round(target * 60);
 }
 
+function hasSameHabitTargetSetup(draft: HabitDraft, currentHabit: HabitDefinitionView) {
+  const habitMode = draft.habitMode;
+  const habitType = getResolvedDraftHabitType(draft);
+
+  if (currentHabit.habitMode !== habitMode || currentHabit.habitType !== habitType) return false;
+  if (habitMode === "quit" || habitType === "binary") return true;
+
+  if (habitType === "time_of_day") {
+    return draft.targetTime === currentHabit.targetTime?.slice(0, 5);
+  }
+
+  const draftTarget = draft.targetValueNumeric.trim();
+  const targetValueNumeric = draftTarget === "" ? Number.NaN : Number(draftTarget);
+  return (
+    Number.isFinite(targetValueNumeric) &&
+    targetValueNumeric === currentHabit.targetValueNumeric &&
+    draft.targetUnit === currentHabit.targetUnit
+  );
+}
+
+function buildHabitTargetMutationFields(draft: HabitDraft, currentHabit?: HabitDefinitionView) {
+  const habitMode = draft.habitMode;
+  const habitType = getResolvedDraftHabitType(draft);
+
+  if (currentHabit && hasSameHabitTargetSetup(draft, currentHabit)) return {};
+
+  const identity = { habitMode, habitType };
+
+  if (habitMode === "timed") {
+    return {
+      ...identity,
+      targetValueNumeric: draft.targetValueNumeric,
+      targetUnit: draft.targetUnit,
+      timerEnabled: true,
+      timerTargetSeconds: getTimerTargetSeconds(draft),
+    };
+  }
+
+  if (habitMode === "quit" || habitType === "binary") {
+    return identity;
+  }
+
+  if (habitType === "time_of_day") {
+    return { ...identity, targetTime: draft.targetTime };
+  }
+
+  return {
+    ...identity,
+    targetValueNumeric: draft.targetValueNumeric,
+    targetUnit: draft.targetUnit,
+  };
+}
+
+function buildHabitCadenceMutationFields(draft: HabitDraft, currentHabit?: HabitDefinitionView) {
+  const scheduleDays = getScheduleDaysForDraft(draft);
+  const cadenceTargetCount = getCadenceTargetCountForDraft(draft);
+  const hasSameSchedule =
+    currentHabit !== undefined &&
+    currentHabit.scheduleDays.length === scheduleDays.length &&
+    currentHabit.scheduleDays.every((day) => scheduleDays.includes(day));
+
+  if (
+    currentHabit &&
+    currentHabit.cadencePeriod === draft.cadencePeriod &&
+    currentHabit.cadenceTargetCount === cadenceTargetCount &&
+    currentHabit.cadenceDayPolicy === draft.cadenceDayPolicy &&
+    hasSameSchedule
+  ) {
+    return {};
+  }
+
+  return {
+    cadencePeriod: draft.cadencePeriod,
+    cadenceTargetCount,
+    cadenceDayPolicy: draft.cadenceDayPolicy,
+    scheduleDays,
+  };
+}
+
 function formatTimer(seconds: number) {
   const safeSeconds = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -800,6 +879,20 @@ function getUnsupportedHabitFieldLabel(field: string) {
     case "status":
     case "unknown_definition_status":
       return "Status";
+    case "unknown_category":
+      return "Category";
+    case "unknown_target_operator":
+    case "unknown_target_unit":
+    case "invalid_target_shape":
+    case "invalid_timer_shape":
+      return "Target setup";
+    case "unknown_cadence_period":
+    case "unknown_cadence_day_policy":
+    case "invalid_cadence_target_count":
+    case "invalid_cadence_shape":
+      return "Cadence";
+    case "invalid_schedule_days":
+      return "Schedule";
     default:
       return "Habit setup";
   }
@@ -2535,10 +2628,6 @@ export default function HabitPerfectDayHub({
       return;
     }
 
-    const habitMode = draft.habitMode;
-    const timerTargetSeconds = getTimerTargetSeconds(draft);
-    const habitType = getResolvedDraftHabitType(draft);
-
     setPendingKey("create");
     setNotice(null);
     setError(null);
@@ -2548,17 +2637,12 @@ export default function HabitPerfectDayHub({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...draft,
-          habitMode,
-          habitType,
-          targetValueNumeric: habitMode === "quit" ? "0" : draft.targetValueNumeric,
-          targetUnit: habitMode === "quit" ? "times" : draft.targetUnit,
-          timerEnabled: habitMode === "timed",
-          timerTargetSeconds,
-          cadencePeriod: draft.cadencePeriod,
-          cadenceTargetCount: getCadenceTargetCountForDraft(draft),
-          cadenceDayPolicy: draft.cadenceDayPolicy,
-          scheduleDays: getScheduleDaysForDraft(draft),
+          title: draft.title,
+          notes: draft.notes,
+          category: draft.category,
+          ...buildHabitTargetMutationFields(draft),
+          startDate: draft.startDate,
+          ...buildHabitCadenceMutationFields(draft),
           selectedDate: snapshot.selectedDate,
           renderedTodayDate: appliedTodayDate,
           timezone: getBrowserLocalDayTimezone(),
@@ -2602,9 +2686,6 @@ export default function HabitPerfectDayHub({
       return;
     }
 
-    const habitMode = editDraft.habitMode;
-    const timerTargetSeconds = getTimerTargetSeconds(editDraft);
-    const habitType = getResolvedDraftHabitType(editDraft);
     const existingHabit = [...snapshot.activeHabits, ...snapshot.archivedHabits].find(
       (habit) => habit.id === habitId
     );
@@ -2621,19 +2702,10 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           title: editDraft.title,
           notes: editDraft.notes,
-          habitMode,
-          habitType,
           category: editDraft.category,
-          targetValueNumeric: habitMode === "quit" ? "0" : editDraft.targetValueNumeric,
-          targetUnit: habitMode === "quit" ? "times" : editDraft.targetUnit,
-          targetTime: editDraft.targetTime,
+          ...buildHabitTargetMutationFields(editDraft, existingHabit),
           ...(changedStartDate === undefined ? {} : { startDate: changedStartDate }),
-          timerEnabled: habitMode === "timed",
-          timerTargetSeconds,
-          cadencePeriod: editDraft.cadencePeriod,
-          cadenceTargetCount: getCadenceTargetCountForDraft(editDraft),
-          cadenceDayPolicy: editDraft.cadenceDayPolicy,
-          scheduleDays: getScheduleDaysForDraft(editDraft),
+          ...buildHabitCadenceMutationFields(editDraft, existingHabit),
           isPerfectDayItem: editDraft.isPerfectDayItem,
           selectedDate: snapshot.selectedDate,
           renderedTodayDate: appliedTodayDate,
@@ -4583,6 +4655,15 @@ export default function HabitPerfectDayHub({
             );
           })}
         </div>
+
+        {snapshot.unsupportedHabits.length > 0 ? (
+          <p
+            data-testid="habits-motivation-unsupported-caveat"
+            className="mt-3 text-sm font-semibold text-amber-700"
+          >
+            Known results exclude Habits that need review.
+          </p>
+        ) : null}
 
         <div id="habits-motivation-details">
           <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">

@@ -50,12 +50,31 @@ function buildHabitLink(
 function buildHabitDefinitionRow(overrides: Partial<HabitDefinitionRow> = {}): HabitDefinitionRow {
   return {
     id: "11111111-1111-4111-8111-111111111111",
+    user_id: "user-1",
     title: "Mobility habit",
+    notes: null,
     habit_mode: "build",
     habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-05-10",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "weekly",
+    cadence_target_count: 1,
+    cadence_day_policy: "any",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: true,
     status: "active",
+    sort_order: 0,
+    created_at: "2026-05-10T08:00:00.000Z",
+    updated_at: "2026-05-10T08:00:00.000Z",
     ...overrides,
-  } as HabitDefinitionRow;
+  };
 }
 
 function buildMicroHabitLinkRow(
@@ -576,6 +595,41 @@ describe("dryland micro plans", () => {
         status: "future_status",
       } as unknown as Partial<HabitDefinitionRow>,
     },
+    {
+      label: "unknown category",
+      rawValues: ["future_category"],
+      overrides: { category: "future_category" } as unknown as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "invalid target shape",
+      rawValues: [],
+      overrides: {
+        target_value_numeric: 1,
+        target_unit: "times",
+      } as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "invalid timer shape",
+      rawValues: [],
+      overrides: {
+        timer_enabled: true,
+        timer_target_seconds: 60,
+      } as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "unknown cadence",
+      rawValues: ["future_period"],
+      overrides: {
+        cadence_period: "future_period",
+      } as unknown as Partial<HabitDefinitionRow>,
+    },
+    {
+      label: "invalid schedule",
+      rawValues: ["future_weekday"],
+      overrides: {
+        schedule_days: ["monday", "future_weekday"],
+      } as unknown as Partial<HabitDefinitionRow>,
+    },
   ])(
     "blocks new Habit credit for $label before any check-in query",
     async ({ rawValues, overrides }) => {
@@ -783,12 +837,27 @@ describe("dryland micro plans", () => {
     const insertSelect = vi.fn(() => ({ single: insertSingle }));
     const insert = vi.fn(() => ({ select: insertSelect }));
     const from = vi.fn(() => ({ select, insert }));
+    const legacyLink = buildDrylandMicroHabitLinkRecord(
+      buildMicroHabitLinkRow(),
+      buildHabitDefinitionRow({
+        cadence_period: null,
+        cadence_target_count: null,
+        cadence_day_policy: null,
+        schedule_days: ["monday", "wednesday", "friday"],
+      } as unknown as Partial<HabitDefinitionRow>)
+    );
+
+    expect(legacyLink).toMatchObject({
+      habitDefinitionSupport: "supported",
+      habitCadenceLabel: "Weekly - 3 fixed days",
+      canCount: true,
+    });
 
     const result = await recordMicroSessionHabitCredit({ from } as never, {
       userId: "user-1",
       planId: "22222222-2222-4222-8222-222222222222",
       blockId: "unit-1",
-      link: buildHabitLink(),
+      link: legacyLink,
       selectedDate: "2026-05-10",
       todayDate: "2026-05-10",
       timezone: "Europe/Oslo",

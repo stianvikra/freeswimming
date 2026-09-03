@@ -4,6 +4,7 @@ import {
   buildMyLibraryCalendarDailyLayers,
   partitionCalendarHabitRows,
 } from "@/lib/my-library/calendar-daily-layers";
+import { buildHabitDefinitionView } from "@/lib/habits/shared";
 import type {
   HabitCheckInView,
   HabitDefinitionRow,
@@ -242,6 +243,35 @@ describe("my library calendar daily layers", () => {
     expect(habitLayer?.metrics.map((metric) => metric.id)).not.toEqual(
       expect.arrayContaining(["habit_daily", "habit_due", "habit_rest", "habit_slips"])
     );
+  });
+
+  it("lets definition review win over a not-tracked Calendar day", () => {
+    const layer = buildMyLibraryCalendarDailyLayers({
+      dateKeys: ["2026-06-10"],
+      todayDate: "2026-06-10",
+      habits: {
+        status: "ready",
+        habits: [],
+        checkIns: [],
+        resetEvents: [],
+        unsupported: { count: 1, labels: ["Future habit"] },
+        dayStatuses: {
+          status: "ready",
+          entries: [{ reviewDate: "2026-06-10", dayStatus: "not_tracked" }],
+        },
+      },
+      microSessions: { status: "ready", plans: [] },
+    })["2026-06-10"]?.find((item) => item.source === "habits");
+
+    expect(layer).toMatchObject({
+      status: "review",
+      tone: "warning",
+      compactLabel: "Habits review needed",
+    });
+    expect(layer?.metrics.map((metric) => metric.id)).toEqual([
+      "habit_not_tracked",
+      "habit_review",
+    ]);
   });
 
   it.each([
@@ -533,13 +563,31 @@ describe("my library calendar daily layers", () => {
     });
   });
 
-  it("does not count future Habits or unknown Habit cadence values", () => {
+  it("uses the shared definition boundary for legacy cadence and future Habit fields", () => {
     const partitioned = partitionCalendarHabitRows([
       buildHabitRow({ id: "supported", title: "Supported habit" }),
+      buildHabitRow({
+        id: "legacy-cadence",
+        title: "Legacy cadence habit",
+        cadence_period: null,
+        cadence_target_count: null,
+        cadence_day_policy: null,
+        schedule_days: ["monday", "wednesday", "friday"],
+      } as unknown as Partial<HabitDefinitionRow>),
       buildHabitRow({
         id: "unsupported",
         title: "Quarterly habit",
         cadence_period: "quarterly",
+      }),
+      buildHabitRow({
+        id: "unknown-category",
+        title: "Future category habit",
+        category: "future_category",
+      }),
+      buildHabitRow({
+        id: "invalid-schedule",
+        title: "Duplicate schedule habit",
+        schedule_days: ["monday", "monday"],
       }),
       buildHabitRow({
         id: "unknown-type",
@@ -570,10 +618,16 @@ describe("my library calendar daily layers", () => {
       microSessions: { status: "ready", plans: [] },
     });
 
-    expect(partitioned.supportedRows.map((row) => row.id)).toEqual(["supported"]);
+    expect(partitioned.usableRows.map((row) => row.id)).toEqual(["supported", "legacy-cadence"]);
+    expect(buildHabitDefinitionView(partitioned.usableRows[1])).toMatchObject({
+      cadencePeriod: "weekly",
+      cadenceTargetCount: 3,
+      cadenceDayPolicy: "fixed",
+      scheduleDays: ["monday", "wednesday", "friday"],
+    });
     expect(partitioned.unsupported).toMatchObject({
-      count: 4,
-      labels: ["Quarterly habit", "Future type habit", "Future mode habit"],
+      count: 6,
+      labels: ["Quarterly habit", "Future category habit", "Duplicate schedule habit"],
     });
     expect(layers["2026-06-12"]?.find((layer) => layer.source === "habits")).toMatchObject({
       status: "future",
@@ -600,6 +654,7 @@ describe("my library calendar daily layers", () => {
       status: "review",
       compactLabel: "Habits review needed",
     });
+    expect(JSON.stringify(reviewLayers)).not.toContain("future_category");
   });
 
   it("keeps supported progress visible while making mixed Habit truth a review state", () => {

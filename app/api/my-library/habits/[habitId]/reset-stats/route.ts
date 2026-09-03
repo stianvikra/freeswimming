@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
-import { HABIT_MOTIVATION_RESET_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
+import {
+  HABIT_DEFINITION_WRITE_GUARD_SELECT,
+  HABIT_MOTIVATION_RESET_SELECT,
+  loadHabitSnapshot,
+} from "@/lib/habits/server";
 import {
   buildHabitMotivationResetInsert,
   classifyHabitDefinition,
@@ -124,7 +128,7 @@ export async function POST(request: Request, { params }: Props) {
 
   const habitResult = await supabase
     .from("habit_definitions")
-    .select("id, title, habit_type, habit_mode, start_date, status")
+    .select(HABIT_DEFINITION_WRITE_GUARD_SELECT)
     .eq("user_id", user.id)
     .eq("id", habitId)
     .maybeSingle();

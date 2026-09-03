@@ -523,19 +523,33 @@ describe("my library calendar plan loader", () => {
   });
 
   it("reviews unsupported Habit definitions and excludes their check-ins and resets", async () => {
+    const legacyHabitId = "88888888-8888-4888-8888-888888888888";
     const unsupportedHabitId = "99999999-9999-4999-8999-999999999999";
     const { from } = buildSupabaseMock({
       habitDefinitions: [
         buildHabitDefinitionRow(),
         buildHabitDefinitionRow({
+          id: legacyHabitId,
+          title: "Legacy daily Habit",
+          cadence_period: null,
+          cadence_target_count: null,
+          cadence_day_policy: null,
+          sort_order: 1,
+        } as unknown as Partial<HabitDefinitionRow>),
+        buildHabitDefinitionRow({
           id: unsupportedHabitId,
           title: "Future Habit",
-          habit_type: "future_type",
-          sort_order: 1,
+          category: "future_category",
+          sort_order: 2,
         }),
       ],
       habitCheckIns: [
-        buildHabitCheckInRow({ check_in_date: "2026-06-20" }),
+        buildHabitCheckInRow({ check_in_date: "2026-06-19" }),
+        buildHabitCheckInRow({
+          id: "88888888-8888-4888-8888-888888888887",
+          habit_id: legacyHabitId,
+          check_in_date: "2026-06-19",
+        }),
         buildHabitCheckInRow({
           id: "99999999-9999-4999-8999-999999999998",
           habit_id: unsupportedHabitId,
@@ -545,10 +559,18 @@ describe("my library calendar plan loader", () => {
       habitResets: [
         buildHabitResetRow({ effective_date: "2026-06-20" }),
         buildHabitResetRow({
+          id: "88888888-8888-4888-8888-888888888886",
+          habit_id: legacyHabitId,
+          effective_date: "2026-06-20",
+        }),
+        buildHabitResetRow({
           id: "99999999-9999-4999-8999-999999999997",
           habit_id: unsupportedHabitId,
           effective_date: "2026-06-20",
         }),
+      ],
+      habitDayStatuses: [
+        { review_date: "2026-06-20", day_status: "not_tracked", status: "reviewed" },
       ],
     });
 
@@ -562,16 +584,17 @@ describe("my library calendar plan loader", () => {
     expect(habitLayer).toMatchObject({
       status: "review",
       tone: "warning",
-      compactLabel: "1/1 habits · review",
+      compactLabel: "0/2 habits · review",
     });
     expect(habitLayer?.metrics).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "habit_daily", value: "1/1" }),
-        expect.objectContaining({ id: "habit_resets", value: "1 marker" }),
+        expect.objectContaining({ id: "habit_daily", value: "0/2" }),
+        expect.objectContaining({ id: "habit_resets", value: "2 markers" }),
         expect.objectContaining({ id: "habit_review", value: "1 habit" }),
       ])
     );
-    expect(JSON.stringify(habitLayer)).not.toContain("future_type");
+    expect(habitLayer?.metrics.find((metric) => metric.id === "habit_not_tracked")).toBeUndefined();
+    expect(JSON.stringify(habitLayer)).not.toContain("future_category");
   });
 
   it("loads a bounded not-tracked day as a neutral Calendar layer", async () => {
