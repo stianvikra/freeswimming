@@ -40,6 +40,17 @@ function jsonNoStore(body: unknown, status = 200) {
   });
 }
 
+const HABIT_DAY_STATUS_MISSING_SCHEMA_CODES = new Set([
+  "42P01", // undefined_table
+  "42703", // undefined_column
+  "PGRST204", // PostgREST column not found
+  "PGRST205", // PostgREST table not found
+]);
+
+function isHabitDayStatusSchemaMissing(error: { code?: string | null } | null | undefined) {
+  return typeof error?.code === "string" && HABIT_DAY_STATUS_MISSING_SCHEMA_CODES.has(error.code);
+}
+
 export async function GET() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -74,6 +85,7 @@ export async function GET() {
     drylandSessionsResult,
     habitDefinitionsResult,
     habitCheckInsResult,
+    habitDayStatusesResult,
     workoutsResult,
     trainingActivityEventsResult,
     providerConnectionsResult,
@@ -180,6 +192,12 @@ export async function GET() {
       .eq("user_id", userId)
       .order("check_in_date", { ascending: false }),
     supabase
+      .from("habit_absence_review_acknowledgements")
+      .select("id, review_scope, review_date, day_status, created_at, updated_at")
+      .eq("user_id", userId)
+      .not("day_status", "is", null)
+      .order("review_date", { ascending: false }),
+    supabase
       .from("workouts")
       .select(
         "id, source_kind, status, generator_kind, source_fingerprint, title, title_suggestions, description, environment, pool_length_m, session_type, effort, size_mode, target_distance_m, target_time_min, total_distance_m, estimated_duration_min, base_pace_seconds_per_100, used_css_pace_label, allowed_strokes, equipment_allowlist, focus_text, goal_title, constraint_text, warnings, steps, generated_at, accepted_at, created_at, updated_at"
@@ -256,6 +274,10 @@ export async function GET() {
     habitCheckInsResult.error && isHabitsSchemaMissing(habitCheckInsResult.error)
       ? []
       : (habitCheckInsResult.data ?? []);
+  const normalizedHabitDayStatuses =
+    habitDayStatusesResult.error && isHabitDayStatusSchemaMissing(habitDayStatusesResult.error)
+      ? []
+      : (habitDayStatusesResult.data ?? []);
   const normalizedProviderConnections =
     providerConnectionsResult.error &&
     isProviderEvidenceSchemaMissing(providerConnectionsResult.error)
@@ -307,6 +329,9 @@ export async function GET() {
       : null) ??
     (habitCheckInsResult.error && !isHabitsSchemaMissing(habitCheckInsResult.error)
       ? habitCheckInsResult.error
+      : null) ??
+    (habitDayStatusesResult.error && !isHabitDayStatusSchemaMissing(habitDayStatusesResult.error)
+      ? habitDayStatusesResult.error
       : null) ??
     (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
       ? workoutsResult.error
@@ -361,6 +386,7 @@ export async function GET() {
       drylandSessions: normalizedDrylandSessions,
       habitDefinitions: normalizedHabitDefinitions,
       habitCheckIns: normalizedHabitCheckIns,
+      habitDayStatuses: normalizedHabitDayStatuses,
       workouts: normalizedWorkouts,
       trainingActivityEvents: normalizedTrainingActivityEvents,
       providerConnections: normalizedProviderConnections,

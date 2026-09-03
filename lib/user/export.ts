@@ -188,6 +188,11 @@ type HabitCheckInRow = Pick<
   | "updated_at"
 >;
 
+type HabitDayStatusRow = Pick<
+  Database["public"]["Tables"]["habit_absence_review_acknowledgements"]["Row"],
+  "id" | "review_scope" | "review_date" | "day_status" | "created_at" | "updated_at"
+>;
+
 type WorkoutRow = Pick<
   Database["public"]["Tables"]["workouts"]["Row"],
   | "id"
@@ -336,6 +341,7 @@ export type BuildUserExportPayloadInput = {
   drylandSessions: DrylandSessionRow[];
   habitDefinitions: HabitDefinitionRow[];
   habitCheckIns: HabitCheckInRow[];
+  habitDayStatuses?: HabitDayStatusRow[];
   workouts: WorkoutRow[];
   trainingActivityEvents: TrainingActivityEventRow[];
   providerConnections: ProviderConnectionRow[];
@@ -349,7 +355,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-06-23-training-activity-export",
+    schemaVersion: "2026-09-03-habit-day-status-export",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -541,6 +547,16 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),
+    habitDayStatuses: (input.habitDayStatuses ?? [])
+      .filter((row) => row.day_status !== null)
+      .map((row) => ({
+        id: row.id,
+        reviewScope: row.review_scope,
+        reviewDate: row.review_date,
+        dayStatus: row.day_status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
     workouts: input.workouts.map((row) => ({
       id: row.id,
       sourceKind: row.source_kind,

@@ -8,6 +8,9 @@ type PostgrestLikeError = {
 const HABIT_SCHEMA_MARKERS = [
   "habit_definitions",
   "habit_check_ins",
+  "habit_absence_review_acknowledgements",
+  "habit_absence_review_set_day_status",
+  "day_status",
   "habit_type",
   "habit_mode",
   "check_in_date",

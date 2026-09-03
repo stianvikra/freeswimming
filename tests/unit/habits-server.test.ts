@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadHabitSnapshot } from "@/lib/habits/server";
-import type {
-  HabitAbsenceReviewAcknowledgementRow,
-  HabitCheckInRow,
-  HabitDefinitionRow,
-  HabitMotivationResetRow,
+import {
+  getHabitAbsenceReviewCandidateDates,
+  type HabitAbsenceReviewAcknowledgementRow,
+  type HabitCheckInRow,
+  type HabitDefinitionRow,
+  type HabitMotivationResetRow,
 } from "@/lib/habits/shared";
 import type { Database } from "@/types/database";
 
@@ -269,6 +270,54 @@ describe("habits server loader", () => {
     expect(JSON.stringify(snapshot)).not.toMatch(/future_(type|mode|status)/);
   });
 
+  it("keeps archived and unsupported check-in dates out of absence review candidates", async () => {
+    const active = buildHabitRow();
+    const archived = buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Archived habit",
+      status: "archived",
+      sort_order: 2,
+    });
+    const unsupported = buildHabitRow({
+      id: "88888888-8888-4888-8888-888888888888",
+      title: "Future type habit",
+      habit_type: "future_type",
+      sort_order: 3,
+    });
+    const { supabase } = buildSupabaseMock(
+      [active, archived, unsupported],
+      [
+        buildCheckInRow({ check_in_date: "2026-05-04" }),
+        buildCheckInRow({
+          id: "99999999-9999-4999-8999-999999999999",
+          habit_id: archived.id,
+          check_in_date: "2026-05-05",
+        }),
+        buildCheckInRow({
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          habit_id: unsupported.id,
+          check_in_date: "2026-05-06",
+        }),
+      ]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-05-10",
+    });
+
+    expect(snapshot.absenceReviewRecordedCheckInDates).toEqual([
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+    ]);
+    expect(getHabitAbsenceReviewCandidateDates(snapshot, "2026-05-10")).toEqual([
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-09",
+    ]);
+  });
+
   it("adds linked Micro Session progress to habit definitions", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
@@ -501,7 +550,7 @@ describe("habits server loader", () => {
     expect(absenceReviewQuery.lte).toHaveBeenCalledWith("review_date", "2026-06-05");
   });
 
-  it("loads server-canonical absence review acknowledgements for the visible week", async () => {
+  it("projects server-canonical absence review acknowledgements and day statuses", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
     const habit = buildHabitRow({ start_date: "2026-05-04" });
@@ -518,6 +567,7 @@ describe("habits server loader", () => {
           review_scope: "weekly_absence_review",
           review_date: "2026-05-05",
           status: "reviewed",
+          day_status: "not_tracked",
           created_at: "2026-05-10T09:00:00.000Z",
           updated_at: "2026-05-10T09:00:00.000Z",
         },
@@ -529,9 +579,74 @@ describe("habits server loader", () => {
       todayDate: "2026-06-05",
     });
 
-    expect(absenceReviewQuery.gte).toHaveBeenCalledWith("review_date", "2026-05-04");
+    expect(absenceReviewQuery.gte).toHaveBeenCalledWith("review_date", "2026-05-01");
     expect(absenceReviewQuery.lte).toHaveBeenCalledWith("review_date", "2026-05-10");
     expect(snapshot.absenceReviewAcknowledgementsReady).toBe(true);
+    expect(snapshot.dayStatusesReady).toBe(true);
     expect(snapshot.absenceReviewAcknowledgedDates).toEqual(["2026-05-05"]);
+    expect(snapshot.dayStatuses).toEqual([{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }]);
+    expect(snapshot.weekSummary.days.find((day) => day.date === "2026-05-05")).toMatchObject({
+      trackingState: "not_tracked",
+      completionPercent: null,
+      isPerfectDay: false,
+    });
+  });
+
+  it("keeps unknown persisted day statuses fail-closed and out of raw snapshots", async () => {
+    const habit = buildHabitRow({ start_date: "2026-05-04" });
+    const futureStatusRow = {
+      id: "33333333-3333-4333-8333-333333333333",
+      user_id: "user-1",
+      review_scope: "weekly_absence_review",
+      review_date: "2026-05-05",
+      status: "reviewed",
+      day_status: "future_status",
+      created_at: "2026-05-10T09:00:00.000Z",
+      updated_at: "2026-05-10T09:00:00.000Z",
+    } as unknown as HabitAbsenceReviewAcknowledgementRow;
+    const { supabase } = buildSupabaseMock([habit], [], [], [], [], [futureStatusRow]);
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
+
+    expect(snapshot.dayStatuses).toEqual([{ reviewDate: "2026-05-05", dayStatus: "unsupported" }]);
+    expect(snapshot.absenceReviewAcknowledgedDates).toEqual([]);
+    expect(snapshot.weekSummary.metricCoverage.state).toBe("needs_review");
+    expect(JSON.stringify(snapshot)).not.toContain("future_status");
+  });
+
+  it("keeps unknown acknowledgement workflow statuses visible only as Needs review", async () => {
+    const habit = buildHabitRow({ start_date: "2026-05-04" });
+    const futureWorkflowRow = {
+      id: "33333333-3333-4333-8333-333333333333",
+      user_id: "user-1",
+      review_scope: "weekly_absence_review",
+      review_date: "2026-05-05",
+      status: "future_workflow_status",
+      day_status: null,
+      created_at: "2026-05-10T09:00:00.000Z",
+      updated_at: "2026-05-10T09:00:00.000Z",
+    } as HabitAbsenceReviewAcknowledgementRow;
+    const { supabase, absenceReviewQuery } = buildSupabaseMock(
+      [habit],
+      [],
+      [],
+      [],
+      [],
+      [futureWorkflowRow]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", {
+      selectedDate: "2026-05-10",
+      todayDate: "2026-06-05",
+    });
+
+    expect(absenceReviewQuery.eq).not.toHaveBeenCalledWith("status", "reviewed");
+    expect(snapshot.dayStatuses).toEqual([{ reviewDate: "2026-05-05", dayStatus: "unsupported" }]);
+    expect(snapshot.absenceReviewAcknowledgedDates).toEqual([]);
+    expect(snapshot.weekSummary.metricCoverage.state).toBe("needs_review");
+    expect(JSON.stringify(snapshot)).not.toContain("future_workflow_status");
   });
 });

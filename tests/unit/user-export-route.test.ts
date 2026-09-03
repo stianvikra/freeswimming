@@ -24,6 +24,7 @@ function buildQuery(result: QueryResult) {
   const query = {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
+    not: vi.fn(() => query),
     order: vi.fn(() => query),
     maybeSingle: vi.fn(async () => result),
     then: (resolve: (value: QueryResult) => unknown, reject?: (reason: unknown) => unknown) =>
@@ -96,6 +97,19 @@ describe("/api/user/export route", () => {
         ],
         error: null,
       },
+      habit_absence_review_acknowledgements: {
+        data: [
+          {
+            id: "day-status-future",
+            review_scope: "weekly_absence_review",
+            review_date: "2026-08-30",
+            day_status: "future_private_value",
+            created_at: "2026-08-31T08:00:00.000Z",
+            updated_at: "2026-08-31T08:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
     });
     createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
 
@@ -120,12 +134,20 @@ describe("/api/user/export route", () => {
         sourceDrylandMicroPlanId: "micro-plan-1",
       }),
     ]);
+    expect(payload.export.habitDayStatuses).toEqual([
+      expect.objectContaining({
+        id: "day-status-future",
+        reviewDate: "2026-08-30",
+        dayStatus: "future_private_value",
+      }),
+    ]);
     expect(payload).toMatchObject({
       ok: true,
-      export: { schemaVersion: "2026-06-23-training-activity-export" },
+      export: { schemaVersion: "2026-09-03-habit-day-status-export" },
     });
     expect(supabase.from).toHaveBeenCalledWith("habit_definitions");
     expect(supabase.from).toHaveBeenCalledWith("habit_check_ins");
+    expect(supabase.from).toHaveBeenCalledWith("habit_absence_review_acknowledgements");
   });
 
   it("returns an export with empty provider arrays when provider evidence schema is missing", async () => {
@@ -152,6 +174,13 @@ describe("/api/user/export route", () => {
       provider_connections: missingProviderTable,
       provider_activity_evidence: missingProviderTable,
       provider_import_runs: missingProviderTable,
+      habit_absence_review_acknowledgements: {
+        data: null,
+        error: {
+          code: "42703",
+          message: "column day_status does not exist",
+        },
+      },
     });
 
     createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
@@ -165,20 +194,66 @@ describe("/api/user/export route", () => {
         providerConnections: unknown[];
         providerActivityEvidence: unknown[];
         providerImportRuns: unknown[];
+        habitDayStatuses: unknown[];
       };
     };
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.export.schemaVersion).toBe("2026-06-23-training-activity-export");
+    expect(payload.export.schemaVersion).toBe("2026-09-03-habit-day-status-export");
     expect(payload.export.trainingActivityEvents).toEqual([]);
     expect(payload.export.providerConnections).toEqual([]);
     expect(payload.export.providerActivityEvidence).toEqual([]);
     expect(payload.export.providerImportRuns).toEqual([]);
+    expect(payload.export.habitDayStatuses).toEqual([]);
     expect(supabase.from).toHaveBeenCalledWith("provider_connections");
     expect(supabase.from).toHaveBeenCalledWith("training_activity_events");
     expect(supabase.from).toHaveBeenCalledWith("provider_activity_evidence");
     expect(supabase.from).toHaveBeenCalledWith("provider_import_runs");
+  });
+
+  it("fails instead of dropping Habit day statuses after a real query error", async () => {
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
+    const supabase = buildExportSupabaseClient({
+      profiles: { data: null, error: null },
+      athlete_profiles: { data: null, error: null },
+      training_preferences: { data: null, error: null },
+      habit_absence_review_acknowledgements: {
+        data: null,
+        error: { code: "57014", message: "statement timeout" },
+      },
+    });
+    createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
+
+    const response = await GET();
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ ok: false, error: "Could not export user data." });
+  });
+
+  it("fails instead of treating Habit day-status permission errors as missing schema", async () => {
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
+    const supabase = buildExportSupabaseClient({
+      profiles: { data: null, error: null },
+      athlete_profiles: { data: null, error: null },
+      training_preferences: { data: null, error: null },
+      habit_absence_review_acknowledgements: {
+        data: null,
+        error: {
+          code: "42501",
+          message:
+            "permission denied for table habit_absence_review_acknowledgements while selecting day_status",
+        },
+      },
+    });
+    createServerSupabaseClientMock.mockResolvedValueOnce(supabase);
+
+    const response = await GET();
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ ok: false, error: "Could not export user data." });
   });
 
   it("includes redacted manual fixture provider evidence summaries", async () => {

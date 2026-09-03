@@ -9,16 +9,19 @@ import { clampLocalDayDateToToday } from "@/lib/my-library/local-day";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
+  buildHabitDayStatusView,
   buildHabitDefinitionView,
   buildHabitMotivationResetView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
   classifyHabitDefinition,
+  classifyHabitDayStatus,
   getHabitMotivationRangeStartDate,
   HABIT_MOTIVATION_RANGE_VALUES,
   type HabitAbsenceReviewAcknowledgementRow,
   type HabitCheckInRow,
   type HabitDefinitionRow,
+  type HabitDayStatusView,
   type HabitMicroSessionLinkStatus,
   type HabitMicroSessionLinkView,
   type HabitMicroSessionProgressView,
@@ -100,6 +103,7 @@ export const HABIT_ABSENCE_REVIEW_SELECT = `
   review_scope,
   review_date,
   status,
+  day_status,
   created_at,
   updated_at
 `;
@@ -258,12 +262,14 @@ function buildHabitMotivationSummaries(
   habits: ReturnType<typeof buildHabitDefinitionView>[],
   checkIns: ReturnType<typeof buildHabitCheckInView>[],
   selectedDate: string,
-  resetEvents: HabitMotivationResetView[] = []
+  resetEvents: HabitMotivationResetView[] = [],
+  dayStatuses: HabitDayStatusView[] = []
 ): HabitMotivationRangeSummaries {
   return HABIT_MOTIVATION_RANGE_VALUES.reduce<HabitMotivationRangeSummaries>((summaries, range) => {
     summaries[range] = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
       historyStartDate: getHabitMotivationRangeStartDate(range, selectedDate),
       resetEvents,
+      dayStatuses,
     });
     return summaries;
   }, {});
@@ -277,6 +283,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
     schemaReady: false,
     resetEventsReady: false,
     absenceReviewAcknowledgementsReady: false,
+    dayStatusesReady: false,
     loadError: null,
     selectedDate,
     activeHabits: [],
@@ -317,6 +324,7 @@ export async function loadHabitSnapshot(
     return {
       schemaReady: true,
       absenceReviewAcknowledgementsReady: false,
+      dayStatusesReady: false,
       loadError: "Could not load your habits right now.",
       selectedDate,
       activeHabits: [],
@@ -371,6 +379,7 @@ export async function loadHabitSnapshot(
     return {
       schemaReady: true,
       absenceReviewAcknowledgementsReady: false,
+      dayStatusesReady: false,
       loadError: "Could not load today's habit check-ins right now.",
       selectedDate,
       activeHabits,
@@ -383,7 +392,19 @@ export async function loadHabitSnapshot(
     };
   }
 
-  const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[])
+  const rawCheckInRows = (checkInResult.data ?? []) as HabitCheckInRow[];
+  const selectedWeekStart = getWeekStartDate(selectedDate);
+  const absenceReviewEnd = getHabitCheckInEndDate(selectedDate, dateContext.todayDate);
+  const absenceReviewRecordedCheckInDates = [
+    ...new Set(
+      rawCheckInRows
+        .filter(
+          (row) => row.check_in_date >= selectedWeekStart && row.check_in_date <= absenceReviewEnd
+        )
+        .map((row) => row.check_in_date)
+    ),
+  ].sort((left, right) => left.localeCompare(right));
+  const checkIns = rawCheckInRows
     .filter((row) => supportedHabitIds.has(row.habit_id))
     .map(buildHabitCheckInView);
   const resetResult = await supabase
@@ -403,24 +424,45 @@ export async function loadHabitSnapshot(
     console.error("[Habits] Could not load habit motivation resets", resetResult.error);
   }
 
-  const absenceReviewStart = getWeekStartDate(selectedDate);
-  const absenceReviewEnd = getHabitCheckInEndDate(selectedDate, dateContext.todayDate);
+  // Reuse the existing snapshot history boundary so Motivation sees the same
+  // canonical status evidence as its already-loaded check-ins. Review
+  // eligibility itself remains selected-week-only.
+  const absenceReviewStart = checkInStart;
   const absenceReviewResult = await supabase
     .from("habit_absence_review_acknowledgements")
     .select(HABIT_ABSENCE_REVIEW_SELECT)
     .eq("user_id", userId)
     .eq("review_scope", "weekly_absence_review")
-    .eq("status", "reviewed")
     .gte("review_date", absenceReviewStart)
     .lte("review_date", absenceReviewEnd);
   const absenceReviewAcknowledgementsReady = !isHabitsSchemaMissing(absenceReviewResult.error);
+  const dayStatusesReady = absenceReviewAcknowledgementsReady && !absenceReviewResult.error;
+  const absenceReviewRows = dayStatusesReady
+    ? ((absenceReviewResult.data ?? []) as HabitAbsenceReviewAcknowledgementRow[])
+    : [];
+  const dayStatuses = absenceReviewRows
+    .map((row) =>
+      buildHabitDayStatusView({
+        reviewDate: row.review_date,
+        dayStatus: row.day_status,
+        acknowledgementStatus: row.status,
+      })
+    )
+    .filter((status): status is HabitDayStatusView => status !== null);
   const absenceReviewAcknowledgedDates =
     absenceReviewAcknowledgementsReady && !absenceReviewResult.error
       ? [
           ...new Set(
-            ((absenceReviewResult.data ?? []) as HabitAbsenceReviewAcknowledgementRow[]).map(
-              (row) => row.review_date
-            )
+            absenceReviewRows
+              .filter(
+                (row) =>
+                  row.status === "reviewed" &&
+                  row.review_date >= selectedWeekStart &&
+                  row.review_date <= absenceReviewEnd &&
+                  (row.day_status === null ||
+                    classifyHabitDayStatus(row.day_status).kind === "supported")
+              )
+              .map((row) => row.review_date)
           ),
         ].sort((left, right) => left.localeCompare(right))
       : undefined;
@@ -434,26 +476,31 @@ export async function loadHabitSnapshot(
 
   const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
     resetEvents,
+    dayStatuses,
   });
   const motivationSummaries = buildHabitMotivationSummaries(
     habits,
     checkIns,
     selectedDate,
-    resetEvents
+    resetEvents,
+    dayStatuses
   );
 
   return {
     schemaReady: true,
     resetEventsReady,
     absenceReviewAcknowledgementsReady,
+    dayStatusesReady,
     loadError: null,
     selectedDate,
     activeHabits,
     archivedHabits,
     unsupportedHabits,
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate, { dayStatuses }),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate, { dayStatuses }),
+    absenceReviewRecordedCheckInDates,
     absenceReviewAcknowledgedDates,
+    dayStatuses,
     motivationSummary,
     motivationSummaries,
   };

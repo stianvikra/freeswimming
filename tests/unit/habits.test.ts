@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildHabitCheckInInsert,
   buildHabitCheckInView,
+  buildHabitDayStatusView,
   buildHabitDaySummary,
   buildHabitDefinitionInsert,
   buildHabitDefinitionUpdate,
@@ -9,14 +10,20 @@ import {
   buildHabitMotivationResetInsert,
   buildHabitMotivationResetView,
   buildHabitMotivationSummary,
+  buildHabitMetricCoverage,
   buildHabitWeekSummary,
   classifyHabitDefinition,
+  classifyHabitDayStatus,
+  getEffectiveHabitDayStatus,
+  getHabitAbsenceReviewCandidateDates,
+  getHabitDayStatusLabel,
   getHabitMotivationRangeStartDate,
   UNSUPPORTED_HABIT_DEFINITION_CODE,
   UNSUPPORTED_HABIT_DEFINITION_VALUE_CODE,
   type HabitCheckInRow,
   type HabitDefinitionRow,
   type HabitMotivationResetRow,
+  type HabitSnapshot,
   type SupportedHabitDefinitionRow,
 } from "@/lib/habits/shared";
 
@@ -1487,5 +1494,803 @@ describe("habits domain helpers", () => {
     expect(pluralItem?.evaluation.valueLabel).toBe("2 litres");
     expect(singularHabit.targetLabel).toBe("At least 1 litre");
     expect(singularItem?.evaluation.valueLabel).toBe("1 litre");
+  });
+
+  it("classifies and labels whole-day statuses without exposing unknown raw values", () => {
+    expect(classifyHabitDayStatus(null)).toEqual({ kind: "none" });
+    expect(classifyHabitDayStatus("not_tracked")).toEqual({
+      kind: "supported",
+      dayStatus: "not_tracked",
+    });
+    expect(classifyHabitDayStatus("future_private_status")).toEqual({ kind: "unsupported" });
+    expect(
+      buildHabitDayStatusView({
+        reviewDate: "2026-05-06",
+        dayStatus: "future_private_status",
+      })
+    ).toEqual({ reviewDate: "2026-05-06", dayStatus: "unsupported" });
+    expect(
+      JSON.stringify(
+        buildHabitDayStatusView({
+          reviewDate: "2026-05-06",
+          dayStatus: "future_private_status",
+        })
+      )
+    ).not.toContain("future_private_status");
+    expect(
+      buildHabitDayStatusView({
+        reviewDate: "2026-05-06",
+        dayStatus: "not_tracked",
+        acknowledgementStatus: "future_workflow_status",
+      })
+    ).toEqual({ reviewDate: "2026-05-06", dayStatus: "unsupported" });
+    expect(getHabitDayStatusLabel("not_tracked")).toBe("Not tracked");
+    expect(getHabitDayStatusLabel("unsupported")).toBe("Needs review");
+    expect(() =>
+      buildHabitDayStatusView({ reviewDate: "2026-02-31", dayStatus: "not_tracked" })
+    ).toThrow("Habit day status date must be a real YYYY-MM-DD date.");
+  });
+
+  it("projects metric performance and coverage from separate known and potential units", () => {
+    expect(
+      buildHabitMetricCoverage({
+        potentialUnitCount: 7,
+        knownUnitCount: 5,
+        successfulUnitCount: 4,
+        notTrackedDayCount: 2,
+      })
+    ).toEqual({
+      potentialUnitCount: 7,
+      knownUnitCount: 5,
+      successfulUnitCount: 4,
+      performancePercent: 80,
+      coveragePercent: 71,
+      notTrackedDayCount: 2,
+      state: "available",
+    });
+    expect(
+      buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+        notTrackedDayCount: 2,
+      })
+    ).toMatchObject({
+      performancePercent: null,
+      coveragePercent: 0,
+      state: "no_tracked_data",
+    });
+    expect(
+      buildHabitMetricCoverage({
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        hasUnsupportedDayStatus: true,
+      })
+    ).toMatchObject({
+      performancePercent: null,
+      coveragePercent: null,
+      state: "needs_review",
+    });
+  });
+
+  it("keeps an effective not-tracked day neutral and creates no synthetic habit evidence", () => {
+    const buildHabit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
+    const quitHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "No sweets",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+      })
+    );
+    const checkIns: ReturnType<typeof buildHabitCheckInView>[] = [];
+    const dayStatuses = [{ reviewDate: "2026-05-10", dayStatus: "not_tracked" as const }];
+
+    const summary = buildHabitDaySummary([buildHabit, quitHabit], checkIns, "2026-05-10", {
+      dayStatuses,
+    });
+
+    expect(checkIns).toEqual([]);
+    expect(summary).toMatchObject({
+      dayStatus: "not_tracked",
+      trackingState: "not_tracked",
+      potentialPerfectDayItemCount: 2,
+      perfectDayItemCount: 0,
+      satisfiedPerfectDayItemCount: 0,
+      completionPercent: null,
+      isPerfectDay: false,
+      completedDurationMinutes: 0,
+      completedCountTotal: 0,
+      metricCoverage: {
+        potentialUnitCount: 2,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+        performancePercent: null,
+        coveragePercent: 0,
+        notTrackedDayCount: 1,
+        state: "no_tracked_data",
+      },
+    });
+    expect(summary.items).toHaveLength(2);
+    expect(summary.items.every((item) => item.checkIn === null)).toBe(true);
+    expect(summary.items.every((item) => item.priorityGroup === "not_tracked")).toBe(true);
+    expect(summary.items.map((item) => item.evaluation.stateLabel)).toEqual([
+      "Not tracked",
+      "Not tracked",
+    ]);
+  });
+
+  it("gives any supported check-in precedence over a stale not-tracked marker", () => {
+    const countHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Water",
+        habit_type: "count",
+        target_value_numeric: 2,
+        target_unit: "litres",
+      })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({ value_boolean: null, value_numeric: 2.5 })
+    );
+    const dayStatuses = [{ reviewDate: "2026-05-10", dayStatus: "not_tracked" as const }];
+
+    expect(getEffectiveHabitDayStatus("2026-05-10", dayStatuses, [checkIn])).toBeNull();
+    const summary = buildHabitDaySummary([countHabit], [checkIn], "2026-05-10", {
+      dayStatuses,
+    });
+
+    expect(summary).toMatchObject({
+      dayStatus: null,
+      trackingState: "known",
+      perfectDayItemCount: 1,
+      satisfiedPerfectDayItemCount: 1,
+      completionPercent: 100,
+      completedCountTotal: 2.5,
+      metricCoverage: {
+        potentialUnitCount: 1,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        performancePercent: 100,
+        coveragePercent: 100,
+      },
+    });
+  });
+
+  it("excludes not-tracked dates from weekly performance while retaining coverage", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({ title: "Read", start_date: "2026-05-04" })
+    );
+    const checkIns = ["2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07"].map((date, index) =>
+      buildHabitCheckInView(buildCheckInRow({ id: `week-known-${index}`, check_in_date: date }))
+    );
+    const summary = buildHabitWeekSummary([habit], checkIns, "2026-05-10", {
+      dayStatuses: [
+        { reviewDate: "2026-05-08", dayStatus: "not_tracked" },
+        { reviewDate: "2026-05-09", dayStatus: "not_tracked" },
+      ],
+    });
+
+    expect(summary.perfectDayCount).toBe(4);
+    expect(summary.averageCompletionPercent).toBe(80);
+    expect(summary.metricCoverage).toEqual({
+      potentialUnitCount: 7,
+      knownUnitCount: 5,
+      successfulUnitCount: 4,
+      performancePercent: 80,
+      coveragePercent: 71,
+      notTrackedDayCount: 2,
+      state: "available",
+    });
+    expect(summary.days.find((day) => day.date === "2026-05-08")?.completionPercent).toBeNull();
+  });
+
+  it("treats not-tracked as a neutral hard streak boundary without changing tracked totals", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({ title: "Read", start_date: "2026-05-01" })
+    );
+    const checkIns = ["2026-05-01", "2026-05-02", "2026-05-03", "2026-05-05", "2026-05-06"].map(
+      (date, index) =>
+        buildHabitCheckInView(buildCheckInRow({ id: `streak-known-${index}`, check_in_date: date }))
+    );
+    const summary = buildHabitMotivationSummary([habit], checkIns, "2026-05-06", {
+      dayStatuses: [{ reviewDate: "2026-05-04", dayStatus: "not_tracked" }],
+    });
+
+    expect(summary).toMatchObject({
+      lastTrackedDate: "2026-05-06",
+      potentialDayCount: 6,
+      eligibleDayCount: 5,
+      onTrackDayCount: 5,
+      notTrackedDayCount: 1,
+      currentStreakDays: 2,
+      bestStreakDays: 3,
+      consistencyPercent: 100,
+      totalTimedMinutes: 0,
+      totalCount: 0,
+      metricCoverage: {
+        potentialUnitCount: 6,
+        knownUnitCount: 5,
+        successfulUnitCount: 5,
+        coveragePercent: 83,
+      },
+    });
+    expect(summary.items[0]).toMatchObject({
+      potentialDayCount: 6,
+      eligibleDayCount: 5,
+      onTrackDayCount: 5,
+      notTrackedDayCount: 1,
+      currentStreakDays: 2,
+      bestStreakDays: 3,
+    });
+  });
+
+  it("does not bridge a Perfect Day streak across a not-tracked weekly-any gap", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Weekly swim",
+        start_date: "2026-04-27",
+        cadence_period: "weekly",
+        cadence_target_count: 1,
+        cadence_day_policy: "any",
+      })
+    );
+    const checkIns = ["2026-05-03", "2026-05-05"].map((date, index) =>
+      buildHabitCheckInView(buildCheckInRow({ id: `weekly-gap-${index}`, check_in_date: date }))
+    );
+
+    const summary = buildHabitMotivationSummary([habit], checkIns, "2026-05-05", {
+      dayStatuses: [{ reviewDate: "2026-05-04", dayStatus: "not_tracked" }],
+    });
+
+    expect(summary).toMatchObject({
+      potentialDayCount: 2,
+      eligibleDayCount: 2,
+      onTrackDayCount: 2,
+      notTrackedDayCount: 1,
+      currentStreakDays: 1,
+      bestStreakDays: 1,
+    });
+  });
+
+  it("excludes not-tracked from clear quit days and breaks the clear-day streak", () => {
+    const quitHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "No sweets",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-05-01",
+      })
+    );
+    const summary = buildHabitMotivationSummary([quitHabit], [], "2026-05-05", {
+      dayStatuses: [{ reviewDate: "2026-05-03", dayStatus: "not_tracked" }],
+    });
+
+    expect(summary.items[0]).toMatchObject({
+      lastTrackedDate: null,
+      potentialDayCount: 5,
+      eligibleDayCount: 4,
+      onTrackDayCount: 4,
+      notTrackedDayCount: 1,
+      slipCount: 0,
+      currentStreakDays: 2,
+      bestStreakDays: 2,
+      consistencyPercent: 100,
+      totalTimedMinutes: 0,
+      totalCount: 0,
+    });
+  });
+
+  it("distinguishes met, unknown, and mathematically unreachable any-day periods", () => {
+    const buildWeeklyHabit = (targetCount: number) =>
+      buildHabitDefinitionView(
+        buildHabitRow({
+          title: `Weekly ${targetCount}`,
+          start_date: "2026-05-04",
+          cadence_period: "weekly",
+          cadence_target_count: targetCount,
+          cadence_day_policy: "any",
+        })
+      );
+    const dayStatuses = [{ reviewDate: "2026-05-06", dayStatus: "not_tracked" as const }];
+    const metHabit = buildWeeklyHabit(2);
+    const metCheckIns = ["2026-05-04", "2026-05-05"].map((date, index) =>
+      buildHabitCheckInView(buildCheckInRow({ id: `weekly-met-${index}`, check_in_date: date }))
+    );
+    const met = buildHabitMotivationSummary([metHabit], metCheckIns, "2026-05-10", {
+      dayStatuses,
+    }).items[0];
+    expect(met).toMatchObject({
+      potentialDayCount: 1,
+      eligibleDayCount: 1,
+      onTrackDayCount: 1,
+      notTrackedDayCount: 1,
+      unknownPeriodCount: 0,
+      consistencyPercent: 100,
+      currentStreakDays: 0,
+      bestStreakDays: 0,
+    });
+
+    const uncertainHabit = buildWeeklyHabit(2);
+    const oneCompletion = [
+      buildHabitCheckInView(buildCheckInRow({ id: "weekly-one", check_in_date: "2026-05-04" })),
+    ];
+    const uncertainSummary = buildHabitMotivationSummary(
+      [uncertainHabit],
+      oneCompletion,
+      "2026-05-10",
+      {
+        dayStatuses,
+      }
+    );
+    const uncertain = uncertainSummary.items[0];
+    expect(uncertain).toMatchObject({
+      potentialDayCount: 1,
+      eligibleDayCount: 0,
+      onTrackDayCount: 0,
+      notTrackedDayCount: 1,
+      unknownPeriodCount: 1,
+      consistencyPercent: null,
+      currentStreakDays: 0,
+      metricCoverage: {
+        performancePercent: null,
+        coveragePercent: 0,
+        state: "no_tracked_data",
+      },
+    });
+    expect(uncertainSummary).toMatchObject({
+      potentialDayCount: 2,
+      eligibleDayCount: 1,
+      onTrackDayCount: 1,
+      notTrackedDayCount: 1,
+      currentStreakDays: 0,
+      bestStreakDays: 1,
+      consistencyPercent: 100,
+      metricCoverage: {
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        coveragePercent: 50,
+      },
+    });
+    expect(
+      buildHabitDaySummary([uncertainHabit], oneCompletion, "2026-05-10", {
+        dayStatuses,
+      })
+    ).toMatchObject({
+      trackingState: "known",
+      potentialPerfectDayItemCount: 1,
+      perfectDayItemCount: 0,
+      satisfiedPerfectDayItemCount: 0,
+      completionPercent: null,
+      isPerfectDay: false,
+      metricCoverage: {
+        potentialUnitCount: 1,
+        knownUnitCount: 0,
+        successfulUnitCount: 0,
+        state: "no_tracked_data",
+      },
+      items: [
+        expect.objectContaining({
+          trackingState: "incomplete",
+          evaluation: expect.objectContaining({ stateLabel: "Tracking incomplete" }),
+        }),
+      ],
+    });
+    expect(
+      buildHabitWeekSummary([uncertainHabit], oneCompletion, "2026-05-10", {
+        dayStatuses,
+      })
+    ).toMatchObject({
+      perfectDayCount: 1,
+      averageCompletionPercent: 100,
+      metricCoverage: {
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        coveragePercent: 50,
+        notTrackedDayCount: 1,
+      },
+    });
+
+    const unreachableHabit = buildWeeklyHabit(3);
+    const unreachable = buildHabitMotivationSummary(
+      [unreachableHabit],
+      oneCompletion,
+      "2026-05-10",
+      { dayStatuses }
+    ).items[0];
+    expect(unreachable).toMatchObject({
+      potentialDayCount: 1,
+      eligibleDayCount: 1,
+      onTrackDayCount: 0,
+      notTrackedDayCount: 1,
+      unknownPeriodCount: 0,
+      consistencyPercent: 0,
+      metricCoverage: {
+        performancePercent: 0,
+        coveragePercent: 100,
+        state: "available",
+      },
+    });
+  });
+
+  it.each([
+    {
+      cadencePeriod: "weekly" as const,
+      historyStartDate: "2026-04-01",
+      selectedDate: "2026-04-05",
+      checkInDate: "2026-03-30",
+      notTrackedDate: "2026-04-02",
+    },
+    {
+      cadencePeriod: "monthly" as const,
+      historyStartDate: "2026-03-30",
+      selectedDate: "2026-04-05",
+      checkInDate: "2026-03-15",
+      notTrackedDate: "2026-03-30",
+    },
+  ])(
+    "uses the full canonical $cadencePeriod any-day period when the Motivation range starts mid-period",
+    ({ cadencePeriod, historyStartDate, selectedDate, checkInDate, notTrackedDate }) => {
+      const habit = buildHabitDefinitionView(
+        buildHabitRow({
+          title: `${cadencePeriod} boundary habit`,
+          start_date: "2026-01-01",
+          cadence_period: cadencePeriod,
+          cadence_target_count: 1,
+          cadence_day_policy: "any",
+        })
+      );
+      const checkIn = buildHabitCheckInView(
+        buildCheckInRow({
+          id: `${cadencePeriod}-before-range`,
+          habit_id: habit.id,
+          check_in_date: checkInDate,
+        })
+      );
+
+      const item = buildHabitMotivationSummary([habit], [checkIn], selectedDate, {
+        historyStartDate,
+        dayStatuses: [{ reviewDate: notTrackedDate, dayStatus: "not_tracked" }],
+      }).items[0];
+
+      expect(item).toMatchObject({
+        motivationStartDate: historyStartDate,
+        potentialDayCount: 1,
+        eligibleDayCount: 1,
+        onTrackDayCount: 1,
+        notTrackedDayCount: 1,
+        unknownPeriodCount: 0,
+        consistencyPercent: 100,
+        currentStreakDays: 0,
+        bestStreakDays: 0,
+        metricCoverage: {
+          potentialUnitCount: 1,
+          knownUnitCount: 1,
+          successfulUnitCount: 1,
+          performancePercent: 100,
+          coveragePercent: 100,
+        },
+      });
+    }
+  );
+
+  it("does not pull pre-reset evidence into a cross-range any-day period", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Weekly reset boundary habit",
+        start_date: "2026-01-01",
+        cadence_period: "weekly",
+        cadence_target_count: 1,
+        cadence_day_policy: "any",
+      })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        id: "weekly-before-reset",
+        habit_id: habit.id,
+        check_in_date: "2026-03-30",
+      })
+    );
+    const reset = buildHabitMotivationResetView(
+      buildResetRow({
+        habit_id: habit.id,
+        effective_date: "2026-03-31",
+      })
+    );
+
+    const item = buildHabitMotivationSummary([habit], [checkIn], "2026-04-05", {
+      historyStartDate: "2026-04-01",
+      resetEvents: [reset],
+    }).items[0];
+
+    expect(item).toMatchObject({
+      motivationStartDate: "2026-04-01",
+      potentialDayCount: 1,
+      eligibleDayCount: 1,
+      onTrackDayCount: 0,
+      unknownPeriodCount: 0,
+      consistencyPercent: 0,
+      metricCoverage: {
+        potentialUnitCount: 1,
+        knownUnitCount: 1,
+        successfulUnitCount: 0,
+        performancePercent: 0,
+        coveragePercent: 100,
+      },
+    });
+  });
+
+  it("keeps day-status evidence visible in an open any-day period without scoring it", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Weekly three",
+        start_date: "2026-05-04",
+        cadence_period: "weekly",
+        cadence_target_count: 3,
+        cadence_day_policy: "any",
+      })
+    );
+    const summary = buildHabitMotivationSummary([habit], [], "2026-05-06", {
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }],
+    });
+
+    expect(summary.items[0]).toMatchObject({
+      potentialDayCount: 0,
+      eligibleDayCount: 0,
+      onTrackDayCount: 0,
+      notTrackedDayCount: 1,
+      unknownPeriodCount: 0,
+      consistencyPercent: null,
+      currentStreakDays: 0,
+      bestStreakDays: 0,
+    });
+
+    const unsupportedSummary = buildHabitMotivationSummary([habit], [], "2026-05-06", {
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "unsupported" }],
+    });
+    expect(unsupportedSummary.items[0]?.metricCoverage.state).toBe("needs_review");
+
+    const priorWeekHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Weekly three",
+        start_date: "2026-04-27",
+        cadence_period: "weekly",
+        cadence_target_count: 3,
+        cadence_day_policy: "any",
+      })
+    );
+    const priorWeekCheckIns = ["2026-04-27", "2026-04-28", "2026-04-29"].map((checkInDate, index) =>
+      buildHabitCheckInView(
+        buildCheckInRow({ id: `prior-week-${index}`, check_in_date: checkInDate })
+      )
+    );
+    const streakSummary = buildHabitMotivationSummary(
+      [priorWeekHabit],
+      priorWeekCheckIns,
+      "2026-05-06",
+      { dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" }] }
+    );
+    expect(streakSummary.items[0]).toMatchObject({
+      potentialDayCount: 1,
+      eligibleDayCount: 1,
+      onTrackDayCount: 1,
+      notTrackedDayCount: 1,
+      currentStreakDays: 0,
+      bestStreakDays: 1,
+    });
+  });
+
+  it("does not call a mixed Perfect Day complete when an any-day item is unknown", () => {
+    const weeklyHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "22222222-2222-4222-8222-222222222222",
+        title: "Weekly twice",
+        start_date: "2026-05-04",
+        cadence_period: "weekly",
+        cadence_target_count: 2,
+        cadence_day_policy: "any",
+      })
+    );
+    const sundayHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Sunday reset",
+        start_date: "2026-05-04",
+        schedule_days: ["sunday"],
+      })
+    );
+    const checkIns = [
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "weekly-monday",
+          habit_id: weeklyHabit.id,
+          check_in_date: "2026-05-04",
+        })
+      ),
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "daily-sunday",
+          habit_id: sundayHabit.id,
+          check_in_date: "2026-05-10",
+        })
+      ),
+    ];
+    const options = {
+      dayStatuses: [{ reviewDate: "2026-05-06", dayStatus: "not_tracked" as const }],
+    };
+
+    const daySummary = buildHabitDaySummary(
+      [weeklyHabit, sundayHabit],
+      checkIns,
+      "2026-05-10",
+      options
+    );
+    expect(daySummary).toMatchObject({
+      potentialPerfectDayItemCount: 2,
+      perfectDayItemCount: 1,
+      satisfiedPerfectDayItemCount: 1,
+      completionPercent: 100,
+      isPerfectDay: false,
+      metricCoverage: {
+        potentialUnitCount: 2,
+        knownUnitCount: 1,
+        successfulUnitCount: 1,
+        coveragePercent: 50,
+      },
+    });
+    expect(daySummary.items.find((item) => item.habit.id === weeklyHabit.id)).toMatchObject({
+      trackingState: "incomplete",
+    });
+
+    const motivation = buildHabitMotivationSummary(
+      [weeklyHabit, sundayHabit],
+      checkIns,
+      "2026-05-10",
+      options
+    );
+    expect(motivation).toMatchObject({
+      onTrackDayCount: 1,
+      currentStreakDays: 0,
+      bestStreakDays: 1,
+    });
+  });
+
+  it("ignores day-status evidence from before an any-day Habit existed", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Weekend mobility",
+        start_date: "2026-05-08",
+        cadence_period: "weekly",
+        cadence_target_count: 2,
+        cadence_day_policy: "any",
+      })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        id: "weekly-friday",
+        habit_id: habit.id,
+        check_in_date: "2026-05-08",
+      })
+    );
+    const options = {
+      dayStatuses: [{ reviewDate: "2026-05-05", dayStatus: "not_tracked" as const }],
+    };
+
+    const daySummary = buildHabitDaySummary([habit], [checkIn], "2026-05-10", options);
+    expect(daySummary).toMatchObject({
+      potentialPerfectDayItemCount: 1,
+      perfectDayItemCount: 1,
+      satisfiedPerfectDayItemCount: 0,
+      completionPercent: 0,
+      isPerfectDay: false,
+      metricCoverage: {
+        potentialUnitCount: 1,
+        knownUnitCount: 1,
+        successfulUnitCount: 0,
+        coveragePercent: 100,
+      },
+    });
+    expect(daySummary.items[0]).toMatchObject({ trackingState: "known" });
+
+    expect(
+      buildHabitMotivationSummary([habit], [checkIn], "2026-05-10", options).items[0]
+    ).toMatchObject({
+      potentialDayCount: 1,
+      eligibleDayCount: 1,
+      onTrackDayCount: 0,
+      notTrackedDayCount: 0,
+      unknownPeriodCount: 0,
+      consistencyPercent: 0,
+    });
+  });
+
+  it("keeps supported not-tracked days out of absence-review candidates", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({ title: "Read", start_date: "2026-05-05" })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({ id: "recovery-history", check_in_date: "2026-05-05" })
+    );
+    const dayStatuses = [{ reviewDate: "2026-05-06", dayStatus: "not_tracked" as const }];
+    const weekSummary = buildHabitWeekSummary([habit], [checkIn], "2026-05-10", {
+      dayStatuses,
+    });
+    const motivationSummary = buildHabitMotivationSummary([habit], [checkIn], "2026-05-10", {
+      dayStatuses,
+    });
+    const snapshot: HabitSnapshot = {
+      schemaReady: true,
+      loadError: null,
+      selectedDate: "2026-05-10",
+      activeHabits: [habit],
+      archivedHabits: [],
+      unsupportedHabits: [],
+      daySummary: weekSummary.days.find((day) => day.date === "2026-05-10")!,
+      weekSummary,
+      dayStatuses,
+      motivationSummary,
+      motivationSummaries: { all: motivationSummary },
+    };
+
+    expect(getHabitAbsenceReviewCandidateDates(snapshot, "2026-05-10")).toEqual([
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-09",
+    ]);
+  });
+
+  it("keeps unknown future day statuses fail-closed in metrics and absence review", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({ title: "Read", start_date: "2026-05-05" })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({ id: "recovery-history", check_in_date: "2026-05-05" })
+    );
+    const unsupportedStatus = buildHabitDayStatusView({
+      reviewDate: "2026-05-06",
+      dayStatus: "future_private_status",
+    });
+    expect(unsupportedStatus).not.toBeNull();
+    if (!unsupportedStatus) return;
+
+    const weekSummary = buildHabitWeekSummary([habit], [checkIn], "2026-05-10", {
+      dayStatuses: [unsupportedStatus],
+    });
+    const motivationSummary = buildHabitMotivationSummary([habit], [checkIn], "2026-05-10", {
+      dayStatuses: [unsupportedStatus],
+    });
+    const snapshot: HabitSnapshot = {
+      schemaReady: true,
+      loadError: null,
+      selectedDate: "2026-05-10",
+      activeHabits: [habit],
+      archivedHabits: [],
+      unsupportedHabits: [],
+      daySummary: weekSummary.days.find((day) => day.date === "2026-05-10")!,
+      weekSummary,
+      dayStatuses: [unsupportedStatus],
+      motivationSummary,
+      motivationSummaries: { all: motivationSummary },
+    };
+
+    expect(weekSummary.days.find((day) => day.date === "2026-05-06")).toMatchObject({
+      trackingState: "needs_review",
+      completionPercent: null,
+      metricCoverage: { state: "needs_review" },
+    });
+    expect(weekSummary.averageCompletionPercent).toBeNull();
+    expect(getHabitAbsenceReviewCandidateDates(snapshot, "2026-05-10")).toEqual([
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-09",
+    ]);
   });
 });

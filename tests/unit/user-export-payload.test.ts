@@ -220,6 +220,7 @@ describe("buildUserExportPayload", () => {
           updated_at: "2026-05-10T08:00:00.000Z",
         },
       ],
+      habitDayStatuses: [],
       workouts: [
         {
           id: "workout-1",
@@ -359,7 +360,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-06-23-training-activity-export",
+      schemaVersion: "2026-09-03-habit-day-status-export",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -577,6 +578,7 @@ describe("buildUserExportPayload", () => {
           updatedAt: "2026-05-10T08:00:00.000Z",
         },
       ],
+      habitDayStatuses: [],
       workouts: [
         {
           id: "workout-1",
@@ -753,6 +755,7 @@ describe("buildUserExportPayload", () => {
     expect(payload.drylandSessions).toEqual([]);
     expect(payload.habitDefinitions).toEqual([]);
     expect(payload.habitCheckIns).toEqual([]);
+    expect(payload.habitDayStatuses).toEqual([]);
     expect(payload.workouts).toEqual([]);
     expect(payload.trainingActivityEvents).toEqual([]);
     expect(payload.providerConnections).toEqual([]);
@@ -821,7 +824,7 @@ describe("buildUserExportPayload", () => {
       providerImportRuns: [],
     });
 
-    expect(payload.schemaVersion).toBe("2026-06-23-training-activity-export");
+    expect(payload.schemaVersion).toBe("2026-09-03-habit-day-status-export");
     expect(
       payload.habitDefinitions.map(({ id, habitType, habitMode, status }) => ({
         id,
@@ -848,5 +851,78 @@ describe("buildUserExportPayload", () => {
         })
       )
     );
+  });
+
+  it("exports only non-null whole-day Habit statuses with raw owner-private values", () => {
+    type ExportInput = Parameters<typeof buildUserExportPayload>[0];
+    const base = {
+      userId: "user-day-status",
+      userEmail: "owner@example.com",
+      generatedAt: "2026-09-03T08:00:00.000Z",
+      profile: null,
+      athleteProfile: null,
+      trainingMetrics: [],
+      trainingPreferences: null,
+      personalRecords: [],
+      entitlements: [],
+      courseProgress: [],
+      guideProgress: [],
+      guideSessionProgress: [],
+      goals: [],
+      trainingFocuses: [],
+      trainingNotes: [],
+      downloadLinks: [],
+      drylandSessions: [],
+      habitDefinitions: [],
+      habitCheckIns: [],
+      workouts: [],
+      trainingActivityEvents: [],
+      providerConnections: [],
+      providerActivityEvidence: [],
+      providerImportRuns: [],
+    } satisfies Omit<ExportInput, "habitDayStatuses">;
+
+    const payload = buildUserExportPayload({
+      ...base,
+      habitDayStatuses: [
+        {
+          id: "status-1",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-09-01",
+          day_status: "not_tracked",
+          created_at: "2026-09-03T08:00:00.000Z",
+          updated_at: "2026-09-03T08:01:00.000Z",
+        },
+        {
+          id: "status-2",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-09-02",
+          day_status: null,
+          created_at: "2026-09-03T08:00:00.000Z",
+          updated_at: "2026-09-03T08:01:00.000Z",
+        },
+        {
+          id: "status-3",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-09-03",
+          day_status: "future_private_value",
+          created_at: "2026-09-03T08:00:00.000Z",
+          updated_at: "2026-09-03T08:01:00.000Z",
+        },
+      ] as unknown as NonNullable<ExportInput["habitDayStatuses"]>,
+    });
+
+    expect(payload.habitDayStatuses).toEqual([
+      {
+        id: "status-1",
+        reviewScope: "weekly_absence_review",
+        reviewDate: "2026-09-01",
+        dayStatus: "not_tracked",
+        createdAt: "2026-09-03T08:00:00.000Z",
+        updatedAt: "2026-09-03T08:01:00.000Z",
+      },
+      expect.objectContaining({ id: "status-3", dayStatus: "future_private_value" }),
+    ]);
+    expect(payload).not.toHaveProperty("habitAbsenceReviewAcknowledgements");
   });
 });

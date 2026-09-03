@@ -1165,6 +1165,7 @@ export type Database = {
       habit_absence_review_acknowledgements: {
         Row: {
           created_at: string;
+          day_status: string | null;
           id: string;
           review_date: string;
           review_scope: string;
@@ -1174,6 +1175,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          day_status?: string | null;
           id?: string;
           review_date: string;
           review_scope?: string;
@@ -1183,6 +1185,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          day_status?: string | null;
           id?: string;
           review_date?: string;
           review_scope?: string;
@@ -2365,6 +2368,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      habit_absence_review_set_day_status: {
+        Args: { p_day_status: string | null; p_review_dates: string[]; p_user_id: string };
+        Returns: {
+          day_status: string | null;
+          review_date: string;
+          was_changed: boolean;
+        }[];
+      };
       admin_set_user_role: {
         Args: {
           p_actor_email: string;
