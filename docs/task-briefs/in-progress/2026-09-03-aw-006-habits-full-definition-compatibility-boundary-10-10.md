@@ -449,12 +449,13 @@ Any code, test, config, script, migration, workflow, or runtime diff uses the fu
 - `2026-09-03 | screenshot-approval-stop | implemented the shared canonical/legacy/unsupported boundary, guarded every scoped write/consumer, preserved raw precision/history/export and H-082 date evidence, and updated support contracts. Privacy-safe exposure was 0/49 rows; writers remain one query with 6->17 guard columns; bounded descriptor worst case was 161->406 bytes; final scope is 3878/4000 changed lines. Combined Vitest passed 17 files/516 tests; typecheck, ESLint (0 errors/8 unrelated warnings), all-brief lint, targeted Prettier, and diff check passed. Four after/reference artifacts captured 2026-09-03 19:04–19:12 with zero 320/390/768/1440 horizontal overflow, zero console warnings/errors, zero serious/critical axe findings on Child AC review/Motivation and Today/Calendar/Micro surfaces; whole-Habits axe still reports five untouched Weekly Overview nodes (3 prohibited div aria-label, 2 4.37:1 contrast) outside this diff | next: wait for owner screenshot approval before verify:pre-pr, commit, push, PR, CI, or verify:pre-merge`
 - `2026-09-03 | screenshot-approved | owner replied "godkjent" after reviewing the four after/reference artifacts; no product rendering/style/asset/export HTML changed after final capture | next: fetch origin, run verify:pre-pr, then commit/push/open PR and continue through CI plus verify:pre-merge without merging`
 - `2026-09-03 | pre-pr-green | current branch remained 0 behind/0 ahead of origin/main@5651b9a1; full-lane npm run verify:pre-pr passed quality/brief gates, lint, typecheck, 265 files/2067 unit tests, production build, public performance budgets, and Playwright with 111 passed/573 environment-skipped; artifact artifacts/test-runs/20260903-192452 | next: commit, push, open the PR, record delivery evidence, monitor required CI, then run verify:pre-merge without merging`
+- `2026-09-03 | pr-open | implementation committed as 3b361c09, pushed on codex/aw-006-habits-full-definition-compatibility-boundary, and opened as PR #1257 with canonical generated metadata; no product rendering/style/asset/export HTML changed after the approved capture | next: push this evidence-only docs checkpoint, monitor required CI on the final PR head, then run verify:pre-merge without merging`
 
 ## Completion Record
 
-- `status`: `in progress; screenshots and pre-PR approved/green, commit and PR delivery active`
+- `status`: `in progress; PR #1257 open, required CI and pre-merge validation active`
 - `10/10 claim`: `no; required CI and current-head pre-merge evidence remain`
-- `implementation_commit`: `TBD`
-- `pull_request`: `TBD`
+- `implementation_commit`: `3b361c09`
+- `pull_request`: `#1257` (`https://github.com/stianvikra/freeswimming/pull/1257`)
 - `screenshots`: `output/playwright/habits-full-definition-compatibility-2026-09-03-190420` (`after/reference`, captured locally 2026-09-03 19:04–19:12)
 - `validation`: `exposure 0/49; targeted 17 files/516 tests; typecheck, lint, all-brief lint, Prettier, diff, responsive, console, and scoped axe passed; full-lane pre-PR PASS at artifacts/test-runs/20260903-192452 (265 files/2067 unit tests, build/performance, Playwright 111 passed/573 environment-skipped); CI/pre-merge pending`
