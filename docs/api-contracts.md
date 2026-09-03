@@ -1356,7 +1356,7 @@ The server owns the current instant and derives `todayDate` as a strict `YYYY-MM
 
 Every Habits mutation body also carries `renderedTodayDate`, copied from the server-rendered local-day context rather than derived from the browser clock. After validating the explicit timezone, the server derives the current local day again and requires an exact match before any domain/database write or snapshot refresh. A missing or stale value returns `409` with `code = STALE_LOCAL_DAY_CONTEXT`; a supplied malformed date returns `400` with `code = INVALID_DATE`. The client may refresh once after the `409`, but it must not retry the mutation automatically.
 
-`selectedDate` controls the requested history snapshot only. Missing, invalid, or future snapshot dates are normally clamped to the same effective local `today`; they never prove that a future definition/check-in/review/reset date is valid. The absence-review route is the strict exception because `selectedDate` also scopes mutation authority: omission defaults to Today, while a supplied invalid or future date returns `400 INVALID_DATE` or `400 FUTURE_REVIEW_DATE`. Mutation responses reuse the same captured instant and local-day context as their write guard.
+`selectedDate` controls the requested history snapshot only. Missing, invalid, or future snapshot dates are clamped to the same effective local `today`; they never prove that a future definition/check-in/review/reset date is valid. Mutation responses reuse the same captured instant and local-day context as their write guard.
 
 All currently supported Habit types inherit this boundary through the shared definition/check-in contracts. A future type, mode, cadence, or status that changes due/done, review, streak, Perfect Day, or Calendar counting requires an explicit database/type/view-model mapping, negative tests, and Help/support update before release; labels may change through shared display mappings without changing stable IDs or historical date keys.
 
@@ -1410,7 +1410,7 @@ accept `isPerfectDayItem`.
 - Quit slips are explicit `valueBoolean: false` writes for `habit_mode = quit`; no slip or miss row is written automatically at day change.
 - Timed source updates use `timerSeconds` and/or `manualMinutes` and cannot be mixed with legacy `valueNumeric`.
 
-### Absence Review Acknowledgement And Day Status
+### Absence Review Acknowledgement
 
 `POST /api/my-library/habits/absence-review`
 
@@ -1420,30 +1420,18 @@ accept `isPerfectDayItem`.
   "selectedDate": "2026-06-14",
   "renderedTodayDate": "2026-06-14",
   "timezone": "Europe/Oslo",
-  "action": "not_tracked_visible_batch",
-  "dayStatus": "not_tracked"
+  "action": "finish"
 }
 ```
 
 - Auth: signed-in user session required.
-- `selectedDate` may be omitted to use the server-derived Today. When supplied to this absence-review route, it must be a real, non-future local date because it selects the one ISO week whose server-derived candidates the route may mutate; invalid or future values return `400` instead of being clamped.
-- `dates` must contain 1–7 unique ISO dates. Future dates are `400`; Today, dates outside the selected ISO week, tracked dates, hidden dates, and any date outside the server-derived candidate set are `409` with zero writes. The user may navigate to one older week and act on that selected week's visible candidates, but there is no cross-week/all-history discovery or batch.
-- The server independently derives the exact visible H-077 candidate set for the selected ISO week: a past date with recovery history, zero recorded Habit actions, no existing supported `not_tracked` marker, a potential Perfect Day denominator, and at least one active, due, unresolved, non-Quit, non-Micro-backed Perfect Day item. Any owner check-in row on that date blocks candidacy, including a row attached to an archived or fail-closed unsupported Habit definition; those child rows still stay excluded from normal supported Habit metrics. Partial-use and already-not-tracked dates remain in history but are not new review candidates or batch inputs.
-- Supported `action` values are:
-  - `mark`: acknowledge only the submitted candidate subset without changing `day_status`;
-  - `finish`: acknowledge exactly the complete current visible candidate set;
-  - `not_tracked_single`: require exactly one current candidate and `dayStatus = "not_tracked"`; an identical retry may instead name the same selected-week date when it already has the supported marker;
-  - `not_tracked_visible_batch`: require every complete current visible candidate and `dayStatus = "not_tracked"`; an identical retry may additionally contain only selected-week dates that already have the supported marker;
-  - `not_tracked_undo`: require exactly one existing owner-scoped acknowledgement and `dayStatus = null`. Undo stays available when the date is no longer a new-review candidate, retains `status = "reviewed"`, and is idempotent.
-- Unknown actions or request statuses fail closed with `400`. A stored unknown non-null `day_status` blocks `mark`, `finish`, single, batch, and Undo with `409 ABSENCE_REVIEW_STATUS_UNSUPPORTED`; the raw stored value is never returned, logged, used as UI copy, or emitted to analytics.
-- Owner-scoped `habit_absence_review_acknowledgements` keeps workflow `status = "reviewed"` separate from nullable whole-day `day_status`. The only currently supported day status is stable machine value `not_tracked`; its visible label comes from the shared display mapping and may change without changing persisted identity.
+- `dates` must be a non-empty list of ISO dates, maximum 31 values, and every date must be effective local `today` or earlier.
+- The route upserts owner-scoped `habit_absence_review_acknowledgements` rows with `review_scope = "weekly_absence_review"` and `status = "reviewed"`.
+- The prominent Habits absence review UI is reserved for past dates with due unresolved habits and no recorded habit action; partial-use days stay in history but do not become the daily review queue.
 - On Today, `Start review` navigates to the first unchecked review date, while `Dismiss` acknowledges all visible review dates and hides the prompt without editing habit history.
-- Acknowledgement and day-status actions create zero `habit_check_ins`. Single/batch/Undo use one owner-scoped atomic RPC; batch is all-or-nothing and retry-safe. The new `day_status` column is not directly writable by the authenticated database role, and the RPC is callable only by the server service role after the route has authenticated the owner and recomputed the selected-week candidate set. Existing acknowledgement-only columns remain protected by owner RLS.
-- Every successful `habit_check_ins` insert/update—including manual, timer, Rest, Slip, and linked Micro Session credit—takes the same owner/day transaction lock and nulls `day_status` in the check-in transaction. Check-in evidence therefore wins concurrent writes. A failed check-in leaves the marker intact, while later check-in deletion never revives it.
-- Successful responses return `action`, sorted `affectedDates`, `affectedCount`, the mutation-time `visibleCandidateDates` used for authority, `reviewedDates` for compatibility, and a refreshed `snapshot`. For day-status actions, `affectedDates` and `affectedCount` come from rows actually changed under the database lock; an idempotent same-state retry therefore returns zero affected dates/count even though the requested final state remains valid.
-- Stable expected failures are `400 INVALID_JSON|INVALID_TIMEZONE|INVALID_REVIEW_ACTION|INVALID_DAY_STATUS|INVALID_REVIEW_DATES|INVALID_DATE|DUPLICATE_REVIEW_DATE|TOO_MANY_REVIEW_DATES|FUTURE_REVIEW_DATE`, `401 UNAUTHORIZED`, `409 STALE_LOCAL_DAY_CONTEXT|ABSENCE_REVIEW_CANDIDATE_CONFLICT|ABSENCE_REVIEW_CHECK_IN_CONFLICT|ABSENCE_REVIEW_STATUS_CONFLICT|ABSENCE_REVIEW_STATUS_UNSUPPORTED`, and `503 ABSENCE_REVIEW_UNAVAILABLE`. Expected validation, conflict, schema, and storage failures emit zero success analytics and no unexpected `500`.
-- Server analytics use `habit_absence_review_acknowledged` only after commit and only when at least one row actually changed, with bounded `selectedDate`, actual changed `reviewDateCount`, `reviewAction`, and `reviewScope`; the event contains no Habit content or raw day status. A same-state day-status retry returns success with zero affected rows and emits no duplicate success event.
-- Child AB only creates new markers for one selected week's visible review dates. Undo is likewise bounded to that selected ISO week, including idempotent retry after the marker was cleared. Existing navigation may select an older week, but cross-week/all-history review discovery, aggregate queueing, and bulk action remain H-071; bounded consumers still respect stored markers already present in their normal report ranges.
+- Acknowledging review dates never creates, updates, or deletes `habit_check_ins`; it only closes the review prompt for those dates.
+- The response returns a refreshed Habits snapshot whose `absenceReviewAcknowledgedDates` list is the server-canonical source for whether reviewed dates should show again.
+- Server analytics use `habit_absence_review_acknowledged` with only `selectedDate`, `reviewDateCount`, and `reviewAction`.
 
 ### Reset Stats Request
 
