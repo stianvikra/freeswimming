@@ -375,7 +375,7 @@ function buildHabitRangeStats(
     averageCompletionPercent:
       daysWithHabits.length > 0
         ? Math.round(
-            daysWithHabits.reduce((total, day) => total + day.completionPercent, 0) /
+            daysWithHabits.reduce((total, day) => total + (day.completionPercent ?? 0), 0) /
               daysWithHabits.length
           )
         : 0,
