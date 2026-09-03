@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-09-03-aw-006-habits-absence-review-not-tracked-status-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-09-03`
 - `updated`: `2026-09-03`
@@ -13,17 +13,17 @@
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `parent_child`: `Child AB`
 - `target_findings`: `H-082`
-- `execution_mode`: `owner explicitly said Kjør Child AB; execute the scoped workstream end to end with the required screenshot approval stop before pre-PR gates`
-- `intended_branch`: `codex/aw-006-habits-absence-review-not-tracked-status`
-- `strict_10_10_mode`: `yes; visible changes require owner screenshot approval before pre-PR gates`
+- `execution_mode`: `completed end to end through the owner-approved sequential merge of PRs #1253, #1254, and #1255`
+- `delivery_branches`: `codex/aw-006-habits-absence-review-not-tracked-status`, `codex/aw-006-habits-not-tracked-consumer-parity`, and `codex/aw-006-habits-not-tracked-review-ui`
+- `strict_10_10_mode`: `yes; strict process gates were enforced throughout, while the closeout outcome remains 10/10 claim: no because DevOps and rollback readiness reached 4/5 without an instant runtime kill switch`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-09-03`
-- `base`: clean synced `main@4d874404` after the Child AA repo-managed closeout in PR `#1252`.
-- `audit_status`: `active`; pickup audit began on clean synced `main@4d874404` before branch creation.
-- `decision`: Execute Child AB as the only active H-082 slice for a reversible whole-local-day `not_tracked` review disposition, with H-071 and every other parent finding still outside scope.
-- `reason`: The current server-canonical absence-review row can only store workflow `status = reviewed`. It can close a visible review day but cannot truthfully distinguish a day the user explicitly says was not tracked from Done, Missed, Rest day, Slip, Perfect Day, a clear Quit day, or ordinary missing evidence.
+- `base`: pickup began on clean synced `main@4d874404`; implementation completed on clean synced `main@c65e407f` after PRs `#1253`, `#1254`, and `#1255` merged in dependency order.
+- `audit_status`: `closed`; H-082 is resolved and the parent returns to no selected child.
+- `decision`: Close Child AB after shipping the reversible whole-local-day `not_tracked` review disposition while keeping H-071 and every other parent finding outside scope.
+- `reason`: At pickup, the server-canonical absence-review row could store only workflow `status = reviewed`; it could close a visible review day but could not truthfully distinguish a day the user explicitly said was not tracked from Done, Missed, Rest day, Slip, Perfect Day, a clear Quit day, or ordinary missing evidence.
 - `must_refresh_before_execution_if`: Refresh if `AGENTS.md`, task-brief or scorecard rules, `HabitPerfectDayHub`, Habits snapshot and Motivation helpers, absence-review/check-in routes, linked Micro Session Habit credit, local-day handling, Calendar Plan/Trends, comparison math, analytics taxonomy, Supabase migrations/RLS/generated types, Help/Guide/support surfaces, H-071/H-074 disposition, screenshot rules, or verification lanes change after `main@4d874404`; also refresh if `origin/main` advances before execution.
 - `scope_stop`: Stop and revise before implementation if the safe design requires all-history review discovery or mutation, definition history/versioning, a new Habit check-in status, changing Rest/Skip semantics, destructive migration/backfill, cross-week bulk action, new provider, new analytics vendor, or a broad Calendar/Motivation/Trends redesign.
 
@@ -55,13 +55,13 @@ Explicitly not owned:
 - `H-072/H-073/H-075`: broad Home hash/browser coverage and legacy catch-up event-taxonomy cleanup beyond focused tests and directly required event mapping.
 - A new Habit check-in status, Rest day/Skip semantics, vacation mode, reminders, hard delete, export redesign beyond the bounded additive `habitDayStatuses` portability contract, definition-history versioning, provider/native sync, or broad Habits/Calendar redesign.
 
-## Pickup Audit And Active Implementation Evidence
+## Pickup Audit And Shipped Implementation Evidence
 
 - `habit_absence_review_acknowledgements` is already the owner-scoped server-canonical review table, uniquely keyed by user, review scope, and review date.
 - At pickup on `main@4d874404`, its database constraint accepted only workflow `status = reviewed`. Existing rows therefore meant that a day was acknowledged, not why it was closed.
 - At pickup, `POST /api/my-library/habits/absence-review` validated authentication, local-day context, ISO dates, future dates, and a bounded date list, then upserted every submitted row as `status = reviewed`.
 - `loadHabitSnapshot` derives review eligibility and mutation membership only from the selected ISO week. Its day-status metric reader now follows the existing check-in evidence boundary so Motivation `All` and other current consumers see matching status/check-in history; this does not add older-week review discovery or mutation, and H-074 owns a later query-window split.
-- The date-first review UI already supports `Start review`, `Dismiss`, `Done with this day`, `Close review`, selected historical dates, server persistence, and normal Habit controls. Child AB should extend this mature flow rather than create another recovery surface.
+- The date-first review UI already supported `Start review`, `Dismiss`, `Done with this day`, `Close review`, selected historical dates, server persistence, and normal Habit controls. Child AB extended this mature flow rather than creating another recovery surface.
 - Existing check-ins, including Rest day, Slip, timer/manual sources, and linked Micro Session credit, are the canonical evidence for what was actually recorded on a Habit and date.
 - Candidate authority treats any owner check-in row on the selected-week date as recorded evidence, including rows attached to archived or fail-closed unsupported Habit definitions. Those rows block whole-day `not_tracked` without gaining supported metric credit, and the bounded snapshot exposes only their unique dates rather than private child content.
 - At pickup, Motivation and Calendar projections had no whole-day unknown-observation contract. Without one explicit shared rule, a new marker could drift into false success, false failure, streak protection, or inconsistent denominators.
@@ -188,7 +188,7 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
+- _Accessibility (a11y)_
 - `Data placement and sync boundaries`
 - `Caching and invalidation strategy`
 - `Reliability and failure handling`
@@ -664,7 +664,7 @@ Any runtime, migration, type, test, config, script, or workflow diff uses the fu
 
 ## Automation, Git, And Session Continuity
 
-- Current mode is active implementation after the owner's explicit `Kjør Child AB`; keep every change within this brief and its named evidence surfaces.
+- Execution is complete after the owner's explicit `Kjør Child AB` and later sequential merge approval; the shipped changes remained within this brief and its named evidence surfaces.
 - Once explicitly executed, use automation-first delivery with the screenshot approval exception: branch, implementation, targeted tests, screenshot handoff and stop, then pre-PR, commit/push, PR/CI, and pre-merge.
 - Never merge without explicit owner approval.
 - Commit and push validated implementation checkpoints without unrelated batching; update the PR after one complete vertical slice or 2–4 checkpoints.
@@ -712,7 +712,40 @@ Child Definition of Done:
 - `2026-09-03 | stacked PR checkpoint | the first combined implementation commit reproduced the approved and fully green tree exactly, but required PR Size failed because 8,628 changed lines exceeded the non-waivable 4,000-line repository limit; the unchanged final tree was therefore split in deploy order into three bounded branches: additive data/status foundation (3,357 changed lines), status-aware metric and consumer parity (2,248), then authenticated review actions and approved UI (3,023). Each branch is independently below the gate; the final stacked tree matched the safety branch byte-for-byte before this docs-only checkpoint, and no product-rendering file changed after the approved screenshots | next: run current-head npm run verify:pre-pr on each branch, push/update the three stacked PRs in order, require all CI green, then run npm run verify:pre-merge on every exact head without merging`
 - `2026-09-03 | layer A merged and layer B restacked | owner approved sequential merge; PR #1253 merged as 2c93e9f5, local/origin main were fast-forwarded, and consumer layer B was replayed alone onto that squash commit at b14a47dc without duplicating the foundation. Stack-fit/classification rationale: the changed lib/my-library files are known Habit consumer view-model/domain surfaces, while their component peers reuse those shared view-model contracts and the established Calendar, Today, Motivation, and Trends reference surfaces; no unknown runtime surface is introduced. Targeted tests cover the potential/known/successful metric contract, neutral streak/Perfect Day/Quit behavior, and partial known duration/count evidence. The owner-approved after/reference screenshot artifacts remain output/playwright/habits-absence-review-not-tracked-2026-09-03-115142 plus the unchanged Calendar/Motivation support set at output/playwright/habits-absence-review-not-tracked-2026-09-03-100931; the screenshot approval stop is satisfied, comparison filenames are after-/reference-, responsive checks cover 320/768/1440 px, accessibility evidence remains zero Axe violations, and no product-rendering code changed during restack | next: rerun full current-head pre-PR on B, force-with-lease push, retarget #1254 to main, await required CI, and rerun pre-merge before the second approved merge`
 - `2026-09-03 | layer B merged and layer C restacked | restacked B passed full pre-PR at ef91c9c7 with 265 unit files / 1,946 tests, build, performance budgets, and 111 Playwright passes plus 573 environment-gated skips; current-head private-gate pre-merge and required CI passed before PR #1254 merged as 94209bb2. Review writer/UI layer C was then replayed alone onto updated main without duplicating A or B; the resulting product tree retains the exact approved single/all-visible/Undo behavior and after/reference rendering, and the only post-capture changes are lifecycle documentation checkpoints | next: commit this C checkpoint, run full current-head pre-PR, force-with-lease push, retarget #1255 to main, await required CI, and rerun pre-merge before the final approved implementation merge`
+- `2026-09-03 | implementation merged | restacked C passed full pre-PR at 16eeda02 with 265 unit files / 1,985 tests, production build, performance budgets, and 111 Playwright passes plus 573 environment-gated skips; current-head private-gate pre-merge and required Analyze/size-check/verify CI passed before PR #1255 merged as c65e407f. The complete stack is now #1253 / 2c93e9f5, #1254 / 94209bb2, and #1255 / c65e407f on synced main, with H-082 shipped, H-071/H-074/H-081 still deferred, and no product-rendering change after the owner-approved screenshots | next: complete the single repo-managed docs-only closeout, sync/prune main, rerun post-merge preflight, and perform the mandatory chat-handoff assessment`
 
 ## Completion Record
 
-In progress. Record PR/commit/result, explicit `10/10 claim: yes/no`, one achieved-score/evidence/gap row for every target category, screenshot artifacts, test/CI evidence, rollback state, resolved/deferred findings, and the parent return checkpoint only after the implementation and required gates complete.
+- `completed`: `2026-09-03`
+- `merged_pr`: `#1253`, `#1254`, and `#1255`, merged in dependency order
+- `squash_commit`: `2c93e9f5`, `94209bb2`, and `c65e407f`
+- `result`: Closed AW-006 Child AB. A returning user can mark one eligible review day or every visible eligible day in the selected week as `Not tracked`, undo the marker, or replace it later with a real check-in. The marker creates no Habit check-in and contributes to none of Done, Missed, Rest day, Slip, Perfect Day, clear Quit-day, success percentages, or streak credit; performance uses known units while coverage keeps the unknown potential visible across Habits, Calendar, Motivation, and Trends.
+- `validation`: Focused Vitest (`15` files / `352` tests); isolated PostgreSQL `17.6.1` migration, constraint, RPC, RLS, cross-owner, idempotency, atomic batch, rollback, and true race smoke; linked `freeswimming-org-prod` migration apply plus local/remote parity and dry-run; typecheck; lint with `0` errors and `8` unrelated existing warnings; all-brief and quality-gate lint; `git diff --check`; owner-approved responsive/a11y screenshots; cumulative full `npm run verify:pre-pr` with `265` unit files / `1,985` tests, production build, performance budgets, and Playwright `111` passed / `573` expected environment/profile skips; current-head full pre-PR and private-gate pre-merge on every restacked layer; and green required GitHub CI for PRs `#1253`, `#1254`, and `#1255` before sequential squash merge.
+- `screenshot_artifacts`: `output/playwright/habits-absence-review-not-tracked-2026-09-03-115142`; captured `2026-09-03 11:51 CEST`, owner approved, comparison type `after/reference`, four representative responsive artifacts with no horizontal overflow at `320/768/1440` px, zero Axe violations on the checked surfaces, and zero final console errors/warnings. Supporting unchanged Calendar/Motivation evidence remains at `output/playwright/habits-absence-review-not-tracked-2026-09-03-100931`. No product-rendering file changed after final capture.
+- `resolved_findings`: `H-082`.
+- `deferred_findings`: `H-071` older-week/all-history review discovery, queue, and bulk action; `H-074` deep-history query redesign; `H-081` residual definition compatibility; and every other parent finding not explicitly owned by Child AB.
+- `release_gate`: passed; every target category reached at least `4/5`.
+- `remaining_gaps`: Child AB has no instant runtime kill switch. After a non-null marker may exist, rollback must retain the additive schema, status-aware readers, neutral metric projection, selected-date Undo, and check-in-clear trigger, and use a scoped deploy or roll-forward. H-071 also intentionally limits review discovery and bulk action to one selected visible week at a time.
+- `10/10 claim`: no - DevOps and rollback readiness reached `4/5`, not `5/5`; all other critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                       | Gaps / Notes                                                                                            |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | H-082 shipped as one reversible whole-day status with explicit single/visible-week scope and H-071 boundary.                                   | None in Child AB.                                                                                       |
+| UX flow clarity                               | `5/5`          | Selected-day, all-visible, pending, retry, success, error, Undo, and later-check-in replacement paths are covered.                             | None.                                                                                                   |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference artifacts prove neutral hierarchy and responsive behavior at 320/768/1440 px.                                   | None.                                                                                                   |
+| Business logic correctness and data integrity | `5/5`          | Domain, route, RPC, trigger, and race tests prove zero synthetic check-ins, atomic batch/Undo, and check-in-wins precedence.                   | None.                                                                                                   |
+| Accessibility (a11y)                          | `5/5`          | Keyboard/focus/live-status coverage, non-colour-only labels, responsive checks, and zero Axe violations passed.                                | None.                                                                                                   |
+| Performance (CWV + payloads)                  | `4/5`          | Existing bounded consumer windows, max-seven mutation, no N+1/dependency, production build, and route budgets passed.                          | Supporting score; no H-074 deep-history optimization was attempted.                                     |
+| Data placement and sync boundaries            | `5/5`          | Workflow and day status are separate server-canonical fields; transient UI reloads from one truthful snapshot and check-ins remain canonical.  | None.                                                                                                   |
+| Caching and invalidation strategy             | `5/5`          | Mark, batch, Undo, and later check-in return/refetch fresh affected projections with stale-response protection.                                | None.                                                                                                   |
+| Reliability and failure handling              | `5/5`          | Lost-response retries are idempotent, batch is all-or-nothing, and expected auth/schema/stale failures are deterministic.                      | None.                                                                                                   |
+| Security and authz                            | `5/5`          | Auth, owner-scoped RLS, service-only RPC, trigger authority, forged-date rejection, and cross-owner negatives passed.                          | None.                                                                                                   |
+| Privacy and compliance                        | `5/5`          | Owner-private bounded export preserves canonical status while UI, analytics, logs, and errors exclude private/raw values.                      | None.                                                                                                   |
+| Content governance                            | `5/5`          | API, user-flow, privacy/support, parent, queue, inventory, labels, and lifecycle evidence share one contract.                                  | None.                                                                                                   |
+| Analytics and KPI observability               | `5/5`          | Stable bounded action events emit only after real change; failures and the marker create no synthetic success KPI.                             | None.                                                                                                   |
+| Incident response and support operations      | `5/5`          | Support guidance covers scope, coverage, Undo, override, safe retry, schema failure, and privacy-safe diagnosis.                               | None.                                                                                                   |
+| i18n operational readiness                    | `5/5`          | Stable machine values stay separate from shared labels; longer copy was checked at 320 px and future statuses require mapping.                 | None.                                                                                                   |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js, TypeScript, Supabase/RLS, Habits, Calendar, Motivation, Trends, and test surfaces were reused with no dependency.            | None.                                                                                                   |
+| Testing and QA automation                     | `5/5`          | Focused tests, database race evidence, full local gates, owner screenshots, three current-head pre-merge runs, and required CI all passed.     | None.                                                                                                   |
+| Scalability and cost efficiency               | `4/5`          | Mutation is one bounded max-seven operation and readers reuse current evidence windows with no job, external call, or all-history queue.       | Supporting score; H-071/H-074 expansion and optimization remain deliberately separate.                  |
+| DevOps and rollback readiness                 | `4/5`          | Expand-first migration, linked parity, mixed-version floor, current-head gates, ordered stack, and scoped roll-forward procedure are recorded. | No instant kill switch; blind old-reader rollback is unsafe after a marker exists. Fix only separately. |
