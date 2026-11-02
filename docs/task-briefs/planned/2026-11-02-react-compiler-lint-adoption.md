@@ -7,7 +7,8 @@
 - `owner`: `stianvikra`
 - `created`: `2026-11-02`
 - `updated`: `2026-11-02`
-- `parent`: `docs/task-briefs/in-progress/2026-11-02-security-and-ci-maintenance.md`
+- `parent`: `docs/task-briefs/done/2026-11-02-security-and-ci-maintenance.md`
+- `review_by`: `2026-12-01`
 
 ## Brief Audit Record
 
