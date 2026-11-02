@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-11-02-security-and-ci-maintenance`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-11-02`
 - `updated`: `2026-11-02`
@@ -172,3 +172,46 @@ Help/Guide N/A: no user/admin action, label, recovery behavior or product workfl
 - `2026-11-02 | working tree on main@18fca537 | Full pre-PR reaches lint and exposes 124 pre-existing component diagnostics newly enabled by the mandatory Hooks 7.1 preset (111 effect-state, 6 purity, 3 refs, 2 immutability, 2 manual-memoization). Preserve existing baseline controls, keep remaining preset rules enabled, and record a dated component-migration follow-up; no broad product rewrite. Separate old/new package comparison proves all four malicious mail fixtures fail under 9.0.6 and pass under 10.3.1. | Next: targeted real ESLint regression test, then full gate.`
 - `2026-11-02 | working tree on main@18fca537 | First runtime pre-PR: 266 unit files / 2074 tests pass; build and all public performance budgets pass. Full browser matrix: 111 pass, 570 pre-existing skips, 3 failures, all WebKit context.close teardown timeouts after existing project-ineligible skips. No product assertion ran in those three cases. One targeted unchanged rerun gives the expected 6 skipped cases with no teardown failure, confirming fixture instability. Extend only the test-tool scope to Playwright 1.64.1 and matching browsers; preserve test bodies, assertions, eligibility and timeouts. | Next: clean install, targeted browser validation and a fresh full gate.`
 - `2026-11-02 | implementation checkpoint | Playwright 1.64.1 and matching Chromium/Firefox/WebKit install cleanly. Targeted unit/lint-fixture tests: 19 pass; TypeScript passes; targeted browser setup/mobile smoke: 4 pass / 26 existing eligibility skips. No E2E assertion, timeout, retry or eligibility changed. Rechecked Hooks 7.0.1 source: rule names already existed, so the five diagnostic-family exceptions are recorded explicitly as a temporary architectural gap, with no blanket exclusion of other/future rules. | Next: commit the scoped checkpoint, run full verify:pre-pr on that exact commit, then push/PR/CI/pre-merge.`
+- `2026-11-02 | a18d19f6 -> main@5721001e | PR #1261 merged after explicit owner approval. Full pre-PR, password-backed pre-merge, required CI, Vercel preview, authenticated Admin E2E and full Nightly pass. Main synced; local and remote implementation branch removed after verifying the squash merge. Post-merge preflight selected exactly this brief for one repo-managed docs-only closeout. | Next: validate and merge the authorized docs-only closeout, sync/prune, then complete chat handoff.`
+
+## Completion Record
+
+- `completed`: `2026-11-02`
+- `merged_pr`: [#1261](https://github.com/stianvikra/freeswimming/pull/1261)
+- `squash_commit`: `5721001e20ca3f62fb2453cee05cbaf8fbb9c256`
+- `validated_head`: `a18d19f6079bfb89d70a77e998e81ca3542a31dd`
+- `result`: Kjente produksjonssårbarheter er fjernet, e-postmottakere har direkte sikkerhetstester, og nettlesertestene kjører igjen i et støttet testmiljø. Produktflyter og data er bevart.
+- `validation`: Clean `npm ci`; production audit 0 findings; full-tree audit 0 high/critical. Local `npm run verify:pre-pr` PASS at `artifacts/test-runs/20261102-034116`; `npm run verify:pre-merge` PASS at `artifacts/verify-pre-merge/20261102-025658.json`, reusing the same-head public gate and running six fresh password-form access checks. Both changed briefs pass scorecard lint.
+- `ci`: [Required CI](https://github.com/stianvikra/freeswimming/actions/runs/41380049363), [CodeQL](https://github.com/stianvikra/freeswimming/actions/runs/41380049258), [PR Size](https://github.com/stianvikra/freeswimming/actions/runs/41380049288), [Vercel preview](https://github.com/stianvikra/freeswimming/actions/runs/41380049373), [Nightly](https://github.com/stianvikra/freeswimming/actions/runs/41380119935), and [Admin E2E](https://github.com/stianvikra/freeswimming/actions/runs/41380122308) all pass for the validated head.
+- `test_counts`: 266 unit files / 2074 tests; local and GitHub full browser matrix each 111 passed / 573 existing project or environment skips; six fresh local password access tests; authenticated Admin E2E nine passed / one existing skip. No E2E assertion, timeout, retry or eligibility changed.
+- `performance_decision`: `hold` with one qualifying weekly green and 17.1% worst budget margin. Preserve current thresholds until the documented two-week condition is met.
+- `visual_review`: N/A; no product-rendering file, styling, assets, copy or workflow was changed. The Next-managed agent heading normalization is documentation only.
+- `10/10 claim`: no - security and stack discipline are 4/5 with the explicit gaps below; every target meets the release minimum of 4/5.
+
+Critical target categories:
+
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                       | Gaps / Notes                                                                                                                                                                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Business logic correctness and data integrity | `5/5`          | 18 provider/composer tests pass; all four adversarial address fixtures fail with old 9.0.6 and pass with 10.3.1; existing delivery IDs, failures and redaction pass.           | No schema, persisted entity or provider-write policy change.                                                                                                                       |
+| Performance (CWV + payloads)                  | `5/5`          | All four canonical public route budgets pass locally and in Nightly with unchanged limits.                                                                                     | Trend hold; no stretch target change.                                                                                                                                              |
+| Reliability and failure handling              | `5/5`          | Supported fixed runner images; full local/Nightly matrix and authenticated Admin pass after matching Playwright/browser update.                                                | Existing project/auth skips are explicit; old WebKit teardown symptom did not recur in the fresh full matrix.                                                                      |
+| Security and authz                            | `4/5`          | Production audit has 0 findings; full tree has 0 high/critical; provider, API and password-gate negative paths plus CodeQL pass.                                               | 20 moderate development-only affected packages remain; GitHub alert endpoint reports disabled (403). Owner stianvikra reviews remaining tooling/security operations by 2026-12-01. |
+| Incident response and support operations      | `5/5`          | Maintenance/testing runbooks and debug log record setup-versus-assertion probes, supported-image recovery and audit-first upgrade/rollback guidance.                           | Upstream WebKit internals are not claimed as proven; observed fixture boundary and probes are recorded.                                                                            |
+| Stack-fit and dependency discipline           | `4/5`          | Exact Next/config 16.4.3, Nodemailer 10.3.1 and Playwright 1.64.1; no new direct dependency; real core-Hooks fixture passes.                                                   | Five compiler diagnostic families are temporarily deferred. Owner stianvikra reviews the planned component migration by 2026-12-01; retain other/future preset rules.              |
+| Testing and QA automation                     | `5/5`          | 2074 unit tests, 111 full-matrix public browser passes, six local password checks, nine authenticated Admin passes, and all required/extra CI green.                           | Existing eligibility skips documented; zero new skip or assertion relaxation.                                                                                                      |
+| DevOps and rollback readiness                 | `5/5`          | Same-head pre-PR/pre-merge, required CI and Vercel green; main synced to squash 5721001e; implementation refs pruned; rollback is a scoped commit revert without DB migration. | Reverting security packages restores known vulnerability exposure and is emergency-only pending a corrected patch.                                                                 |
+
+## Remaining Gaps And Return Path
+
+- Moderate development-only advisories remain a separate toolchain review; avoid npm's suggested obsolete ESLint/config downgrades. Owner: stianvikra; review no later than 2026-12-01.
+- Five explicit compiler diagnostic deferrals are owned by `docs/task-briefs/planned/2026-11-02-react-compiler-lint-adoption.md`. Select and refresh one component family before executing it; review by 2026-12-01.
+- Dependabot alert activation/token scope and the three stale dependency PRs remain deferred maintenance evidence. No credential scope or GitHub security setting changed here.
+- All target scores are >=4/5. Fix/defer decision: keep these bounded follow-ups planned; no below-release target was accepted.
+- Return to monthly maintenance issue [#1260](https://github.com/stianvikra/freeswimming/issues/1260). No further implementation slice is selected by this closeout; assess a fresh chat after the authorized docs-only PR is merged and main is synced.

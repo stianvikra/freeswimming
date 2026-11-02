@@ -32,7 +32,7 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Prevention: fixed runner image plus the documented compatibility review in testing strategy and
   maintenance cadence; verify browser installation and real test steps on branch Actions runs.
 - Evidence: failed runs `41281589485` and `41282533534`; active brief
-  `docs/task-briefs/in-progress/2026-11-02-security-and-ci-maintenance.md` records repair validation.
+  `docs/task-briefs/done/2026-11-02-security-and-ci-maintenance.md` records repair validation.
 
 ## 2026-11-02 - Local WebKit: full-matrix context teardown times out after project-ineligible skips
 
