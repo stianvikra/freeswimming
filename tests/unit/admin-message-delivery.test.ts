@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildMessageDeliveryAttemptRecord,
@@ -208,6 +209,83 @@ describe("admin message delivery provider contract", () => {
       })
     );
   });
+
+  it.each([
+    {
+      name: "ordinary display name",
+      to: basePayload.to,
+      expectedRecipient: "support@example.com",
+    },
+    {
+      name: "a future recipient with a non-ASCII display name",
+      to: "Ny svømmer <future.swimmer@example.org>",
+      expectedRecipient: "future.swimmer@example.org",
+    },
+    {
+      name: "a mailbox hidden inside a nested comment",
+      to: "Swimmer (outer(inner) <attacker@example.net>) <swimmer@example.com>",
+      expectedRecipient: "swimmer@example.com",
+    },
+    {
+      name: "a group delimiter inside a comment",
+      to: "Training: (notes; <attacker@example.net>) <swimmer@example.com>;",
+      expectedRecipient: "swimmer@example.com",
+    },
+    {
+      name: "a group delimiter inside a quoted display name",
+      to: 'Training: "notes;" "<attacker@example.net>" <swimmer@example.com>;',
+      expectedRecipient: "swimmer@example.com",
+    },
+    {
+      name: "a closing angle bracket inside a quoted local part",
+      to: '<"lane@attacker.example>"@example.com>',
+      // SMTP sanitizes the local part; the security boundary is the declared
+      // recipient domain and exactly one envelope recipient.
+      expectedRecipient: expect.stringMatching(/@example\.com$/),
+    },
+  ])(
+    "composes SMTP only for the intended recipient with $name",
+    async ({ to, expectedRecipient }) => {
+      // Use the real public composer without opening an SMTP connection. These
+      // envelope assertions catch recipient substitution, which mocks cannot see.
+      const transport = nodemailer.createTransport({
+        streamTransport: true,
+        buffer: true,
+        newline: "unix",
+      });
+      const sendMail = vi.fn((input: Parameters<typeof transport.sendMail>[0]) =>
+        transport.sendMail(input)
+      );
+
+      const result = await deliverMessage(
+        { ...basePayload, to },
+        {
+          env: {
+            MESSAGE_DELIVERY_PROVIDER: "smtp_one_com_compatible",
+            MESSAGE_DELIVERY_SMTP_HOST: "smtp.example.com",
+            MESSAGE_DELIVERY_SMTP_USER: "mailbox@example.com",
+            MESSAGE_DELIVERY_SMTP_PASSWORD: "test-only-password",
+          },
+          smtpTransportFactory: () => ({ sendMail }),
+        }
+      );
+
+      expect(result).toMatchObject({
+        status: "accepted_by_provider",
+        providerMessageId: "<attempt_123@freeswimming.app>",
+      });
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      const composed = await sendMail.mock.results[0].value;
+      expect(composed.envelope).toEqual({
+        from: "hello@freeswimming.org",
+        to: [expectedRecipient],
+      });
+      const mime = composed.message.toString();
+      expect(mime).toContain("Message-ID: <attempt_123@freeswimming.app>");
+      expect(mime).toContain("Reply-To: swimmer@example.com");
+      expect(mime).toContain(basePayload.text);
+    }
+  );
 
   it("classifies SMTP auth failures as final and redacts secrets plus addresses", async () => {
     const sendMail = vi.fn().mockRejectedValue(

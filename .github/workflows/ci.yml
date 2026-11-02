@@ -9,7 +9,8 @@ on:
 
 jobs:
   e2e-smoke:
-    runs-on: ubuntu-latest
+    # Review OS changes together with Playwright; ubuntu-latest can advance first.
+    runs-on: ubuntu-24.04
     # Keep enough room for dependency install, browser install, app startup, and
     # both smoke suites. Browser install happens once here; the site-lock-smoke
     # job below remains as a required-check gate that depends on this job.
@@ -116,7 +117,8 @@ jobs:
     needs:
       - e2e-smoke
       - site-lock-smoke
-    runs-on: ubuntu-latest
+    # Performance checks launch the repo's pinned Playwright browsers.
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
       - name: Checkout

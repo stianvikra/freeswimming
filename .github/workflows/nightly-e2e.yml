@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
   performance-budget-gates:
-    runs-on: ubuntu-latest
+    # Keep browser jobs on a Playwright-supported image, not a moving OS alias.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -60,7 +61,7 @@ jobs:
           retention-days: 14
 
   e2e-full-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -98,7 +99,7 @@ jobs:
           retention-days: 14
 
   private-gate-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout

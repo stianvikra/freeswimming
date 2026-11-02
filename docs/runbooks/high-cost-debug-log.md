@@ -18,6 +18,40 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Evidence:
 ```
 
+## 2026-11-02 - Scheduled E2E: browser installation fails after hosted runner OS changes
+
+- Surface: Nightly E2E and Admin E2E, with the same compatibility risk in browser-dependent CI jobs.
+- Symptom: repeated failures from 2026-10-24 onward; browser installation exits before any test
+  assertion, and performance/private-gate steps never execute.
+- Root cause: `ubuntu-latest` advanced to Ubuntu 26.04 while locked Playwright 1.59.1 does not
+  support `ubuntu26.04-x64`. The log explicitly reports the unsupported OS during browser setup.
+- Fix pattern: pin browser-dependent jobs to supported `ubuntu-24.04`; keep unrelated jobs and
+  the existing Playwright matrix unchanged. Review a later OS/Playwright migration as a pair.
+- Detection/probe: inspect the first failing step and runner image, then compare against the
+  installed Playwright release's supported platforms. Distinguish setup failure from assertion failure.
+- Prevention: fixed runner image plus the documented compatibility review in testing strategy and
+  maintenance cadence; verify browser installation and real test steps on branch Actions runs.
+- Evidence: failed runs `41281589485` and `41282533534`; active brief
+  `docs/task-briefs/in-progress/2026-11-02-security-and-ci-maintenance.md` records repair validation.
+
+## 2026-11-02 - Local WebKit: full-matrix context teardown times out after project-ineligible skips
+
+- Surface: local iPhone/tablet/desktop WebKit fixtures under Playwright 1.59.1.
+- Symptom: three `context.close` teardown timeouts at 30 seconds; the corresponding test bodies
+  had already selected their existing project-ineligible skip, so no product assertion ran.
+- Root-cause boundary: browser-fixture teardown is proven by error contexts; an underlying WebKit
+  defect is not established from one run. Application behavior is ruled out for these failures.
+- Ranked probes: inspect teardown versus assertion stacks first; check existing eligibility next;
+  allow one unchanged targeted run to confirm instability before changing the test environment.
+  That probe returned the expected six skips without a teardown error.
+- Fix pattern: use an explicitly reviewed Playwright/browser pair (1.64.1 in this maintenance
+  round) and validate the unchanged full matrix. Do not add retries, new skips, or longer timeouts
+  to hide context shutdown failures. If it recurs, investigate fixture lifecycle before product code.
+- Prevention: keep browser builds in sync with the package and record full-matrix evidence,
+  including existing skip eligibility, rather than describing an all-skipped probe as product QA.
+- Evidence: `artifacts/test-runs/20261102-032303/verify.log`, the targeted teardown probe,
+  and the maintenance brief's subsequent full-gate results.
+
 ## 2026-06-11 - Codex Local Automation: repeated screenshot, approval, and PR-check friction
 
 - Surface: Codex local execution flow, Playwright/Chromium screenshot capture, GitHub PR checks,
