@@ -108,6 +108,18 @@ Pre-live or major-release audit:
 
 ## Dependency PR Promotion Gate
 
+For security maintenance, use a fresh production audit and the current lockfile before
+choosing versions. A suggested `npm audit` fix can remain on an older major and leave
+other advisories unresolved; verify the entire resulting production tree after the
+targeted update. Exercise the real email composer with in-memory stream transport when
+Nodemailer recipient parsing changes, alongside existing provider failure/redaction tests.
+No real email needs to be sent for those regression checks.
+
+Browser-dependent CI jobs deliberately use `ubuntu-24.04`. Before changing that image,
+check installed Playwright support and prove browser installation plus the full matrix.
+Treat an OS migration behind `ubuntu-latest` as a compatibility change, not a test flake.
+When investigating failed scheduled runs, inspect the first failing step before rerunning.
+
 Use this order before merging routine dependency PRs:
 
 1. Start from a clean, up-to-date `main`.

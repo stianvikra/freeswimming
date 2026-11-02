@@ -31,6 +31,19 @@ Project-specific scope rules:
 - keyboard focus trap runs only on `desktop-*` projects.
 - desktop/tablet install entry smoke test runs only on `desktop-*` and `tablet-*` projects.
 
+Browser-dependent GitHub Actions jobs in `ci.yml`, `nightly-e2e.yml`, and `admin-e2e.yml`
+use `ubuntu-24.04`. Review runner OS changes together with the installed Playwright
+version; a newer `ubuntu-latest` image can stop browser installation before tests run.
+Keep the browser matrix and assertions intact when repairing runner compatibility.
+
+Next 16.4 requires Hooks 7.1, whose compiler analysis exposes more existing
+component patterns. Five diagnostic families are temporarily deferred in `eslint.config.mjs`, with
+the migration tracked in
+`docs/task-briefs/planned/2026-11-02-react-compiler-lint-adoption.md`.
+Rules of Hooks and exhaustive-deps remain enforced and are exercised by a real
+ESLint fixture in `tests/unit/eslint-hook-baseline.test.ts`. Other recommended rules
+remain enabled; do not add blanket compiler-rule exclusions or inline suppressions.
+
 ## Playwright Local Isolation
 
 Local Playwright runs are isolated by default to avoid collisions with owner-run `next dev` sessions:
